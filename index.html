@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026/12 沖繩冬日海風自由行 | OKINAWA 5-DAY ROAD TRIP</title>
+  <meta name="description" content="2026/12沖繩5天4夜自駕行程介紹網站。好市多採購、北谷週末煙火、糸滿魚市場海鮮、iias水族館、那霸雙神社參拜、文青沖繩麵EIBUN、PARCO CITY海景巨型商場、敘敘苑燒肉與雙豬排巡禮。">
+  <meta name="keywords" content="沖繩自由行, 沖繩自駕, 2026沖繩, 去趣, ChicTrip, 糸滿魚市場, PARCO CITY, 敘敘苑, 通堂拉麵, EIBUN, 波上宮">
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="2026/12 沖繩冬日海風自由行 5天4夜完整行程">
+  <meta property="og:description" content="點擊查看完整自駕行程路線、MapCode導航、老饕美食推薦與去趣App專屬連結！">
+  <meta property="og:type" content="website">
+
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌺</text></svg>">
+</head>
+<body>
+
+  <!-- ==========================================================================
+       Site Header
+       ========================================================================== -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="logo-area">
+        <div class="logo-icon">🌺</div>
+        <div class="logo-text">
+          2026/12 沖繩
+          <span>OKINAWA ROAD TRIP</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#schedule-section" class="nav-link active">🗓️ 每日行程</a></li>
+          <li><a href="#map-section" class="nav-link">🗺️ 路線地圖</a></li>
+          <li><a href="#toolkit-section" class="nav-link">🧰 旅行錦囊</a></li>
+          <li><a href="#chictrip-section" class="nav-link">📲 去趣 App</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <button id="theme-toggle-btn" class="theme-toggle" aria-label="切換深淺模式" title="切換深淺模式">
+          🌙
+        </button>
+        <button class="btn-icon btn-print-itinerary" aria-label="列印或匯出PDF" title="列印或匯出PDF">
+          🖨️
+        </button>
+        <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn-cta-chictrip">
+          <span>📲 去趣 App</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       Hero Section
+       ========================================================================== */
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-badge-group">
+        <span class="hero-pill">📅 2026/12/12 (六) - 12/16 (三) · 5天4夜</span>
+        <span class="hero-pill">🚗 沖繩南部與中部 自駕探險</span>
+        <span class="hero-pill accent">✨ 去趣 ChicTrip 官方精選路線</span>
+      </div>
+
+      <h1 class="hero-title">
+        2026/12 沖繩 <span class="gradient-text">冬日海風自由行</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        告別盛夏酷暑，迎接初冬舒適涼爽的琉球蔚藍！從南城好市多首店狂歡、北谷海濱週六限定煙火、糸滿現剖海鮮早餐、那霸懸崖波上宮祈福、話題文青麵 EIBUN，到西海岸海景巨城 PARCO CITY 痛快血拼 5 小時與極品阿古豬雙豬排饗宴。
+      </p>
+
+      <!-- Countdown Banner -->
+      <div class="countdown-box" id="countdown-wrap">
+        <div class="countdown-label">
+          <span class="pulse-dot"></span>
+          <span>距 2026/12/12 啟程出發倒數：</span>
+        </div>
+        <div class="countdown-grid">
+          <div class="countdown-unit">
+            <div class="countdown-val" id="cd-days">--</div>
+            <div class="countdown-title">天 DAYS</div>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-val" id="cd-hours">--</div>
+            <div class="countdown-title">時 HRS</div>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-val" id="cd-mins">--</div>
+            <div class="countdown-title">分 MINS</div>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-unit">
+            <div class="countdown-val" id="cd-secs">--</div>
+            <div class="countdown-title">秒 SECS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🗓️</div>
+          <div>
+            <div class="stat-value">5 天 4 夜</div>
+            <div class="stat-label">橫跨週末與平日</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📍</div>
+          <div>
+            <div class="stat-value">40 處</div>
+            <div class="stat-label">行程節點與打卡點</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🛍️</div>
+          <div>
+            <div class="stat-value">12 大</div>
+            <div class="stat-label">好市多/PARCO/DFS/永旺商場</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🍣</div>
+          <div>
+            <div class="stat-value">8 處</div>
+            <div class="stat-label">魚市場/沖繩麵/敘敘苑</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="hero-cta-group">
+        <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn btn-chictrip">
+          <span>📲 在去趣 App 查看完整行程路線</span>
+        </a>
+        <a href="#schedule-section" class="btn btn-primary">
+          <span>🗓️ 瀏覽每日詳細時程</span>
+        </a>
+        <button class="btn btn-secondary btn-copy-chictrip">
+          <span>🔗 一鍵複製分享連結</span>
+        </button>
+        <button class="btn btn-secondary btn-print-itinerary">
+          <span>🖨️ 列印行程手冊 (PDF)</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       Schedule Control Bar (Sticky Filter & Day Switcher)
+       ========================================================================== -->
+  <section class="schedule-control-bar" id="schedule-section">
+    <div class="container">
+      <!-- Day Switcher Tabs -->
+      <div class="day-tabs-scroll" id="day-tabs-container">
+        <!-- Dynamically injected via JS -->
+      </div>
+
+      <!-- Secondary Filters & Search -->
+      <div class="filter-row">
+        <div class="category-pills">
+          <button class="cat-pill active" data-category="all">✨ 全部節點</button>
+          <button class="cat-pill" data-category="food">🍣 老饕美食</button>
+          <button class="cat-pill" data-category="shopping">🛍️ 購物商場</button>
+          <button class="cat-pill" data-category="attraction">⛩️ 景點文化</button>
+          <button class="cat-pill" data-category="transport-hotel">🚗 交通/住宿</button>
+          <button class="cat-pill" data-category="favorites">⭐ 我的收藏</button>
+        </div>
+
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="schedule-search-input" class="search-input" placeholder="搜尋景點、美食、MapCode...">
+          <button id="schedule-search-clear" class="search-clear">✕</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       Main Schedule & Interactive Map Layout
+       ========================================================================== -->
+  <main class="main-layout-section">
+    <div class="container">
+      <div class="layout-grid">
+        
+        <!-- Left: Timeline Stream Column -->
+        <div class="timeline-column">
+          <!-- Active Day Header Banner -->
+          <div id="active-day-banner" class="day-header-banner">
+            <!-- Injected by app.js -->
+          </div>
+
+          <!-- Timeline Items Container -->
+          <div class="timeline-stream" id="timeline-items-list">
+            <!-- Injected by app.js -->
+          </div>
+        </div>
+
+        <!-- Right: Interactive Map Sticky Column -->
+        <div class="map-sticky-wrapper" id="map-section">
+          <div class="map-card-container">
+            <div class="map-card-header">
+              <div class="map-title">
+                <span>🗺️ 沖繩自駕路線地圖</span>
+              </div>
+              <div class="map-legend">
+                <span><span class="legend-dot" style="background:#ef4444;"></span>美食</span>
+                <span><span class="legend-dot" style="background:#8b5cf6;"></span>購物</span>
+                <span><span class="legend-dot" style="background:#06b6d4;"></span>景點</span>
+                <span><span class="legend-dot" style="background:#10b981;"></span>住宿</span>
+                <span><span class="legend-dot" style="background:#0284c7;"></span>交通</span>
+              </div>
+            </div>
+
+            <!-- Leaflet Map Container -->
+            <div id="map"></div>
+
+            <div class="map-card-footer">
+              <span>💡 提示：點擊圖標可查看亮點並快速導航</span>
+              <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" style="color:var(--primary); font-weight:600;">去趣 App 導航 →</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================================================
+       Travel Toolkit & Companion Section
+       ========================================================================== -->
+  <section class="travel-toolkit-section" id="toolkit-section" style="padding: 4.5rem 0 3.5rem; background: var(--bg-surface); border-top: 1px solid var(--border);">
+    <div class="container">
+      <div class="section-heading">
+        <span class="section-badge">TRAVEL TOOLKIT</span>
+        <h2 class="section-title">沖繩自駕行前錦囊與實用工具</h2>
+        <p class="section-subtitle">精心統整初冬氣候、右駕安全守則、智慧打包行李清單與記帳換算工具。</p>
+      </div>
+
+      <!-- Navigation for Toolkit Tabs -->
+      <div class="toolkit-tabs-nav">
+        <button class="toolkit-tab-btn active" data-target="panel-weather">🌤️ 12月氣候穿搭</button>
+        <button class="toolkit-tab-btn" data-target="panel-driving">🚗 日本右駕守則</button>
+        <button class="toolkit-tab-btn" data-target="panel-checklist">🎒 必備行李清單</button>
+        <button class="toolkit-tab-btn" data-target="panel-budget">💴 日圓記帳計算機</button>
+        <button class="toolkit-tab-btn" data-target="panel-food">🍱 老饕必吃指南</button>
+      </div>
+
+      <!-- Tab 1: Weather & Clothing -->
+      <div class="toolkit-panel active" id="panel-weather">
+        <div class="weather-grid">
+          <div class="weather-primary-card">
+            <div>
+              <span class="tag-badge" style="background: rgba(255,255,255,0.25); color: #fff;">12月中旬沖繩氣候</span>
+              <div class="weather-temp-huge">16°C ~ 22°C</div>
+              <div style="font-size: 1.15rem; font-weight: 600;">初冬涼爽海風 · 乾季降雨少</div>
+            </div>
+            <p style="font-size: 0.9rem; opacity: 0.9; margin-top: 1rem;">
+              沖繩12月進入最舒適乾爽的季節，無颱風威脅，平均氣溫如台灣深秋，非常適合全日開車出遊與逛街。
+            </p>
+          </div>
+
+          <div class="weather-details-card">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">👔 洋蔥式穿搭關鍵建議</h3>
+            <p style="font-size: 0.925rem; color: var(--text-muted); line-height: 1.6;">
+              由於沖繩四面環海，在北谷美國村、美麗SUN海灘及瀨長島等臨海地區「海風極為強勁」，體感溫度會下降3-5度；而室內商場（如PARCO CITY、iias、AEON）皆開暖氣空調。
+            </p>
+            <ul class="weather-tips-list">
+              <li><strong>內層穿著：</strong> 舒適短袖或透氣薄長袖，便於室內商場舒適血拼。</li>
+              <li><strong>外層必備：</strong> 連帽防風輕羽絨或防潑水風衣外套（隨車攜帶），海邊散步抗風保暖。</li>
+              <li><strong>鞋履選擇：</strong> 輕便耐走的運動慢跑鞋，應對PARCO CITY停留5小時的長途步行。</li>
+              <li><strong>隨身防護：</strong> 抗UV太陽眼鏡（白天晴朗自駕迎光）與保濕護唇膏。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Driving Guide -->
+      <div class="toolkit-panel" id="panel-driving">
+        <div style="background: var(--primary-light); padding: 1.25rem 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; border-left: 5px solid var(--primary);">
+          <h4 style="font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 0.25rem;">⚠️ 台灣駕照自駕 核心法規叮嚀</h4>
+          <p style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5;">
+            台灣旅客於日本合法租車，<strong>必須同時備齊「台灣有效駕照正本」與「監理所申請的日文譯本」</strong>，缺一不可！（國際駕照於日本無效，切勿帶錯）。
+          </p>
+        </div>
+
+        <div class="driving-rules-grid">
+          <div class="driving-rule-card">
+            <h4>🔄 轉彎口訣</h4>
+            <p>牢記<strong>「左小轉、右大轉」</strong>！日本為靠左行駛，右轉時務必先於路口中央等待對向直行車輛全數通過後再轉。</p>
+          </div>
+          <div class="driving-rule-card">
+            <h4>🚦 雨刷與方向燈</h4>
+            <p>日本規格車輛方向燈在<strong>右手邊</strong>、雨刷在左手邊。初期轉彎誤刷雨刷屬正常現象，保持鎮定放慢動作即可。</p>
+          </div>
+          <div class="driving-rule-card">
+            <h4>🚶 行人絕對路權</h4>
+            <p>只要斑馬線上有行人示意欲過馬路，車輛<strong>必須完全靜止禮讓</strong>，切勿搶先通過或按喇叭催促。</p>
+          </div>
+          <div class="driving-rule-card">
+            <h4>🗺️ 車機 MapCode</h4>
+            <p>本行程每個景點皆附有精準 MapCode，租車上車後只要輸入 8-10 位數字，導航精準直達專屬停車場！</p>
+          </div>
+          <div class="driving-rule-card">
+            <h4>⛽ 還車滿油規定</h4>
+            <p>第5天還車前，請務必在豐田租車指定附近的加油站加滿油（油種：Regular レギュラー），並<strong>保留加油發票供查驗</strong>。</p>
+          </div>
+          <div class="driving-rule-card">
+            <h4>🅿️ 停車秩序規範</h4>
+            <p>日本嚴禁路邊臨時違規停車。本行程景點均具備商場大型停車場或專屬停車位，請務必停入白線格內。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Packing Checklist -->
+      <div class="toolkit-panel" id="panel-checklist">
+        <div class="checklist-container">
+          <div class="checklist-header-stats">
+            <div>
+              <h3 style="font-size: 1.25rem; font-weight: 700;">行李準備進度</h3>
+              <div id="checklist-progress-text" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">計算中...</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="checklist-reset-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.35rem 0.85rem;">重設勾選</button>
+            </div>
+          </div>
+
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="checklist-progress-fill" style="width: 0%;"></div>
+          </div>
+
+          <!-- Add custom item input -->
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+            <input type="text" id="checklist-add-input" class="form-control" placeholder="新增個人專屬攜帶物品（如：隱形眼鏡、特定藥物...）">
+            <button id="checklist-add-btn" class="btn btn-primary" style="white-space: nowrap; font-size: 0.85rem;">新增</button>
+          </div>
+
+          <div class="checklist-items-group" id="checklist-items-container">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Budget & Currency Converter -->
+      <div class="toolkit-panel" id="panel-budget">
+        <div class="budget-grid">
+          
+          <!-- Left: Real-time Converter -->
+          <div class="converter-card">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">💱 日幣即時換算台幣</h3>
+            
+            <div class="form-group">
+              <label class="form-label">參考匯率 (1 JPY 換算 TWD)</label>
+              <input type="number" step="0.001" id="currency-rate-input" class="form-control" value="0.215">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">輸入日幣金額 (¥ JPY)</label>
+              <input type="number" id="calc-jpy-input" class="form-control" placeholder="例：3000" value="5000">
+            </div>
+
+            <div class="conversion-result-box">
+              <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">折合台幣預估</div>
+              <div class="conversion-val-big" id="calc-twd-output">約 NT$ 1,075</div>
+            </div>
+
+            <p style="font-size: 0.775rem; color: var(--text-subtle); margin-top: 0.85rem; text-align: center;">
+              * 匯率可依出發當下即時匯率自由自訂修改，系統將自動保存。
+            </p>
+          </div>
+
+          <!-- Right: Expense Tracker -->
+          <div class="expenses-list-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+              <h3 style="font-size: 1.15rem; font-weight: 700;">💰 旅程記帳本</h3>
+              <div style="text-align: right;">
+                <div style="font-size: 0.75rem; color: var(--text-muted);">累計總支出</div>
+                <div style="font-weight: 800; color: var(--primary); font-size: 1.15rem;">
+                  <span id="expenses-total-jpy">¥ 0</span> (<span id="expenses-total-twd">NT$ 0</span>)
+                </div>
+              </div>
+            </div>
+
+            <form id="add-expense-form" class="expense-form-grid">
+              <input type="text" id="expense-name-input" class="form-control" placeholder="品名 (如：敘敘苑午餐)" required>
+              <select id="expense-cat-select" class="form-control">
+                <option value="美食餐飲">美食餐飲</option>
+                <option value="商場購物">商場購物</option>
+                <option value="交通加油">交通加油</option>
+                <option value="景點門票">景點門票</option>
+                <option value="其他雜支">其他雜支</option>
+              </select>
+              <input type="number" id="expense-jpy-input" class="form-control" placeholder="日幣 ¥" required>
+              <button type="submit" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem;">記帳</button>
+            </form>
+
+            <div id="expenses-history-list" style="max-height: 280px; overflow-y: auto;">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Tab 5: Food Bucket List -->
+      <div class="toolkit-panel" id="panel-food">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+          <div class="driving-rule-card" style="border-top: 4px solid #ef4444;">
+            <h4>🍜 沖繩麵 (ソーキそば)</h4>
+            <p><strong>行程推薦：</strong> 田舍公設市場南店 (400円極品軟骨)、沖繩麵 EIBUN (文青排隊第一天王)。<br>高湯甘醇無比，豬軟骨燉至晶透黏糯。</p>
+          </div>
+          <div class="driving-rule-card" style="border-top: 4px solid #06b6d4;">
+            <h4>🍣 現剖刺身與焗烤龍蝦</h4>
+            <p><strong>行程推薦：</strong> 糸滿魚市場 (道之驛糸滿)。<br>銅板價格現挑甜蝦、大生蠔、海膽杯、焗烤龍蝦，產地直送最鮮甜！</p>
+          </div>
+          <div class="driving-rule-card" style="border-top: 4px solid #f59e0b;">
+            <h4>🥩 敘敘苑海景頂級燒肉</h4>
+            <p><strong>行程推薦：</strong> SAN-A 浦添西海岸 PARCO CITY 3F。<br>落地窗直面蔚藍太平洋，中午限定超值套餐，特選和牛五花與牛舌入口爆汁。</p>
+          </div>
+          <div class="driving-rule-card" style="border-top: 4px solid #10b981;">
+            <h4>🐟 鐵板奶油香煎鮮魚</h4>
+            <p><strong>行程推薦：</strong> 糸滿漁民食堂。<br>招牌奶油香煎時令鮮魚配蒜香海苔，魚皮酥脆肉質極嫩，排隊神店！</p>
+          </div>
+          <div class="driving-rule-card" style="border-top: 4px solid #8b5cf6;">
+            <h4>🥢 沖繩阿古豬炸豬排</h4>
+            <p><strong>行程推薦：</strong> 豚かつ 小やじ 那霸店、かつ乃屋。<br>嚴選優質阿古豬低溫慢炸，肉質粉嫩多汁油脂甜美，雙重豬排極致享受！</p>
+          </div>
+          <div class="driving-rule-card" style="border-top: 4px solid #ec4899;">
+            <h4>🍜 琉球新麵 通堂 男人麵女人麵</h4>
+            <p><strong>行程推薦：</strong> 通堂拉麵 小祿本店 (AEON對面)。<br>經典濃郁豚骨男麵與清爽鹽味女麵，搭配無限供應的爽脆辣豆芽，完美收官！</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       ChicTrip App Dedicated Showcase Section
+       ========================================================================== -->
+  <section class="chictrip-banner-section" id="chictrip-section">
+    <div class="container">
+      <div class="chictrip-box">
+        <div class="chictrip-content">
+          <span class="hero-pill accent" style="margin-bottom: 0.75rem;">📲 官方行程分享</span>
+          <h2 class="chictrip-title">用「去趣 ChicTrip」看我的完整行程細節！</h2>
+          <p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.6;">
+            本網站所有 40 個停留節點、每日交通安排與時間規劃，皆完整收錄於「去趣」旅行 App 中。一鍵加入同行者、瀏覽離線地圖、導航路線即時串接！
+          </p>
+
+          <div class="chictrip-url-pill">
+            <span>🔗</span>
+            <span>https://chictrip-share.app.link/SOyJSS7fi6b</span>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 0.5rem;">
+            <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn btn-chictrip">
+              <span>立即在去趣 App 開啟行程</span>
+            </a>
+            <button class="btn btn-secondary btn-copy-chictrip">
+              <span>📋 複製專屬連結</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="text-align: center; background: var(--bg-main); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem;">📱</div>
+          <div style="font-weight: 700; font-size: 0.95rem;">手機一鍵同步</div>
+          <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.25rem;">支援 iOS / Android 去趣 App</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       Spot Detail Modal Dialog
+       ========================================================================== -->
+  <div class="modal-overlay" id="spot-detail-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-title" style="font-size: 1.25rem; font-weight: 800;">景點名稱</h3>
+          <div id="modal-subtitle" style="font-size: 0.825rem; color: var(--text-muted);">英文 / 日文名</div>
+        </div>
+        <button class="modal-close-btn" id="modal-close-btn" aria-label="關閉">✕</button>
+      </div>
+      <div class="modal-body" id="modal-content">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button id="modal-copy-mapcode-btn" class="btn btn-secondary" style="font-size: 0.85rem;">📋 複製 MapCode</button>
+        <a id="modal-nav-link" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size: 0.85rem;">🗺️ Google Maps 導航</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Back to Top Button -->
+  <button id="back-to-top-btn" class="back-to-top" aria-label="返回頁首" title="返回頁首">
+    <span>↑</span>
+  </button>
+
+  <!-- Mobile Bottom Navigation Bar (Visible on mobile <= 768px) -->
+  <nav class="mobile-bottom-nav" aria-label="行動版導覽列">
+    <a href="#schedule-section" class="mobile-nav-btn active" data-target="schedule-section">
+      <span class="mobile-nav-icon">🗓️</span>
+      <span class="mobile-nav-label">每日行程</span>
+    </a>
+    <a href="#map-section" class="mobile-nav-btn" data-target="map-section">
+      <span class="mobile-nav-icon">🗺️</span>
+      <span class="mobile-nav-label">路線地圖</span>
+    </a>
+    <a href="#toolkit-section" class="mobile-nav-btn" data-target="toolkit-section">
+      <span class="mobile-nav-icon">🧰</span>
+      <span class="mobile-nav-label">旅行錦囊</span>
+    </a>
+    <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="mobile-nav-btn chictrip-btn">
+      <span class="mobile-nav-icon">📲</span>
+      <span class="mobile-nav-label">去趣 App</span>
+    </a>
+  </nav>
+
+  <!-- ==========================================================================
+       Site Footer
+       ========================================================================== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="#schedule-section">行程規劃</a>
+        <a href="#map-section">互動地圖</a>
+        <a href="#toolkit-section">行前錦囊</a>
+        <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener">去趣 ChicTrip</a>
+      </div>
+      <p style="margin-bottom: 0.5rem;">
+        🌺 <strong>2026/12 沖繩 5天4夜自駕行程</strong> · 由去趣行程精選製作
+      </p>
+      <p style="font-size: 0.775rem; color: var(--text-subtle);">
+        ※ 實際景點營業時間與公休日可能因日本當地假期調整，出發前建議透過官方連結再次確認。
+      </p>
+    </div>
+  </footer>
+
+  <!-- Leaflet JS for Map -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Data & Application Logic -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
