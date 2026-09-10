@@ -2,7 +2,6 @@
 
 這是一個專為「**2026/12 沖繩 5天4夜自駕行程**」量身打造的現代化、全功能互動介紹網站與旅行隨身指南。
 
-* 行程專屬去趣 ChicTrip 連結：[https://chictrip-share.app.link/SOyJSS7fi6b](https://chictrip-share.app.link/SOyJSS7fi6b)
 * 旅行日期：2026/12/12 (六) - 2026/12/16 (三)
 * 核心住宿：Ocean Tree (海之樹)
 
