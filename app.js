@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     expenses: JSON.parse(safeStorageGet('okinawa_expenses', '[]')),
     exchangeRate: parseFloat(safeStorageGet('okinawa_rate', '0.215')),
     theme: safeStorageGet('okinawa_theme', (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')),
+    mobileView: 'timeline', // 'timeline' | 'map'
     map: null,
     markers: [],
     markerMap: new Map(),
@@ -119,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize Theme
   document.documentElement.setAttribute('data-theme', state.theme);
   updateThemeIcon();
+  updateThemeMeta();
 
   // Initialize Packing Checklist if not in storage
   if (!state.checklist && typeof PACKING_CHECKLIST_DATA !== 'undefined') {
@@ -135,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDayTabs();
   initCategoryPills();
   initSearch();
+  initMobileViewSwitcher();
   initMap();
   renderTimeline();
   initToolkitTabs();
@@ -155,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.documentElement.setAttribute('data-theme', state.theme);
       safeStorageSet('okinawa_theme', state.theme);
       updateThemeIcon();
+      updateThemeMeta();
       showToast(state.theme === 'dark' ? '🌙 已切換為深色模式' : '☀️ 已切換為淺色模式');
     });
   }
@@ -165,6 +169,13 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.innerHTML = state.theme === 'dark' 
       ? '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>'
       : '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>';
+  }
+
+  function updateThemeMeta() {
+    const metaEl = document.getElementById('meta-theme-color');
+    if (metaEl && typeof metaEl.setAttribute === 'function') {
+      metaEl.setAttribute('content', state.theme === 'dark' ? '#090d16' : '#0284c7');
+    }
   }
 
   /* ==========================================================================
@@ -314,6 +325,81 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
+     Mobile View Mode Switcher (Timeline List <-> Interactive Map)
+     ========================================================================== */
+  function initMobileViewSwitcher() {
+    const btnTimeline = document.getElementById('btn-view-timeline');
+    const btnMap = document.getElementById('btn-view-map');
+
+    if (btnTimeline) {
+      btnTimeline.addEventListener('click', () => switchMobileView('timeline'));
+    }
+    if (btnMap) {
+      btnMap.addEventListener('click', () => switchMobileView('map'));
+    }
+  }
+
+  function switchMobileView(mode) {
+    state.mobileView = mode;
+    const grid = document.getElementById('main-layout-grid');
+    const btnTimeline = document.getElementById('btn-view-timeline');
+    const btnMap = document.getElementById('btn-view-map');
+
+    if (grid) {
+      if (mode === 'map') {
+        grid.classList.remove('view-mode-timeline');
+        grid.classList.add('view-mode-map');
+        if (btnMap) btnMap.classList.add('active');
+        if (btnTimeline) btnTimeline.classList.remove('active');
+        renderMapSpotsScroller();
+        setTimeout(() => {
+          if (state.map) {
+            state.map.invalidateSize();
+          }
+        }, 100);
+      } else {
+        grid.classList.remove('view-mode-map');
+        grid.classList.add('view-mode-timeline');
+        if (btnTimeline) btnTimeline.classList.add('active');
+        if (btnMap) btnMap.classList.remove('active');
+      }
+    }
+  }
+
+  function renderMapSpotsScroller() {
+    const scroller = document.getElementById('map-spots-scroller');
+    if (!scroller) return;
+
+    const filtered = getFilteredItems();
+    if (filtered.length === 0) {
+      scroller.innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted);padding:0.25rem 0.5rem;">無符合條件景點</span>';
+      return;
+    }
+
+    scroller.innerHTML = filtered.map(item => `
+      <button class="map-spot-chip" data-id="${escapeHtml(item.id)}" title="${escapeHtml(item.nameZh)}">
+        <span>${item.icon}</span>
+        <span>${escapeHtml(item.nameZh)}</span>
+        <span class="chip-time">${item.time}</span>
+      </button>
+    `).join('');
+
+    scroller.querySelectorAll('.map-spot-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const id = chip.dataset.id;
+        scroller.querySelectorAll('.map-spot-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const item = SCHEDULE_ITEMS.find(s => s.id === id);
+        if (item && state.map) {
+          const marker = state.markerMap.get(id);
+          state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 14), { animate: true });
+          if (marker) marker.openPopup();
+        }
+      });
+    });
+  }
+
+  /* ==========================================================================
      Filtering Logic (Enhanced with MapCode, Category, Time, and Day Query)
      ========================================================================== */
   function matchSearchQuery(item, q) {
@@ -452,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="card-time-badge">⏰ ${item.time}</span>
                 <span class="card-duration-badge">⏱️ ${item.duration}</span>
                 <span class="tag-badge" style="background: var(--primary-light); color: var(--primary);">${escapeHtml(item.categoryLabel)}</span>
-                <span class="tag-badge" style="background: var(--bg-subtle); color: var(--text-muted); font-family: monospace;">MC: ${escapeHtml(item.mapCode)}</span>
+                <button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(item.mapCode)}" title="點擊直接複製日本車機 MapCode">📋 MC: ${escapeHtml(item.mapCode)}</button>
               </div>
               <div class="card-actions-top">
                 <button class="btn-star-fav ${isFav ? 'favorited' : ''}" data-id="${escapeHtml(item.id)}" title="${isFav ? '取消收藏' : '加入收藏'}">
@@ -473,18 +559,21 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="card-footer">
-              <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem;">
+              <div class="card-address">
                 <span>📍 ${escapeHtml(item.address)}</span>
               </div>
               <div class="card-footer-buttons">
-                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}">
+                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點攻略">
                   <span>🔍 查看攻略</span>
                 </button>
-                <button class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}">
+                <button class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode">
+                  <span>📋 複製MC</span>
+                </button>
+                <button class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
                   <span>📍 地圖定位</span>
                 </button>
-                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery || item.name)}" target="_blank" rel="noopener" class="btn-card-action">
-                  <span>🗺️ Google 導航</span>
+                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery || item.name)}" target="_blank" rel="noopener" class="btn-card-action" title="啟動 Google Maps 即時導航">
+                  <span>🗺️ 導航</span>
                 </a>
               </div>
             </div>
@@ -512,6 +601,17 @@ document.addEventListener('DOMContentLoaded', () => {
     listContainer.querySelectorAll('[data-action="locate"]').forEach(btn => {
       btn.addEventListener('click', () => {
         window.appFocusOnMap(btn.dataset.id);
+      });
+    });
+
+    listContainer.querySelectorAll('[data-action="copy-mc"], .btn-copy-mc-badge').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const mc = btn.dataset.mapcode;
+        if (mc) {
+          const cleanCode = mc.replace('*', '').trim();
+          copyTextToClipboard(cleanCode, `📋 已複製 MapCode：${cleanCode}`);
+        }
       });
     });
   }
@@ -692,6 +792,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const bounds = L.latLngBounds(latlngs);
       state.map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     }
+
+    renderMapSpotsScroller();
   }
 
   /* ==========================================================================
@@ -701,6 +803,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = SCHEDULE_ITEMS.find(s => s.id === itemId);
     if (!item) return;
 
+    if (window.innerWidth <= 900) {
+      switchMobileView('map');
+    }
+
     const marker = state.markerMap.get(itemId);
     if (state.map && marker) {
       state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 14), { animate: true });
@@ -708,7 +814,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // On smaller screens, scroll smoothly to the map section
-    if (window.innerWidth <= 1024) {
+    if (window.innerWidth <= 900) {
+      const grid = document.getElementById('main-layout-grid');
+      if (grid) {
+        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else if (window.innerWidth <= 1024) {
       const mapSec = document.getElementById('map-section');
       if (mapSec) {
         mapSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -718,6 +829,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.appScrollToCard = function(itemId) {
+    if (window.innerWidth <= 900) {
+      switchMobileView('timeline');
+    }
+
     let cardEl = document.getElementById(`item-${itemId}`);
     
     // If card is currently hidden due to day filter, switch to that day first
@@ -806,6 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function initModal() {
     const modalOverlay = document.getElementById('spot-detail-modal');
     const modalCloseBtn = document.getElementById('modal-close-btn');
+    const dragHandle = modalOverlay ? modalOverlay.querySelector('.modal-drag-handle') : null;
     if (!modalCloseBtn || !modalOverlay) return;
 
     modalCloseBtn.addEventListener('click', () => {
@@ -817,6 +933,25 @@ document.addEventListener('DOMContentLoaded', () => {
         modalOverlay.classList.remove('open');
       }
     });
+
+    // Touch swipe down on bottom sheet drag handle to dismiss
+    if (dragHandle) {
+      let touchStartY = 0;
+      dragHandle.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      dragHandle.addEventListener('touchend', (e) => {
+        const touchEndY = e.changedTouches[0].clientY;
+        if (touchEndY - touchStartY > 45) {
+          modalOverlay.classList.remove('open');
+        }
+      }, { passive: true });
+
+      dragHandle.addEventListener('click', () => {
+        modalOverlay.classList.remove('open');
+      });
+    }
 
     document.addEventListener('keydown', (e) => {
       if (e && e.key === 'Escape' && modalOverlay.classList.contains('open')) {
@@ -1088,6 +1223,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const navLinks = document.querySelectorAll('.nav-link');
     const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn:not(.chictrip-btn)');
+
+    // Mobile Bottom Nav Click Handlers with View Mode Routing
+    mobileNavBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = btn.dataset.target;
+        if (target === 'map-section' && window.innerWidth <= 900) {
+          e.preventDefault();
+          switchMobileView('map');
+          const grid = document.getElementById('main-layout-grid');
+          if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (target === 'schedule-section' && window.innerWidth <= 900) {
+          switchMobileView('timeline');
+        }
+      });
+    });
+
+    // Window Resize Debounce to Keep Leaflet Tiles Perfectly Aligned
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (state.map) {
+          state.map.invalidateSize();
+        }
+      }, 150);
+    }, { passive: true });
 
     function setActiveNav(targetId) {
       navLinks.forEach(link => {

@@ -2,7 +2,12 @@
 <html lang="zh-TW" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0284c7" id="meta-theme-color">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="2026沖繩自駕">
+  <meta name="format-detection" content="telephone=no">
   <title>2026/12 沖繩冬日海風自由行 | OKINAWA 5-DAY ROAD TRIP</title>
   <meta name="description" content="2026/12沖繩5天4夜自駕行程介紹網站。好市多採購、北谷週末煙火、糸滿魚市場海鮮、iias水族館、那霸雙神社參拜、文青沖繩麵EIBUN、PARCO CITY海景巨型商場、敘敘苑燒肉與雙豬排巡禮。">
   <meta name="keywords" content="沖繩自由行, 沖繩自駕, 2026沖繩, 去趣, ChicTrip, 糸滿魚市場, PARCO CITY, 敘敘苑, 通堂拉麵, EIBUN, 波上宮">
@@ -96,6 +101,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -111,6 +117,8 @@ body {
   transition: background-color var(--transition-normal), color var(--transition-normal);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 a {
@@ -121,6 +129,10 @@ a {
 
 a:hover {
   color: var(--primary-hover);
+}
+
+button, a, input, select, textarea, label {
+  touch-action: manipulation;
 }
 
 button, input, select, textarea {
@@ -1629,115 +1641,403 @@ button, input, select, textarea {
 }
 
 /* ==========================================================================
-   Responsive Breakpoints
+   Mobile View Mode Switcher & Quick Spot Jumper (Global Definition)
+   ========================================================================== */
+.mobile-view-toggle-bar {
+  display: none;
+}
+
+.map-spots-scroller-wrap {
+  display: none;
+}
+
+.modal-drag-handle {
+  display: none;
+}
+
+/* MapCode Interactive Badge on Card */
+.btn-copy-mc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: monospace;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-copy-mc-badge:hover,
+.btn-copy-mc-badge:active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Responsive Breakpoints - Tablet & Intermediate (max-width: 1024px)
    ========================================================================== */
 @media (max-width: 1024px) {
   .layout-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
   .map-sticky-wrapper {
     position: static;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
   }
 
   #map {
-    height: 380px;
+    height: 420px;
   }
 
   .weather-grid, .budget-grid {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
 }
 
+/* ==========================================================================
+   Mobile Dual View Controller (max-width: 900px)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .mobile-view-toggle-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 4px;
+    margin-bottom: 1.25rem;
+    width: 100%;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .view-toggle-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .view-toggle-btn.active {
+    background: var(--bg-surface);
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  /* View Mode: Timeline Active (default) */
+  .layout-grid.view-mode-timeline .timeline-column {
+    display: block;
+  }
+  .layout-grid.view-mode-timeline .map-sticky-wrapper {
+    display: none;
+  }
+
+  /* View Mode: Map Active */
+  .layout-grid.view-mode-map .timeline-column {
+    display: none;
+  }
+  .layout-grid.view-mode-map .map-sticky-wrapper {
+    display: block;
+    margin-bottom: 1.5rem;
+  }
+  .layout-grid.view-mode-map #map {
+    height: calc(65vh - 70px);
+    min-height: 380px;
+    max-height: 540px;
+  }
+
+  /* Quick Spot Jumper Bar below Map */
+  .map-spots-scroller-wrap {
+    display: block;
+    background: var(--bg-surface-elevated);
+    border-top: 1px solid var(--border);
+    padding: 0.65rem 0.75rem;
+    overflow: hidden;
+  }
+
+  .map-spots-scroller {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .map-spots-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .map-spot-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-full);
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .map-spot-chip:hover,
+  .map-spot-chip.active {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .map-spot-chip .chip-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+}
+
+/* ==========================================================================
+   Mobile Screen Optimizations (max-width: 768px)
+   ========================================================================== */
 @media (max-width: 768px) {
-  .hero-title {
-    font-size: 2rem;
+  /* Prevent iOS Safari Auto-Zoom on Input Focus */
+  input[type="text"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Compact Mobile Header */
+  .site-header {
+    top: 0;
+  }
+
+  .header-inner {
+    height: 56px;
+    gap: 0.5rem;
+  }
+
+  .logo-area {
+    font-size: 1rem;
+    gap: 0.5rem;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
   }
 
   .nav-links {
     display: none;
   }
 
+  .header-print-btn {
+    display: none !important;
+  }
+
+  .btn-cta-chictrip {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  /* Sticky Schedule Control Bar */
+  .schedule-control-bar {
+    top: 56px;
+    padding: 0.5rem 0 0.4rem;
+  }
+
+  .day-tabs-scroll {
+    padding-bottom: 0.35rem;
+    gap: 0.4rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .day-tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .day-tab-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .filter-row {
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    gap: 0.5rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .category-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0.2rem;
+    gap: 0.35rem;
+  }
+
+  .category-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cat-pill {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.76rem;
+  }
+
+  .search-box {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .search-input {
+    padding: 0.45rem 2rem 0.45rem 2rem;
+  }
+
+  /* Hero Section */
+  .hero-section {
+    padding: 2.75rem 0 2rem;
+  }
+
+  .hero-title {
+    font-size: clamp(1.75rem, 6.5vw, 2.35rem);
+    line-height: 1.25;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.55;
+  }
+
   .countdown-box {
     flex-direction: column;
     align-items: flex-start;
+    padding: 1rem 1.15rem;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
   }
 
+  .countdown-val {
+    font-size: 1.5rem;
+  }
+
+  /* 2x2 Hero Stats Grid */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .stat-card {
+    padding: 0.85rem;
+    gap: 0.65rem;
+  }
+
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 1.4rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+
+  /* Hero Stacked CTA Buttons */
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.65rem;
+  }
+
+  .hero-cta-group .btn {
+    width: 100%;
+    padding: 0.7rem 1rem;
+  }
+
+  /* Toolkit Navigation Tabs */
+  .toolkit-tabs-nav {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0.2rem 0.25rem 0.5rem;
+    margin-bottom: 1.5rem;
+    gap: 0.45rem;
+  }
+
+  .toolkit-tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .toolkit-tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 0.5rem 0.95rem;
+    font-size: 0.825rem;
+  }
+
+  .weather-temp-huge {
+    font-size: 2.75rem;
+  }
+
+  /* ChicTrip Banner */
   .chictrip-box {
-    padding: 1.5rem;
+    padding: 1.35rem;
     flex-direction: column;
     align-items: flex-start;
+    gap: 1.25rem;
   }
-}
 
-/* Expense Form Responsive Grid */
-.expense-form-grid {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr auto;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-@media (max-width: 640px) {
-  .expense-form-grid {
-    grid-template-columns: 1fr 1fr;
+  .chictrip-title {
+    font-size: 1.45rem;
   }
-  .expense-form-grid input[type="text"] {
-    grid-column: span 2;
+
+  .chictrip-url-pill {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
+    max-width: 100%;
+    overflow-x: auto;
   }
-  .expense-form-grid button {
-    grid-column: span 2;
-  }
-}
 
-/* Floating Back-to-Top Button */
-.back-to-top {
-  position: fixed;
-  bottom: 2rem;
-  right: 1.5rem;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  color: var(--text-main);
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 700;
-  cursor: pointer;
-  z-index: 850;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(10px);
-  transition: all var(--transition-normal);
-}
-
-.back-to-top.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.back-to-top:hover {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px var(--primary-glow);
-}
-
-/* Mobile Bottom Navigation Dock (Visible on mobile <= 768px) */
-.mobile-bottom-nav {
-  display: none;
-}
-
-@media (max-width: 768px) {
+  /* Safe Area Bottom Dock */
   body {
-    padding-bottom: 4.5rem;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
   }
 
   .mobile-bottom-nav {
@@ -1746,15 +2046,18 @@ button, input, select, textarea {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
     background: var(--bg-glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     border-top: 1px solid var(--border);
     z-index: 1000;
     align-items: center;
     justify-content: space-around;
-    padding: 0 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
   }
 
@@ -1767,9 +2070,10 @@ button, input, select, textarea {
     font-size: 0.72rem;
     font-weight: 600;
     text-decoration: none;
-    padding: 0.35rem 0.6rem;
+    padding: 0.3rem 0.5rem;
     border-radius: var(--radius-sm);
     transition: all var(--transition-fast);
+    touch-action: manipulation;
   }
 
   .mobile-nav-btn .mobile-nav-icon {
@@ -1787,12 +2091,201 @@ button, input, select, textarea {
   }
 
   .back-to-top {
-    bottom: 4.75rem;
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
     right: 1rem;
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .toast-container {
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: max-content;
+    max-width: calc(100vw - 32px);
   }
 }
+
+/* ==========================================================================
+   Small Mobile Phone Optimization (max-width: 640px)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .container {
+    padding: 0 1rem;
+  }
+
+  /* Compact Timeline Stream */
+  .timeline-stream {
+    padding-left: 1.2rem;
+  }
+
+  .timeline-stream::before {
+    left: 8px;
+    width: 2px;
+  }
+
+  .timeline-node {
+    left: -1.2rem;
+    width: 20px;
+    height: 20px;
+    font-size: 0.6rem;
+    border-width: 2px;
+    top: 1.15rem;
+  }
+
+  .timeline-card {
+    padding: 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .card-title {
+    font-size: 1.08rem;
+  }
+
+  .card-subtitle {
+    font-size: 0.775rem;
+  }
+
+  .card-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .card-address {
+    font-size: 0.785rem;
+  }
+
+  .card-footer-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .btn-card-action {
+    justify-content: center;
+    padding: 0.5rem 0.4rem;
+    font-size: 0.785rem;
+    min-height: 38px;
+    text-align: center;
+  }
+
+  .transit-connector {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.75rem;
+    margin: 0.2rem 0 0.85rem;
+  }
+
+  /* iOS-Style Modal Bottom Sheet */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-dialog {
+    border-radius: 20px 20px 0 0;
+    max-height: 85vh;
+    max-width: 100%;
+    transform: translateY(100%);
+    margin: 0;
+    border-bottom: none;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-overlay.open .modal-dialog {
+    transform: translateY(0);
+  }
+
+  .modal-drag-handle {
+    display: block;
+    width: 38px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 2px;
+    flex-shrink: 0;
+  }
+
+  .modal-header {
+    padding: 0.85rem 1.25rem 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .modal-body {
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+  }
+
+  .modal-footer {
+    padding: 0.85rem 1.25rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    padding: 0.65rem;
+    font-size: 0.9rem;
+    justify-content: center;
+  }
+
+  /* Toolkit Panels Responsive */
+  .checklist-container {
+    padding: 1.15rem;
+  }
+
+  .checklist-item {
+    padding: 0.75rem 0.85rem;
+    min-height: 48px;
+  }
+
+  .checklist-checkbox {
+    width: 22px;
+    height: 22px;
+  }
+
+  .converter-card,
+  .expenses-list-card {
+    padding: 1.15rem;
+  }
+
+  .expense-form-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .expense-form-grid input#expense-name-input {
+    grid-column: span 2;
+  }
+
+  .expense-form-grid button {
+    grid-column: span 2;
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .btn-delete-expense {
+    min-width: 38px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 
 
 </style>
@@ -1827,7 +2320,7 @@ button, input, select, textarea {
         <button id="theme-toggle-btn" class="theme-toggle" aria-label="切換深淺模式" title="切換深淺模式">
           🌙
         </button>
-        <button class="btn-icon btn-print-itinerary" aria-label="列印或匯出PDF" title="列印或匯出PDF">
+        <button class="btn-icon btn-print-itinerary header-print-btn" aria-label="列印或匯出PDF" title="列印或匯出PDF">
           🖨️
         </button>
         <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn-cta-chictrip">
@@ -1970,7 +2463,18 @@ button, input, select, textarea {
        ========================================================================== -->
   <main class="main-layout-section">
     <div class="container">
-      <div class="layout-grid">
+
+      <!-- Mobile View Mode Switcher (Visible on mobile <= 900px) -->
+      <div class="mobile-view-toggle-bar" id="mobile-view-toggle-bar">
+        <button class="view-toggle-btn active" data-view="timeline" id="btn-view-timeline" aria-label="切換至行程清單模式">
+          <span>📋 行程清單</span>
+        </button>
+        <button class="view-toggle-btn" data-view="map" id="btn-view-map" aria-label="切換至地圖導航模式">
+          <span>🗺️ 路線地圖</span>
+        </button>
+      </div>
+
+      <div class="layout-grid view-mode-timeline" id="main-layout-grid">
         
         <!-- Left: Timeline Stream Column -->
         <div class="timeline-column">
@@ -2003,6 +2507,13 @@ button, input, select, textarea {
 
             <!-- Leaflet Map Container -->
             <div id="map"></div>
+
+            <!-- Mobile Quick Spot Jumper (Scrollable spots chips) -->
+            <div class="map-spots-scroller-wrap" id="map-spots-scroller-wrap">
+              <div class="map-spots-scroller" id="map-spots-scroller">
+                <!-- Injected by app.js -->
+              </div>
+            </div>
 
             <div class="map-card-footer">
               <span>💡 提示：點擊圖標可查看亮點並快速導航</span>
@@ -2266,6 +2777,7 @@ button, input, select, textarea {
        ========================================================================== -->
   <div class="modal-overlay" id="spot-detail-modal">
     <div class="modal-dialog">
+      <div class="modal-drag-handle" aria-hidden="true"></div>
       <div class="modal-header">
         <div>
           <h3 id="modal-title" style="font-size: 1.25rem; font-weight: 800;">景點名稱</h3>
@@ -3374,8 +3886,7 @@ const TRAVEL_TIPS = {
   ]
 };
 
-</script>
-  <script>
+
 /**
  * 2026/12 沖繩 5天4夜自駕行程 - 主應用邏輯
  */
@@ -3488,6 +3999,7 @@ document.addEventListener('DOMContentLoaded', () => {
     expenses: JSON.parse(safeStorageGet('okinawa_expenses', '[]')),
     exchangeRate: parseFloat(safeStorageGet('okinawa_rate', '0.215')),
     theme: safeStorageGet('okinawa_theme', (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')),
+    mobileView: 'timeline', // 'timeline' | 'map'
     map: null,
     markers: [],
     markerMap: new Map(),
@@ -3497,6 +4009,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize Theme
   document.documentElement.setAttribute('data-theme', state.theme);
   updateThemeIcon();
+  updateThemeMeta();
 
   // Initialize Packing Checklist if not in storage
   if (!state.checklist && typeof PACKING_CHECKLIST_DATA !== 'undefined') {
@@ -3513,6 +4026,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDayTabs();
   initCategoryPills();
   initSearch();
+  initMobileViewSwitcher();
   initMap();
   renderTimeline();
   initToolkitTabs();
@@ -3533,6 +4047,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.documentElement.setAttribute('data-theme', state.theme);
       safeStorageSet('okinawa_theme', state.theme);
       updateThemeIcon();
+      updateThemeMeta();
       showToast(state.theme === 'dark' ? '🌙 已切換為深色模式' : '☀️ 已切換為淺色模式');
     });
   }
@@ -3543,6 +4058,13 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.innerHTML = state.theme === 'dark' 
       ? '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>'
       : '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>';
+  }
+
+  function updateThemeMeta() {
+    const metaEl = document.getElementById('meta-theme-color');
+    if (metaEl && typeof metaEl.setAttribute === 'function') {
+      metaEl.setAttribute('content', state.theme === 'dark' ? '#090d16' : '#0284c7');
+    }
   }
 
   /* ==========================================================================
@@ -3692,6 +4214,81 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
+     Mobile View Mode Switcher (Timeline List <-> Interactive Map)
+     ========================================================================== */
+  function initMobileViewSwitcher() {
+    const btnTimeline = document.getElementById('btn-view-timeline');
+    const btnMap = document.getElementById('btn-view-map');
+
+    if (btnTimeline) {
+      btnTimeline.addEventListener('click', () => switchMobileView('timeline'));
+    }
+    if (btnMap) {
+      btnMap.addEventListener('click', () => switchMobileView('map'));
+    }
+  }
+
+  function switchMobileView(mode) {
+    state.mobileView = mode;
+    const grid = document.getElementById('main-layout-grid');
+    const btnTimeline = document.getElementById('btn-view-timeline');
+    const btnMap = document.getElementById('btn-view-map');
+
+    if (grid) {
+      if (mode === 'map') {
+        grid.classList.remove('view-mode-timeline');
+        grid.classList.add('view-mode-map');
+        if (btnMap) btnMap.classList.add('active');
+        if (btnTimeline) btnTimeline.classList.remove('active');
+        renderMapSpotsScroller();
+        setTimeout(() => {
+          if (state.map) {
+            state.map.invalidateSize();
+          }
+        }, 100);
+      } else {
+        grid.classList.remove('view-mode-map');
+        grid.classList.add('view-mode-timeline');
+        if (btnTimeline) btnTimeline.classList.add('active');
+        if (btnMap) btnMap.classList.remove('active');
+      }
+    }
+  }
+
+  function renderMapSpotsScroller() {
+    const scroller = document.getElementById('map-spots-scroller');
+    if (!scroller) return;
+
+    const filtered = getFilteredItems();
+    if (filtered.length === 0) {
+      scroller.innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted);padding:0.25rem 0.5rem;">無符合條件景點</span>';
+      return;
+    }
+
+    scroller.innerHTML = filtered.map(item => `
+      <button class="map-spot-chip" data-id="${escapeHtml(item.id)}" title="${escapeHtml(item.nameZh)}">
+        <span>${item.icon}</span>
+        <span>${escapeHtml(item.nameZh)}</span>
+        <span class="chip-time">${item.time}</span>
+      </button>
+    `).join('');
+
+    scroller.querySelectorAll('.map-spot-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const id = chip.dataset.id;
+        scroller.querySelectorAll('.map-spot-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const item = SCHEDULE_ITEMS.find(s => s.id === id);
+        if (item && state.map) {
+          const marker = state.markerMap.get(id);
+          state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 14), { animate: true });
+          if (marker) marker.openPopup();
+        }
+      });
+    });
+  }
+
+  /* ==========================================================================
      Filtering Logic (Enhanced with MapCode, Category, Time, and Day Query)
      ========================================================================== */
   function matchSearchQuery(item, q) {
@@ -3830,7 +4427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="card-time-badge">⏰ ${item.time}</span>
                 <span class="card-duration-badge">⏱️ ${item.duration}</span>
                 <span class="tag-badge" style="background: var(--primary-light); color: var(--primary);">${escapeHtml(item.categoryLabel)}</span>
-                <span class="tag-badge" style="background: var(--bg-subtle); color: var(--text-muted); font-family: monospace;">MC: ${escapeHtml(item.mapCode)}</span>
+                <button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(item.mapCode)}" title="點擊直接複製日本車機 MapCode">📋 MC: ${escapeHtml(item.mapCode)}</button>
               </div>
               <div class="card-actions-top">
                 <button class="btn-star-fav ${isFav ? 'favorited' : ''}" data-id="${escapeHtml(item.id)}" title="${isFav ? '取消收藏' : '加入收藏'}">
@@ -3851,18 +4448,21 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="card-footer">
-              <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem;">
+              <div class="card-address">
                 <span>📍 ${escapeHtml(item.address)}</span>
               </div>
               <div class="card-footer-buttons">
-                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}">
+                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點攻略">
                   <span>🔍 查看攻略</span>
                 </button>
-                <button class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}">
+                <button class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode">
+                  <span>📋 複製MC</span>
+                </button>
+                <button class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
                   <span>📍 地圖定位</span>
                 </button>
-                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery || item.name)}" target="_blank" rel="noopener" class="btn-card-action">
-                  <span>🗺️ Google 導航</span>
+                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery || item.name)}" target="_blank" rel="noopener" class="btn-card-action" title="啟動 Google Maps 即時導航">
+                  <span>🗺️ 導航</span>
                 </a>
               </div>
             </div>
@@ -3890,6 +4490,17 @@ document.addEventListener('DOMContentLoaded', () => {
     listContainer.querySelectorAll('[data-action="locate"]').forEach(btn => {
       btn.addEventListener('click', () => {
         window.appFocusOnMap(btn.dataset.id);
+      });
+    });
+
+    listContainer.querySelectorAll('[data-action="copy-mc"], .btn-copy-mc-badge').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const mc = btn.dataset.mapcode;
+        if (mc) {
+          const cleanCode = mc.replace('*', '').trim();
+          copyTextToClipboard(cleanCode, `📋 已複製 MapCode：${cleanCode}`);
+        }
       });
     });
   }
@@ -4070,6 +4681,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const bounds = L.latLngBounds(latlngs);
       state.map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     }
+
+    renderMapSpotsScroller();
   }
 
   /* ==========================================================================
@@ -4079,6 +4692,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = SCHEDULE_ITEMS.find(s => s.id === itemId);
     if (!item) return;
 
+    if (window.innerWidth <= 900) {
+      switchMobileView('map');
+    }
+
     const marker = state.markerMap.get(itemId);
     if (state.map && marker) {
       state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 14), { animate: true });
@@ -4086,7 +4703,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // On smaller screens, scroll smoothly to the map section
-    if (window.innerWidth <= 1024) {
+    if (window.innerWidth <= 900) {
+      const grid = document.getElementById('main-layout-grid');
+      if (grid) {
+        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else if (window.innerWidth <= 1024) {
       const mapSec = document.getElementById('map-section');
       if (mapSec) {
         mapSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -4096,6 +4718,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.appScrollToCard = function(itemId) {
+    if (window.innerWidth <= 900) {
+      switchMobileView('timeline');
+    }
+
     let cardEl = document.getElementById(`item-${itemId}`);
     
     // If card is currently hidden due to day filter, switch to that day first
@@ -4184,6 +4810,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function initModal() {
     const modalOverlay = document.getElementById('spot-detail-modal');
     const modalCloseBtn = document.getElementById('modal-close-btn');
+    const dragHandle = modalOverlay ? modalOverlay.querySelector('.modal-drag-handle') : null;
     if (!modalCloseBtn || !modalOverlay) return;
 
     modalCloseBtn.addEventListener('click', () => {
@@ -4195,6 +4822,25 @@ document.addEventListener('DOMContentLoaded', () => {
         modalOverlay.classList.remove('open');
       }
     });
+
+    // Touch swipe down on bottom sheet drag handle to dismiss
+    if (dragHandle) {
+      let touchStartY = 0;
+      dragHandle.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      dragHandle.addEventListener('touchend', (e) => {
+        const touchEndY = e.changedTouches[0].clientY;
+        if (touchEndY - touchStartY > 45) {
+          modalOverlay.classList.remove('open');
+        }
+      }, { passive: true });
+
+      dragHandle.addEventListener('click', () => {
+        modalOverlay.classList.remove('open');
+      });
+    }
 
     document.addEventListener('keydown', (e) => {
       if (e && e.key === 'Escape' && modalOverlay.classList.contains('open')) {
@@ -4466,6 +5112,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const navLinks = document.querySelectorAll('.nav-link');
     const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn:not(.chictrip-btn)');
+
+    // Mobile Bottom Nav Click Handlers with View Mode Routing
+    mobileNavBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = btn.dataset.target;
+        if (target === 'map-section' && window.innerWidth <= 900) {
+          e.preventDefault();
+          switchMobileView('map');
+          const grid = document.getElementById('main-layout-grid');
+          if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (target === 'schedule-section' && window.innerWidth <= 900) {
+          switchMobileView('timeline');
+        }
+      });
+    });
+
+    // Window Resize Debounce to Keep Leaflet Tiles Perfectly Aligned
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (state.map) {
+          state.map.invalidateSize();
+        }
+      }, 150);
+    }, { passive: true });
 
     function setActiveNav(targetId) {
       navLinks.forEach(link => {

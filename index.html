@@ -2,7 +2,12 @@
 <html lang="zh-TW" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0284c7" id="meta-theme-color">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="2026沖繩自駕">
+  <meta name="format-detection" content="telephone=no">
   <title>2026/12 沖繩冬日海風自由行 | OKINAWA 5-DAY ROAD TRIP</title>
   <meta name="description" content="2026/12沖繩5天4夜自駕行程介紹網站。好市多採購、北谷週末煙火、糸滿魚市場海鮮、iias水族館、那霸雙神社參拜、文青沖繩麵EIBUN、PARCO CITY海景巨型商場、敘敘苑燒肉與雙豬排巡禮。">
   <meta name="keywords" content="沖繩自由行, 沖繩自駕, 2026沖繩, 去趣, ChicTrip, 糸滿魚市場, PARCO CITY, 敘敘苑, 通堂拉麵, EIBUN, 波上宮">
@@ -48,7 +53,7 @@
         <button id="theme-toggle-btn" class="theme-toggle" aria-label="切換深淺模式" title="切換深淺模式">
           🌙
         </button>
-        <button class="btn-icon btn-print-itinerary" aria-label="列印或匯出PDF" title="列印或匯出PDF">
+        <button class="btn-icon btn-print-itinerary header-print-btn" aria-label="列印或匯出PDF" title="列印或匯出PDF">
           🖨️
         </button>
         <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn-cta-chictrip">
@@ -191,7 +196,18 @@
        ========================================================================== -->
   <main class="main-layout-section">
     <div class="container">
-      <div class="layout-grid">
+
+      <!-- Mobile View Mode Switcher (Visible on mobile <= 900px) -->
+      <div class="mobile-view-toggle-bar" id="mobile-view-toggle-bar">
+        <button class="view-toggle-btn active" data-view="timeline" id="btn-view-timeline" aria-label="切換至行程清單模式">
+          <span>📋 行程清單</span>
+        </button>
+        <button class="view-toggle-btn" data-view="map" id="btn-view-map" aria-label="切換至地圖導航模式">
+          <span>🗺️ 路線地圖</span>
+        </button>
+      </div>
+
+      <div class="layout-grid view-mode-timeline" id="main-layout-grid">
         
         <!-- Left: Timeline Stream Column -->
         <div class="timeline-column">
@@ -224,6 +240,13 @@
 
             <!-- Leaflet Map Container -->
             <div id="map"></div>
+
+            <!-- Mobile Quick Spot Jumper (Scrollable spots chips) -->
+            <div class="map-spots-scroller-wrap" id="map-spots-scroller-wrap">
+              <div class="map-spots-scroller" id="map-spots-scroller">
+                <!-- Injected by app.js -->
+              </div>
+            </div>
 
             <div class="map-card-footer">
               <span>💡 提示：點擊圖標可查看亮點並快速導航</span>
@@ -487,6 +510,7 @@
        ========================================================================== -->
   <div class="modal-overlay" id="spot-detail-modal">
     <div class="modal-dialog">
+      <div class="modal-drag-handle" aria-hidden="true"></div>
       <div class="modal-header">
         <div>
           <h3 id="modal-title" style="font-size: 1.25rem; font-weight: 800;">景點名稱</h3>
