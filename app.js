@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateThemeMeta() {
     const metaEl = document.getElementById('meta-theme-color');
     if (metaEl && typeof metaEl.setAttribute === 'function') {
-      metaEl.setAttribute('content', state.theme === 'dark' ? '#090d16' : '#0284c7');
+      metaEl.setAttribute('content', state.theme === 'dark' ? '#090d16' : '#ffffff');
     }
   }
 
@@ -344,6 +344,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const grid = document.getElementById('main-layout-grid');
     const btnTimeline = document.getElementById('btn-view-timeline');
     const btnMap = document.getElementById('btn-view-map');
+    const mobileNavTimeline = document.querySelector('.mobile-bottom-nav [data-target="schedule-section"]');
+    const mobileNavMap = document.querySelector('.mobile-bottom-nav [data-target="map-section"]');
 
     if (grid) {
       if (mode === 'map') {
@@ -351,19 +353,49 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.classList.add('view-mode-map');
         if (btnMap) btnMap.classList.add('active');
         if (btnTimeline) btnTimeline.classList.remove('active');
+        if (mobileNavMap) mobileNavMap.classList.add('active');
+        if (mobileNavTimeline) mobileNavTimeline.classList.remove('active');
         renderMapSpotsScroller();
         setTimeout(() => {
           if (state.map) {
             state.map.invalidateSize();
+            fitMapToCurrentMarkers();
           }
-        }, 100);
+        }, 120);
       } else {
         grid.classList.remove('view-mode-map');
         grid.classList.add('view-mode-timeline');
         if (btnTimeline) btnTimeline.classList.add('active');
         if (btnMap) btnMap.classList.remove('active');
+        if (mobileNavTimeline) mobileNavTimeline.classList.add('active');
+        if (mobileNavMap) mobileNavMap.classList.remove('active');
       }
     }
+  }
+
+  function fitMapToCurrentMarkers() {
+    if (!state.map) return;
+    const filtered = getFilteredItems();
+    const latlngs = filtered.map(i => [i.lat, i.lng]);
+    if (latlngs.length > 0) {
+      const bounds = L.latLngBounds(latlngs);
+      state.map.fitBounds(bounds, { padding: [35, 35], maxZoom: 14 });
+    } else {
+      state.map.setView([26.35, 127.80], 10);
+    }
+  }
+
+  function syncScrollerActiveChip(itemId) {
+    const scroller = document.getElementById('map-spots-scroller');
+    if (!scroller) return;
+    scroller.querySelectorAll('.map-spot-chip').forEach(c => {
+      if (c.dataset.id === itemId) {
+        c.classList.add('active');
+        c.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      } else {
+        c.classList.remove('active');
+      }
+    });
   }
 
   function renderMapSpotsScroller() {
@@ -387,8 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
     scroller.querySelectorAll('.map-spot-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const id = chip.dataset.id;
-        scroller.querySelectorAll('.map-spot-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
+        syncScrollerActiveChip(id);
         const item = SCHEDULE_ITEMS.find(s => s.id === id);
         if (item && state.map) {
           const marker = state.markerMap.get(id);
@@ -609,8 +640,17 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
         const mc = btn.dataset.mapcode;
         if (mc) {
-          const cleanCode = mc.replace('*', '').trim();
+          const cleanCode = mc.trim();
           copyTextToClipboard(cleanCode, `📋 已複製 MapCode：${cleanCode}`);
+          const origHtml = btn.innerHTML;
+          btn.innerHTML = btn.classList.contains('btn-copy-mc-badge') ? `✓ 已複製 ${escapeHtml(cleanCode)}` : `<span>✓ 已複製</span>`;
+          btn.style.borderColor = 'var(--emerald)';
+          btn.style.color = 'var(--emerald)';
+          setTimeout(() => {
+            btn.innerHTML = origHtml;
+            btn.style.borderColor = '';
+            btn.style.color = '';
+          }, 1600);
         }
       });
     });
@@ -654,6 +694,16 @@ document.addEventListener('DOMContentLoaded', () => {
         subdomains: 'abcd',
         maxZoom: 19
       }).addTo(state.map);
+
+      state.map.on('popupopen', (e) => {
+        const px = e.popup.getLatLng();
+        if (px) {
+          const match = SCHEDULE_ITEMS.find(s => Math.abs(s.lat - px.lat) < 0.0001 && Math.abs(s.lng - px.lng) < 0.0001);
+          if (match) {
+            syncScrollerActiveChip(match.id);
+          }
+        }
+      });
 
       updateMapMarkers();
     } catch (e) {
@@ -808,22 +858,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const marker = state.markerMap.get(itemId);
-    if (state.map && marker) {
-      state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 14), { animate: true });
-      marker.openPopup();
+    if (state.map) {
+      state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 15), { animate: true });
+      if (marker) {
+        setTimeout(() => marker.openPopup(), 150);
+      }
     }
 
+    syncScrollerActiveChip(itemId);
+
     // On smaller screens, scroll smoothly to the map section
-    if (window.innerWidth <= 900) {
-      const grid = document.getElementById('main-layout-grid');
-      if (grid) {
-        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    } else if (window.innerWidth <= 1024) {
-      const mapSec = document.getElementById('map-section');
-      if (mapSec) {
-        mapSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     showToast(`📍 已在地圖定位：${item.nameZh}`);
   };
@@ -910,52 +957,76 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     document.getElementById('modal-nav-link').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery || item.name)}`;
-    document.getElementById('modal-copy-mapcode-btn').onclick = () => {
-      const cleanCode = item.mapCode.replace('*', '').trim();
-      copyTextToClipboard(cleanCode, `📋 已複製 MapCode：${cleanCode}`);
-    };
+    const copyBtn = document.getElementById('modal-copy-mapcode-btn');
+    if (copyBtn) {
+      copyBtn.textContent = '📋 複製 MapCode';
+      copyBtn.onclick = () => {
+        const cleanCode = item.mapCode.trim();
+        copyTextToClipboard(cleanCode, `📋 已複製 MapCode：${cleanCode}`);
+        copyBtn.textContent = '✓ 已複製！';
+        setTimeout(() => { copyBtn.textContent = '📋 複製 MapCode'; }, 1600);
+      };
+    }
 
     modalOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
   };
 
   function initModal() {
     const modalOverlay = document.getElementById('spot-detail-modal');
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const dragHandle = modalOverlay ? modalOverlay.querySelector('.modal-drag-handle') : null;
+    const modalHeader = modalOverlay ? modalOverlay.querySelector('.modal-header') : null;
     if (!modalCloseBtn || !modalOverlay) return;
 
-    modalCloseBtn.addEventListener('click', () => {
+    function closeSpotModal() {
       modalOverlay.classList.remove('open');
-    });
+      document.body.style.overflow = '';
+    }
+
+    modalCloseBtn.addEventListener('click', closeSpotModal);
 
     modalOverlay.addEventListener('click', (e) => {
       if (e.target === modalOverlay) {
-        modalOverlay.classList.remove('open');
+        closeSpotModal();
       }
     });
 
-    // Touch swipe down on bottom sheet drag handle to dismiss
+    // Touch swipe down on bottom sheet header or drag handle to dismiss
+    let touchStartY = 0;
+    let isSwiping = false;
+
+    const onTouchStart = (e) => {
+      const modalBody = modalOverlay.querySelector('.modal-body');
+      if (modalBody && modalBody.scrollTop > 0 && e.target.closest('.modal-body')) {
+        return;
+      }
+      touchStartY = e.touches[0].clientY;
+      isSwiping = true;
+    };
+
+    const onTouchEnd = (e) => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      const touchEndY = e.changedTouches[0].clientY;
+      if (touchEndY - touchStartY > 50) {
+        closeSpotModal();
+      }
+    };
+
     if (dragHandle) {
-      let touchStartY = 0;
-      dragHandle.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-      }, { passive: true });
-
-      dragHandle.addEventListener('touchend', (e) => {
-        const touchEndY = e.changedTouches[0].clientY;
-        if (touchEndY - touchStartY > 45) {
-          modalOverlay.classList.remove('open');
-        }
-      }, { passive: true });
-
-      dragHandle.addEventListener('click', () => {
-        modalOverlay.classList.remove('open');
-      });
+      dragHandle.addEventListener('touchstart', onTouchStart, { passive: true });
+      dragHandle.addEventListener('touchend', onTouchEnd, { passive: true });
+      dragHandle.addEventListener('click', closeSpotModal);
+    }
+    if (modalHeader) {
+      modalHeader.addEventListener('touchstart', onTouchStart, { passive: true });
+      modalHeader.addEventListener('touchend', onTouchEnd, { passive: true });
     }
 
     document.addEventListener('keydown', (e) => {
       if (e && e.key === 'Escape' && modalOverlay.classList.contains('open')) {
-        modalOverlay.classList.remove('open');
+        closeSpotModal();
       }
     });
   }
@@ -1228,13 +1299,17 @@ document.addEventListener('DOMContentLoaded', () => {
     mobileNavBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         const target = btn.dataset.target;
-        if (target === 'map-section' && window.innerWidth <= 900) {
-          e.preventDefault();
-          switchMobileView('map');
-          const grid = document.getElementById('main-layout-grid');
-          if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (target === 'schedule-section' && window.innerWidth <= 900) {
-          switchMobileView('timeline');
+        if (target === 'map-section') {
+          if (window.innerWidth <= 900) {
+            e.preventDefault();
+            switchMobileView('map');
+            const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
+            if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        } else if (target === 'schedule-section') {
+          if (window.innerWidth <= 900) {
+            switchMobileView('timeline');
+          }
         }
       });
     });
@@ -1273,7 +1348,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            setActiveNav(entry.target.id);
+            let activeId = entry.target.id;
+            if (activeId === 'schedule-section' && state.mobileView === 'map' && window.innerWidth <= 900) {
+              activeId = 'map-section';
+            }
+            setActiveNav(activeId);
           }
         });
       }, { threshold: 0.25 });
