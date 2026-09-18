@@ -3174,6 +3174,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function syncFlightToItinerary(flight, showToastMsg = true) {
     if (!flight) return;
 
+    state.selectedFlightId = flight.id;
+    safeStorageSet('okinawa_selected_flight', flight.id);
+
     // 1. 同步 Day 1 (入境取車：保留約 60 分鐘通關、提行李與接駁取車手續)
     const day1Items = (typeof SCHEDULE_ITEMS !== 'undefined') ? SCHEDULE_ITEMS.filter(it => it.day === 1) : [];
     if (day1Items.length > 0 && flight.outbound) {
@@ -3198,6 +3201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 2. 同步 Day 5 (機場還車報到：起飛前約 120 分鐘抵達租車營業所還車)
+    let isEarlyDay5Departure = false;
     const day5Items = (typeof SCHEDULE_ITEMS !== 'undefined') ? SCHEDULE_ITEMS.filter(it => it.day === 5) : [];
     if (day5Items.length > 0 && flight.inbound) {
       const depTime = flight.inbound.depTime || '11:55';
@@ -3220,6 +3224,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let computedDay5Start = targetReturnMins - elapsedBeforeReturn;
       while (computedDay5Start < 0) computedDay5Start += 24 * 60;
       computedDay5Start = computedDay5Start % (24 * 60);
+      if (computedDay5Start < 390) isEarlyDay5Departure = true; // 06:30 前出發
 
       // 設定 Day 5 第一站時間
       day5Items[0].time = formatMinutesToTime(computedDay5Start);
@@ -3287,7 +3292,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof renderPlannerStudio === 'function') renderPlannerStudio();
 
     if (showToastMsg) {
-      showToast(`✈️ 已成功切換為【${flight.name}】！Day 1 抵達與 Day 5 機場還車時間已智慧同步連鎖推算。`);
+      if (isEarlyDay5Departure) {
+        showToast(`✈️ 已切換為【${flight.name}】！⚠️ 回程為早班機，Day 5 出發較早，建議適度精簡當日景點停留。`);
+      } else {
+        showToast(`✈️ 已成功切換為【${flight.name}】！Day 1 抵達與 Day 5 機場還車時間已智慧同步連鎖推算。`);
+      }
     }
   }
 
@@ -3307,8 +3316,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const flights = (typeof OKINAWA_FLIGHTS !== 'undefined') ? OKINAWA_FLIGHTS : (window.OKINAWA_FLIGHTS || []);
     let filtered = flights;
-    if (filter === 'JX') filtered = flights.filter(f => f.airlineCode === 'JX');
-    else if (filter === 'CI') filtered = flights.filter(f => f.airlineCode === 'CI');
+    if (filter === 'CI') filtered = flights.filter(f => f.airlineCode === 'CI');
+    else if (filter === 'JX') filtered = flights.filter(f => f.airlineCode === 'JX');
     else if (filter === 'BR') filtered = flights.filter(f => f.airlineCode === 'BR');
     else if (filter === 'all' && state.customFlightData) {
       filtered = [state.customFlightData, ...flights];
@@ -3341,7 +3350,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
               <div class="flight-leg-timing">
                 <span>起降：<strong>${flight.outbound.depTime}</strong> 起飛 ➔ <strong>${flight.outbound.arrTime}</strong> 抵達</span>
-                <span style="color:var(--text-subtle, #64748b);">(${flight.outbound.duration})</span>
+                <span style="color:var(--text-muted); font-size:0.75rem;">(${flight.outbound.duration})</span>
               </div>
             </div>
 
@@ -3354,7 +3363,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
               <div class="flight-leg-timing">
                 <span>起降：<strong>${flight.inbound.depTime}</strong> 起飛 ➔ <strong>${flight.inbound.arrTime}</strong> 抵達</span>
-                <span style="color:var(--text-subtle, #64748b);">(${flight.inbound.duration})</span>
+                <span style="color:var(--text-muted); font-size:0.75rem;">(${flight.inbound.duration})</span>
               </div>
             </div>
           </div>
@@ -3373,20 +3382,25 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
 
-    // 綁定選擇此航班按鈕
+    // 綁定卡片整張點擊與按鈕選擇 (支援行動端單手直接輕觸切換)
+    container.querySelectorAll('.flight-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const fId = card.dataset.flightId;
+        let targetFlight = (state.customFlightData && state.customFlightData.id === fId) ? state.customFlightData : flights.find(f => f.id === fId);
+        if (targetFlight) {
+          syncFlightToItinerary(targetFlight, true);
+          renderFlightCards(state.flightFilter);
+          closeFlightModal();
+        }
+      });
+    });
+
     container.querySelectorAll('.btn-apply-flight').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const fId = btn.dataset.flightId;
-        let targetFlight = null;
-        if (state.customFlightData && state.customFlightData.id === fId) {
-          targetFlight = state.customFlightData;
-        } else {
-          targetFlight = flights.find(f => f.id === fId);
-        }
+        let targetFlight = (state.customFlightData && state.customFlightData.id === fId) ? state.customFlightData : flights.find(f => f.id === fId);
         if (targetFlight) {
-          state.selectedFlightId = targetFlight.id;
-          safeStorageSet('okinawa_selected_flight', targetFlight.id);
           syncFlightToItinerary(targetFlight, true);
           renderFlightCards(state.flightFilter);
           closeFlightModal();

@@ -3330,11 +3330,13 @@ button, input, select, textarea {
   transition: all var(--transition-fast);
   position: relative;
   border-left-width: 5px;
+  cursor: pointer;
 }
 
 .flight-card:hover {
   border-color: var(--border-focus);
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .flight-card.active-flight {

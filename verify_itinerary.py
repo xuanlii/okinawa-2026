@@ -480,6 +480,7 @@ def test_flight_selector_and_sync():
     // Case 1: CI Morning (CI120 arr 10:45 / CI121 dep 11:55)
     var ciMorning = OKINAWA_FLIGHTS.find(function(f) { return f.id === 'ci-oka-morning-roundtrip'; });
     engine.syncFlightToItinerary(ciMorning, false);
+    if (engine.state.selectedFlightId !== 'ci-oka-morning-roundtrip') throw new Error("selectedFlightId not updated for CI morning");
     var d1_1 = SCHEDULE_ITEMS.find(function(it) { return it.id === 'd1-1'; });
     var d5_5 = SCHEDULE_ITEMS.find(function(it) { return it.id === 'd5-5'; });
     if (d1_1.time !== "11:45") throw new Error("CI120 Day 1 pickup time expected 11:45, got: " + d1_1.time);
@@ -491,18 +492,21 @@ def test_flight_selector_and_sync():
     // Case 2: STARLUX (JX870 arr 12:05 / JX871 dep 13:15)
     var jx = OKINAWA_FLIGHTS.find(function(f) { return f.id === 'starlux-oka-roundtrip'; });
     engine.syncFlightToItinerary(jx, false);
+    if (engine.state.selectedFlightId !== 'starlux-oka-roundtrip') throw new Error("selectedFlightId not updated for JX");
     if (d1_1.time !== "13:05") throw new Error("JX870 Day 1 pickup time expected 13:05, got: " + d1_1.time);
     if (d5_5.time !== "11:15") throw new Error("JX871 Day 5 car return expected 11:15, got: " + d5_5.time);
 
     // Case 3: EVA Air Early (BR112 arr 09:15 / BR113 dep 10:15)
     var brEarly = OKINAWA_FLIGHTS.find(function(f) { return f.id === 'eva-oka-early-roundtrip'; });
     engine.syncFlightToItinerary(brEarly, false);
+    if (engine.state.selectedFlightId !== 'eva-oka-early-roundtrip') throw new Error("selectedFlightId not updated for BR early");
     if (d1_1.time !== "10:15") throw new Error("BR112 Day 1 pickup time expected 10:15, got: " + d1_1.time);
     if (d5_5.time !== "08:15") throw new Error("BR113 Day 5 car return expected 08:15, got: " + d5_5.time);
 
     // Case 4: EVA Air Afternoon (BR186 arr 18:25 / BR185 dep 19:25)
     var brAft = OKINAWA_FLIGHTS.find(function(f) { return f.id === 'eva-oka-afternoon-roundtrip'; });
     engine.syncFlightToItinerary(brAft, false);
+    if (engine.state.selectedFlightId !== 'eva-oka-afternoon-roundtrip') throw new Error("selectedFlightId not updated for BR aft");
     if (d1_1.time !== "19:25") throw new Error("BR186 Day 1 pickup time expected 19:25, got: " + d1_1.time);
     if (d5_5.time !== "17:25") throw new Error("BR185 Day 5 car return expected 17:25, got: " + d5_5.time);
 
@@ -514,6 +518,7 @@ def test_flight_selector_and_sync():
       inbound: { flightNo: "MM927", depTime: "16:30", arrTime: "17:15" }
     };
     engine.syncFlightToItinerary(customFlight, false);
+    if (engine.state.selectedFlightId !== 'custom') throw new Error("selectedFlightId not updated for custom");
     if (d1_1.time !== "16:00") throw new Error("Custom Day 1 pickup time expected 16:00, got: " + d1_1.time);
     if (d5_5.time !== "14:30") throw new Error("Custom Day 5 car return expected 14:30, got: " + d5_5.time);
 
