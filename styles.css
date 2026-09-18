@@ -2080,6 +2080,10 @@ button, input, select, textarea {
     text-decoration: none;
     padding: 0.3rem 0.5rem;
     border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
     transition: all var(--transition-fast);
     touch-action: manipulation;
   }
@@ -2330,6 +2334,61 @@ button, input, select, textarea {
   .btn-card-action {
     font-size: 0.75rem;
     padding: 0.45rem 0.25rem;
+  }
+
+  /* Mobile Touch Targets & Controls */
+  .btn-stop-ctrl {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.15rem;
+  }
+
+  .btn-stop-dur-step {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.25rem;
+  }
+
+  .stop-duration-select {
+    height: 44px;
+    font-size: 16px !important;
+  }
+
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Horizontal Scroll Snapping */
+  .planner-day-tabs,
+  .day-tabs-scroll,
+  .category-pills,
+  .picker-cat-pills,
+  .picker-gen-pills {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .planner-day-tabs::-webkit-scrollbar,
+  .day-tabs-scroll::-webkit-scrollbar,
+  .category-pills::-webkit-scrollbar,
+  .picker-cat-pills::-webkit-scrollbar,
+  .picker-gen-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .planner-day-tab-btn,
+  .day-tab-btn,
+  .cat-pill,
+  .pill-badge {
+    scroll-snap-align: center;
+    flex-shrink: 0;
+    min-height: 44px;
   }
 }
 
@@ -2851,6 +2910,44 @@ button, input, select, textarea {
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.stop-duration-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.btn-stop-dur-step {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-stop-dur-step:active {
+  background: var(--primary-light);
+}
+
+.stop-duration-stepper .stop-duration-select {
+  border: none;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: transparent;
 }
 
 .stop-reorder-btns {

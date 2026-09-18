@@ -789,10 +789,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     container.innerHTML = html;
 
+    const activeTab = container.querySelector('.day-tab-btn.active');
+    if (activeTab) {
+      setTimeout(() => {
+        activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }, 50);
+    }
+
     container.querySelectorAll('.day-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         container.querySelectorAll('.day-tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         state.activeDay = parseInt(btn.dataset.day, 10);
         renderTimeline();
         updateMapMarkers();
@@ -1657,6 +1665,13 @@ document.addEventListener('DOMContentLoaded', () => {
         </button>
       `).join('');
 
+      const activeTab = tabsContainer.querySelector('.planner-day-tab-btn.active');
+      if (activeTab) {
+        setTimeout(() => {
+          activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }, 50);
+      }
+
       tabsContainer.querySelectorAll('.planner-day-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           state.plannerData.activeDayIndex = parseInt(btn.dataset.dayIndex, 10);
@@ -1807,9 +1822,13 @@ document.addEventListener('DOMContentLoaded', () => {
                       ${stop.icon || '📍'} ${escapeHtml(stop.nameZh || stop.name)}
                     </h3>
                     <span class="stop-time-chip">⏰ ${stop.arrivalTime} ~ ${stop.departureTime}</span>
-                    <select class="stop-duration-select" data-index="${idx}" title="調整此景點預計停留時間">
-                      ${optionsHtml}
-                    </select>
+                    <div class="stop-duration-stepper">
+                      <button type="button" class="btn-stop-dur-step btn-stop-dur-minus" data-index="${idx}" title="減少15分鐘" aria-label="減少15分鐘">－</button>
+                      <select class="stop-duration-select" data-index="${idx}" title="調整此景點預計停留時間">
+                        ${optionsHtml}
+                      </select>
+                      <button type="button" class="btn-stop-dur-step btn-stop-dur-plus" data-index="${idx}" title="增加15分鐘" aria-label="增加15分鐘">＋</button>
+                    </div>
                     ${days.length > 1 ? `
                       <select class="stop-move-day-select" data-index="${idx}" title="將此景點移動至其他天">
                         <option value="">移至其他天...</option>
@@ -1916,6 +1935,49 @@ document.addEventListener('DOMContentLoaded', () => {
             const val = parseInt(e.target.value, 10);
             if (!isNaN(val) && activeDay.stops[stopIdx]) {
               activeDay.stops[stopIdx].durationMinutes = val;
+              savePlannerData();
+              renderPlannerStudio();
+            }
+          });
+        });
+
+        // Duration Stepper (- / +)
+        const durSteps = [15, 30, 45, 60, 90, 120, 150, 180, 240];
+
+        streamContainer.querySelectorAll('.btn-stop-dur-minus').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const stopIdx = parseInt(btn.dataset.index, 10);
+            if (activeDay.stops[stopIdx]) {
+              const cur = parseInt(activeDay.stops[stopIdx].durationMinutes, 10) || 60;
+              let next = cur - 15;
+              for (let i = durSteps.length - 1; i >= 0; i--) {
+                if (durSteps[i] < cur) {
+                  next = durSteps[i];
+                  break;
+                }
+              }
+              activeDay.stops[stopIdx].durationMinutes = Math.max(15, next);
+              savePlannerData();
+              renderPlannerStudio();
+            }
+          });
+        });
+
+        streamContainer.querySelectorAll('.btn-stop-dur-plus').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const stopIdx = parseInt(btn.dataset.index, 10);
+            if (activeDay.stops[stopIdx]) {
+              const cur = parseInt(activeDay.stops[stopIdx].durationMinutes, 10) || 60;
+              let next = cur + 15;
+              for (let i = 0; i < durSteps.length; i++) {
+                if (durSteps[i] > cur) {
+                  next = durSteps[i];
+                  break;
+                }
+              }
+              activeDay.stops[stopIdx].durationMinutes = Math.min(240, next);
               savePlannerData();
               renderPlannerStudio();
             }
@@ -2903,6 +2965,20 @@ document.addEventListener('DOMContentLoaded', () => {
             link.classList.remove('active');
           }
         }
+      });
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        const href = btn.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          btn.classList.toggle('active', href.substring(1) === targetId);
+        }
+      });
+    }
+
+    const bottomSpotsBtn = document.getElementById('bottom-nav-open-spots');
+    if (bottomSpotsBtn) {
+      bottomSpotsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSpotPickerModal();
       });
     }
 
