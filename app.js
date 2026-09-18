@@ -914,17 +914,28 @@ document.addEventListener('DOMContentLoaded', () => {
       btnMap.classList.remove('active');
       layoutGrid.classList.remove('view-mode-map');
       layoutGrid.classList.add('view-mode-timeline');
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        if (btn.dataset.target) {
+          btn.classList.toggle('active', btn.dataset.target === 'schedule-section');
+        }
+      });
     } else {
       btnMap.classList.add('active');
       btnTimeline.classList.remove('active');
       layoutGrid.classList.remove('view-mode-timeline');
       layoutGrid.classList.add('view-mode-map');
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        if (btn.dataset.target) {
+          btn.classList.toggle('active', btn.dataset.target === 'map-section');
+        }
+      });
 
       // Refresh Leaflet map tile layout when switching views
       setTimeout(() => {
         if (state.map) {
           state.map.invalidateSize();
           fitMapToCurrentMarkers();
+          syncMapGestureState();
         }
       }, 200);
     }
@@ -1248,6 +1259,38 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==========================================================================
      Leaflet Map System
      ========================================================================== */
+  let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  function syncMapGestureState() {
+    const btn = document.getElementById('btn-map-gesture-toggle');
+    if (!state.map) return;
+
+    if (window.innerWidth > 768) {
+      state.map.dragging.enable();
+      if (state.map.touchZoom) state.map.touchZoom.enable();
+      if (btn) btn.style.display = 'none';
+      return;
+    }
+
+    if (btn) btn.style.display = 'flex';
+
+    if (mapGestureLocked) {
+      state.map.dragging.disable();
+      if (state.map.touchZoom) state.map.touchZoom.disable();
+      if (btn) {
+        btn.classList.remove('unlocked');
+        btn.innerHTML = `<span class="gesture-icon">🔒</span><span class="gesture-text">地圖已鎖定（滑動不卡手）· 點擊啟用互動</span>`;
+      }
+    } else {
+      state.map.dragging.enable();
+      if (state.map.touchZoom) state.map.touchZoom.enable();
+      if (btn) {
+        btn.classList.add('unlocked');
+        btn.innerHTML = `<span class="gesture-icon">🔓</span><span class="gesture-text">地圖互動中 · 點擊鎖定（恢復順暢滑動）</span>`;
+      }
+    }
+  }
+
   function initMap() {
     const mapContainer = document.getElementById('map');
     if (!mapContainer) return;
@@ -1269,6 +1312,18 @@ document.addEventListener('DOMContentLoaded', () => {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19
       }).addTo(state.map);
+
+      const gestureBtn = document.getElementById('btn-map-gesture-toggle');
+      if (gestureBtn) {
+        gestureBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          mapGestureLocked = !mapGestureLocked;
+          syncMapGestureState();
+        });
+      }
+
+      syncMapGestureState();
+      window.addEventListener('resize', syncMapGestureState);
 
       updateMapMarkers();
     } catch (e) {
@@ -2134,6 +2189,64 @@ document.addEventListener('DOMContentLoaded', () => {
     query: ''
   };
 
+  function attachModalBottomSheetGestures(modalEl, closeFn) {
+    if (!modalEl) return;
+    const dialog = modalEl.querySelector('.modal-dialog');
+    const dragHandle = modalEl.querySelector('.modal-drag-handle');
+    const header = modalEl.querySelector('.modal-header');
+    if (!dialog) return;
+
+    let startY = 0;
+    let currentY = 0;
+    let isSwiping = false;
+
+    const onStart = (e) => {
+      if (window.innerWidth > 768) return;
+      const modalBody = modalEl.querySelector('.modal-body') || modalEl.querySelector('.picker-modal-body');
+      if (modalBody && modalBody.scrollTop > 0 && e.target.closest('.modal-body, .picker-modal-body')) {
+        return;
+      }
+      startY = e.touches[0].clientY;
+      currentY = startY;
+      isSwiping = true;
+      dialog.style.transition = 'none';
+    };
+
+    const onMove = (e) => {
+      if (!isSwiping) return;
+      currentY = e.touches[0].clientY;
+      const diffY = currentY - startY;
+      if (diffY > 0) {
+        dialog.style.transform = `translateY(${diffY}px)`;
+      }
+    };
+
+    const onEnd = () => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      dialog.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+      const diffY = currentY - startY;
+      if (diffY > 70) {
+        dialog.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+          closeFn();
+          dialog.style.transform = '';
+        }, 220);
+      } else {
+        dialog.style.transform = '';
+      }
+    };
+
+    [dragHandle, header].forEach(el => {
+      if (el) {
+        el.addEventListener('touchstart', onStart, { passive: true });
+        el.addEventListener('touchmove', onMove, { passive: true });
+        el.addEventListener('touchend', onEnd, { passive: true });
+        el.addEventListener('touchcancel', onEnd, { passive: true });
+      }
+    });
+  }
+
   function initSpotPickerModal() {
     const modal = document.getElementById('spot-picker-modal');
     const closeBtn = document.getElementById('picker-modal-close-btn');
@@ -2142,17 +2255,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const customForm = document.getElementById('custom-stop-form');
     const submitCustomBtn = document.getElementById('btn-submit-custom-stop');
 
-    if (closeBtn && modal) {
-      closeBtn.addEventListener('click', () => {
+    function closePicker() {
+      if (modal) {
         modal.classList.remove('open');
         document.body.style.overflow = '';
-      });
+      }
+    }
+
+    if (closeBtn && modal) {
+      closeBtn.addEventListener('click', closePicker);
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-          modal.classList.remove('open');
-          document.body.style.overflow = '';
+          closePicker();
         }
       });
+      attachModalBottomSheetGestures(modal, closePicker);
     }
 
     if (searchInput) {
@@ -2577,36 +2694,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    let touchStartY = 0;
-    let isSwiping = false;
-
-    const onTouchStart = (e) => {
-      const modalBody = modalOverlay.querySelector('.modal-body');
-      if (modalBody && modalBody.scrollTop > 0 && e.target.closest('.modal-body')) {
-        return;
-      }
-      touchStartY = e.touches[0].clientY;
-      isSwiping = true;
-    };
-
-    const onTouchEnd = (e) => {
-      if (!isSwiping) return;
-      isSwiping = false;
-      const touchEndY = e.changedTouches[0].clientY;
-      if (touchEndY - touchStartY > 50) {
-        closeSpotModal();
-      }
-    };
-
-    if (dragHandle) {
-      dragHandle.addEventListener('touchstart', onTouchStart, { passive: true });
-      dragHandle.addEventListener('touchend', onTouchEnd, { passive: true });
-      dragHandle.addEventListener('click', closeSpotModal);
-    }
-    if (modalHeader) {
-      modalHeader.addEventListener('touchstart', onTouchStart, { passive: true });
-      modalHeader.addEventListener('touchend', onTouchEnd, { passive: true });
-    }
+    attachModalBottomSheetGestures(modalOverlay, closeSpotModal);
 
     document.addEventListener('keydown', (e) => {
       if (e && e.key === 'Escape' && modalOverlay.classList.contains('open')) {
@@ -2968,11 +3056,44 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
         const href = btn.getAttribute('href');
-        if (href && href.startsWith('#')) {
-          btn.classList.toggle('active', href.substring(1) === targetId);
+        const target = btn.dataset.target || (href && href.startsWith('#') ? href.substring(1) : null);
+        if (target) {
+          btn.classList.toggle('active', target === targetId);
         }
       });
     }
+
+    const mobileNavBtns = document.querySelectorAll('.mobile-bottom-nav .mobile-nav-btn');
+    mobileNavBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = btn.dataset.target;
+        if (!target) return;
+        e.preventDefault();
+
+        if (target === 'schedule-section') {
+          if (window.innerWidth <= 900) {
+            switchMobileView('timeline');
+          }
+          const sec = document.getElementById('schedule-section');
+          if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+          setActiveNav('schedule-section');
+        } else if (target === 'map-section') {
+          if (window.innerWidth <= 900) {
+            switchMobileView('map');
+          }
+          const sec = document.getElementById('map-section');
+          if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+          setTimeout(() => {
+            if (state.map) state.map.invalidateSize();
+          }, 250);
+          setActiveNav('map-section');
+        } else if (target === 'toolkit-section') {
+          const sec = document.getElementById('toolkit-section');
+          if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+          setActiveNav('toolkit-section');
+        }
+      });
+    });
 
     const bottomSpotsBtn = document.getElementById('bottom-nav-open-spots');
     if (bottomSpotsBtn) {

@@ -405,7 +405,16 @@
             </div>
 
             <!-- Leaflet Map Container -->
-            <div id="map"></div>
+            <div class="map-wrapper" style="position: relative;">
+              <div id="map"></div>
+              <!-- Mobile Map Gesture Protection Overlay -->
+              <div class="map-gesture-overlay" id="map-gesture-overlay">
+                <button type="button" class="btn-map-gesture-toggle" id="btn-map-gesture-toggle" aria-label="切換地圖互動模式">
+                  <span class="gesture-icon">🔒</span>
+                  <span class="gesture-text">地圖已鎖定（滑動不卡手）· 點擊啟用互動</span>
+                </button>
+              </div>
+            </div>
 
             <!-- Mobile Quick Spot Jumper (Scrollable spots chips) -->
             <div class="map-spots-scroller-wrap" id="map-spots-scroller-wrap">
