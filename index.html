@@ -16,9 +16,6 @@
   <meta property="og:title" content="2026/12 沖繩冬日海風自由行 5天4夜完整行程">
   <meta property="og:description" content="點擊查看完整自駕行程路線、MapCode導航、老饕美食推薦與去趣App專屬連結！">
   <meta property="og:type" content="website">
-
-  <!-- Leaflet CSS for Map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="styles.css">
@@ -452,6 +449,7 @@
               <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-traffic" title="切換即時路況圖層 (需 JS API 模式)" style="display:none;">🚦 即時路況</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-mode" title="在嵌入模式與 JS API 模式間切換">🔄 切換視圖</button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-reset-gmap-route" title="返回當日完整自駕路線視圖" style="display:none; color:var(--primary); font-weight:700;">🔄 返回當日路線</button>
                 <span>💡 提示：點擊圖標可查看亮點並啟動導航</span>
               </div>
               <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" style="color:var(--primary); font-weight:600; font-size:0.8rem;">去趣 App 導航 →</a>
@@ -1033,8 +1031,6 @@
     </div>
   </footer>
 
-  <!-- Leaflet JS for Map -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   
   <!-- Data & Application Logic -->
   <script src="data.js"></script>

@@ -550,8 +550,10 @@ def test_google_maps_integration():
     var clearInterval = function() {};
     var console = { log: print, warn: print, error: print };
 
-    function makeElement() {
+    var elemCache = {};
+    function makeElement(id) {
       return {
+        id: id || '',
         addEventListener: function() {},
         querySelector: function() { return makeElement(); },
         querySelectorAll: function() { return []; },
@@ -563,14 +565,17 @@ def test_google_maps_integration():
       };
     }
     var document = {
-      documentElement: makeElement(),
+      documentElement: makeElement('html'),
       addEventListener: function(event, cb) { this.cb = cb; },
-      getElementById: function(id) { return makeElement(); },
+      getElementById: function(id) {
+        if (!elemCache[id]) elemCache[id] = makeElement(id);
+        return elemCache[id];
+      },
       querySelectorAll: function() { return []; },
       querySelector: function() { return makeElement(); },
       createElement: function() { return makeElement(); },
-      body: makeElement(),
-      head: makeElement()
+      body: makeElement('body'),
+      head: makeElement('head')
     };
     var window = {
       innerWidth: 1200,
@@ -646,6 +651,20 @@ def test_google_maps_integration():
       throw new Error("Spot streetview link mismatch: " + spotLinks.streetViewUrl);
     }
 
+    // 4. Test appFocusOnMap & reset button display
+    var sampleSpot = engine.findCatalogSpot("spot-parco-city");
+    if (!sampleSpot) throw new Error("spot-parco-city not found!");
+    engine.appFocusOnMap("spot-parco-city");
+
+    var iframeEl = document.getElementById("okinawa-gmap-iframe");
+    if (!iframeEl.src || iframeEl.src.indexOf("maps.google.com/maps?q=") === -1) {
+      throw new Error("appFocusOnMap did not update iframe src: " + iframeEl.src);
+    }
+    var resetBtnEl = document.getElementById("btn-reset-gmap-route");
+    if (resetBtnEl.style.display !== "inline-block") {
+      throw new Error("btn-reset-gmap-route should be displayed after focus, got: " + resetBtnEl.style.display);
+    }
+
     print("ALL GOOGLE MAPS INTEGRATION ASSERTIONS PASSED!");
     """
 
@@ -654,9 +673,18 @@ def test_google_maps_integration():
         print(f"  [FAIL] JSC Google Maps Integration Error:\n{res.stderr}\n{res.stdout}")
         sys.exit(1)
 
+    # Check Leaflet CDN removal and reset button in index.html
+    with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    assert 'leaflet.css' not in html_content, "Obsolete Leaflet CSS still found in index.html"
+    assert 'leaflet.js' not in html_content, "Obsolete Leaflet JS still found in index.html"
+    assert 'id="btn-reset-gmap-route"' in html_content or "id='btn-reset-gmap-route'" in html_content, "Missing btn-reset-gmap-route in index.html"
+
     print("  [PASS] Google Maps Directions URL Scheme (origin, waypoints, destination) verified")
     print("  [PASS] Google Maps Dynamic Embed URL generation (no key + official API key) verified")
     print("  [PASS] Spot card 3-action links (📍即時導航, 🔍老饕評價, 🏙️街景預覽) verified")
+    print("  [PASS] Clean removal of Leaflet CDN links and presence of route reset button confirmed")
+    print("  [PASS] appFocusOnMap execution, iframe src update & reset button toggle verified")
 
 def main():
     print("==================================================")

@@ -436,6 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gmapApiKey: safeStorageGet('google_maps_api_key', ''),
     googleMap: null,
     googleMarkers: [],
+    googleMarkerMap: new Map(),
     googlePolyline: null,
     googleTrafficLayer: null,
     googleTrafficEnabled: false
@@ -954,6 +955,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function fitMapToCurrentMarkers() {
+    if (state.googleMap && typeof google !== 'undefined' && google.maps && state.googleMarkers.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      state.googleMarkers.forEach(m => {
+        if (typeof m.getPosition === 'function') bounds.extend(m.getPosition());
+      });
+      state.googleMap.fitBounds(bounds);
+      return;
+    }
     if (!state.map) return;
     if (state.itineraryMode === 'planner') {
       if (state.plannerPolyline) {
@@ -1011,13 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
     scroller.querySelectorAll('.map-spot-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const id = chip.dataset.id;
-        syncScrollerActiveChip(id);
-        const item = SCHEDULE_ITEMS.find(s => s.id === id);
-        if (item && state.map) {
-          const marker = state.markerMap.get(id);
-          state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 14), { animate: true });
-          if (marker) marker.openPopup();
-        }
+        window.appFocusOnMap(id);
       });
     });
   }
@@ -1197,9 +1200,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
                   <span>➕ 加自訂</span>
                 </button>
-                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery || item.name)}" target="_blank" rel="noopener" class="btn-card-action" title="啟動 Google Maps 即時導航">
-                  <span>🗺️ 導航</span>
-                </a>
               </div>
             </div>
 
@@ -1548,6 +1548,21 @@ document.addEventListener('DOMContentLoaded', () => {
       window.addEventListener('resize', syncMapGestureState);
     }
 
+    // 返回當日完整自駕路線按鈕
+    const resetRouteBtn = document.getElementById('btn-reset-gmap-route');
+    if (resetRouteBtn) {
+      resetRouteBtn.addEventListener('click', () => {
+        if (state.itineraryMode === 'planner') {
+          const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+          updatePlannerMapMarkers(timeline.computedStops);
+        } else {
+          updateMapMarkers();
+        }
+        resetRouteBtn.style.display = 'none';
+        showToast('已恢復當日完整自駕路線');
+      });
+    }
+
     // 嘗試初始化 Google Maps JS SDK (若有儲存金鑰)
     if (state.gmapApiKey && state.gmapMode === 'js') {
       loadGoogleMapsJsApi(state.gmapApiKey);
@@ -1701,6 +1716,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('okinawa-gmap-canvas');
     const modeBadge = document.getElementById('gmaps-mode-badge');
     const trafficBtn = document.getElementById('btn-toggle-gmap-traffic');
+    const resetBtn = document.getElementById('btn-reset-gmap-route');
+    if (resetBtn) resetBtn.style.display = 'none';
 
     if (state.gmapMode === 'js' && state.gmapApiKey && typeof google !== 'undefined' && google.maps) {
       if (iframe) iframe.style.display = 'none';
@@ -1736,6 +1753,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     state.googleMarkers.forEach(m => m.setMap(null));
     state.googleMarkers = [];
+    state.googleMarkerMap = new Map();
     if (state.googlePolyline) {
       state.googlePolyline.setMap(null);
       state.googlePolyline = null;
@@ -1789,11 +1807,14 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       const infoWindow = new google.maps.InfoWindow({ content: infoContent });
+      marker.__infoWindow = infoWindow;
       marker.addListener('click', () => {
         infoWindow.open(state.googleMap, marker);
       });
 
       state.googleMarkers.push(marker);
+      if (stop.id) state.googleMarkerMap.set(stop.id, marker);
+      if (nameZh) state.googleMarkerMap.set(nameZh, marker);
     });
 
     if (pathCoords.length > 1) {
@@ -1821,103 +1842,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. 更新 Google Maps 視圖 (Embed 或 JS API)
     updateGoogleMapsView(filtered);
-
-    if (!state.map) return;
-
-    // Clear existing official markers & polyline
-    state.markers.forEach(m => state.map.removeLayer(m));
-    state.markers = [];
-    state.markerMap.clear();
-
-    if (state.polyline) {
-      state.map.removeLayer(state.polyline);
-      state.polyline = null;
-    }
-
-    // Clear any planner markers if in official mode
-    state.plannerMarkers.forEach(m => state.map.removeLayer(m));
-    state.plannerMarkers = [];
-    if (state.plannerPolyline) {
-      state.map.removeLayer(state.plannerPolyline);
-      state.plannerPolyline = null;
-    }
-
-    if (filtered.length === 0) return;
-
-    const latlngs = [];
-
-    filtered.forEach(item => {
-      latlngs.push([item.lat, item.lng]);
-
-      const pinEl = document.createElement('div');
-      pinEl.className = 'custom-pin-wrapper';
-      pinEl.innerHTML = `
-        <div class="custom-pin ${item.category}" style="cursor:pointer;">
-          <span>${item.icon}</span>
-        </div>
-      `;
-
-      const customIcon = L.divIcon({
-        className: 'custom-pin-container',
-        html: pinEl.innerHTML,
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -36]
-      });
-
-      const popupContent = `
-        <div class="map-popup-card" style="min-width: 200px; padding: 0.25rem;">
-          <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">
-            <span>Day ${item.day} · ${item.time}</span>
-            <span class="tag-badge" style="font-size:0.7rem; padding: 0.1rem 0.4rem;">${escapeHtml(item.categoryLabel)}</span>
-          </div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0 0 0.25rem 0; color: var(--text-main);">${escapeHtml(item.nameZh)}</h4>
-          <div style="font-size: 0.775rem; color: var(--text-muted); margin-bottom: 0.4rem;">${escapeHtml(item.name)}</div>
-          <div style="font-size: 0.775rem; font-family: monospace; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">🚗 MC: ${escapeHtml(item.mapCode)}</div>
-          <div style="display: flex; gap: 0.35rem;">
-            <button class="btn-card-action primary btn-popup-detail" data-id="${escapeHtml(item.id)}" style="flex: 1; padding: 0.3rem 0.5rem; font-size: 0.75rem;">🔍 攻略</button>
-            <button class="btn-card-action btn-popup-locate" data-id="${escapeHtml(item.id)}" style="flex: 1; padding: 0.3rem 0.5rem; font-size: 0.75rem;">📍 定位</button>
-          </div>
-        </div>
-      `;
-
-      const marker = L.marker([item.lat, item.lng], { icon: customIcon })
-        .addTo(state.map)
-        .bindPopup(popupContent);
-
-      marker.on('click', () => {
-        syncScrollerActiveChip(item.id);
-      });
-
-      marker.on('popupopen', () => {
-        const popupEl = document.querySelector('.leaflet-popup-content');
-        if (popupEl) {
-          const detailBtn = popupEl.querySelector('.btn-popup-detail');
-          const locateBtn = popupEl.querySelector('.btn-popup-locate');
-          if (detailBtn) {
-            detailBtn.onclick = () => window.appOpenModal(item.id);
-          }
-          if (locateBtn) {
-            locateBtn.onclick = () => window.appScrollToCard(item.id);
-          }
-        }
-      });
-
-      state.markers.push(marker);
-      state.markerMap.set(item.id, marker);
-    });
-
-    // Draw route polyline if single day is selected and items > 1
-    if (state.activeDay !== 0 && latlngs.length > 1) {
-      state.polyline = L.polyline(latlngs, {
-        color: '#0284c7',
-        weight: 4,
-        opacity: 0.75,
-        dashArray: '8, 8'
-      }).addTo(state.map);
-    }
-
-    fitMapToCurrentMarkers();
   }
 
   function updatePlannerMapMarkers(computedStops) {
@@ -1926,81 +1850,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. 更新 Google Maps 視圖 (Embed 或 JS API)
     updateGoogleMapsView(computedStops);
-
-    if (!state.map) return;
-
-    // Clear official markers & polylines
-    state.markers.forEach(m => state.map.removeLayer(m));
-    state.markers = [];
-    state.markerMap.clear();
-    if (state.polyline) {
-      state.map.removeLayer(state.polyline);
-      state.polyline = null;
-    }
-
-    // Clear previous planner markers & polyline
-    state.plannerMarkers.forEach(m => state.map.removeLayer(m));
-    state.plannerMarkers = [];
-    if (state.plannerPolyline) {
-      state.map.removeLayer(state.plannerPolyline);
-      state.plannerPolyline = null;
-    }
-
-    if (!computedStops || computedStops.length === 0) return;
-
-    const latlngs = [];
-
-    computedStops.forEach((stop, idx) => {
-      if (typeof stop.lat !== 'number' || typeof stop.lng !== 'number') return;
-
-      latlngs.push([stop.lat, stop.lng]);
-
-      const pinHtml = `<div class="custom-route-marker">${idx + 1}</div>`;
-      const customIcon = L.divIcon({
-        className: 'custom-route-marker-wrap',
-        html: pinHtml,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-        popupAnchor: [0, -18]
-      });
-
-      const popupContent = `
-        <div style="min-width: 190px; padding: 0.25rem;">
-          <div style="font-size:0.75rem; font-weight:700; color:var(--primary); margin-bottom:0.2rem;">站點 #${idx + 1}</div>
-          <h4 style="font-size:0.95rem; font-weight:800; margin:0 0 0.25rem 0;">${escapeHtml(stop.nameZh || stop.name)}</h4>
-          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.35rem;">⏰ ${stop.arrivalTime} ~ ${stop.departureTime} (${stop.durationMinutes} 分)</div>
-          <div style="font-size:0.75rem; font-family:monospace; color:#0284c7; margin-bottom:0.4rem;">🚗 MC: ${escapeHtml(stop.mapCode || '無')}</div>
-          <button class="btn btn-primary btn-sm btn-planner-popup-info" style="width:100%; font-size:0.75rem; padding:0.3rem;">🔍 查看景點攻略</button>
-        </div>
-      `;
-
-      const marker = L.marker([stop.lat, stop.lng], { icon: customIcon })
-        .addTo(state.map)
-        .bindPopup(popupContent);
-
-      marker.on('popupopen', () => {
-        const popupEl = document.querySelector('.leaflet-popup-content');
-        if (popupEl) {
-          const infoBtn = popupEl.querySelector('.btn-planner-popup-info');
-          if (infoBtn) {
-            infoBtn.onclick = () => window.appOpenModal(stop.id);
-          }
-        }
-      });
-
-      state.plannerMarkers.push(marker);
-    });
-
-    if (latlngs.length > 1) {
-      state.plannerPolyline = L.polyline(latlngs, {
-        color: '#7c3aed',
-        weight: 5,
-        opacity: 0.85,
-        dashArray: '6, 8'
-      }).addTo(state.map);
-    }
-
-    fitMapToCurrentMarkers();
   }
 
   /* ==========================================================================
@@ -2396,9 +2245,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="btn-card-action" data-action="locate-planner-stop" data-index="${idx}">
                       <span>📍 地圖定位</span>
                     </button>
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.nameZh || stop.name)}" target="_blank" rel="noopener" class="btn-card-action">
-                      <span>🗺️ 導航</span>
-                    </a>
                   </div>
                 </div>
 
@@ -3215,18 +3061,25 @@ document.addEventListener('DOMContentLoaded', () => {
       switchMobileView('map');
     }
 
-    const marker = state.markerMap.get(itemId);
-    if (state.googleMap && typeof google !== 'undefined' && google.maps) {
+    const resetBtn = document.getElementById('btn-reset-gmap-route');
+    if (resetBtn) resetBtn.style.display = 'inline-block';
+
+    if (state.gmapMode === 'js' && state.googleMap && typeof google !== 'undefined' && google.maps) {
       state.googleMap.setCenter({ lat: item.lat, lng: item.lng });
       state.googleMap.setZoom(15);
-    } else if (state.map) {
-      state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 15), { animate: true });
-      if (marker) {
-        setTimeout(() => marker.openPopup(), 150);
+      let targetMarker = state.googleMarkerMap ? state.googleMarkerMap.get(itemId) : null;
+      if (!targetMarker && state.googleMarkers) {
+        targetMarker = state.googleMarkers.find(m => {
+          const pos = typeof m.getPosition === 'function' ? m.getPosition() : null;
+          return pos && Math.abs(pos.lat() - item.lat) < 0.0001 && Math.abs(pos.lng() - item.lng) < 0.0001;
+        });
+      }
+      if (targetMarker && targetMarker.__infoWindow) {
+        targetMarker.__infoWindow.open(state.googleMap, targetMarker);
       }
     } else {
       const iframe = document.getElementById('okinawa-gmap-iframe');
-      if (iframe && state.gmapMode === 'embed' && item.lat && item.lng) {
+      if (iframe && item.lat && item.lng) {
         iframe.src = `https://maps.google.com/maps?q=${item.lat},${item.lng}+(${encodeURIComponent(item.nameZh || item.name)})&z=15&hl=zh-TW&output=embed`;
       }
     }
@@ -3234,7 +3087,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncScrollerActiveChip(itemId);
 
     const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
-    if (targetEl) {
+    if (targetEl && typeof targetEl.scrollIntoView === 'function') {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     showToast(`📍 已在地圖定位：${item.nameZh}`);
@@ -4087,6 +3940,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGoogleMapsDayNavBtn,
     updateGoogleMapsView,
     initGoogleMap,
+    appFocusOnMap: window.appFocusOnMap,
     state
   };
   window.OKINAWA_GMAPS = window.__okinawaApp__;
