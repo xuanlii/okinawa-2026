@@ -389,6 +389,147 @@ def test_jsc_execution():
     else:
         print("  [PASS] Live JavaScriptCore runtime executed all algorithm, boundary, and preset assertions cleanly")
 
+def test_flight_selector_and_sync():
+    print("\n--- Testing Flight Selector Database, DOM & Dynamic Time Sync ---")
+    with open(os.path.join(BASE_DIR, 'data.js'), 'r', encoding='utf-8') as f:
+        data_text = f.read()
+    with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
+        html_text = f.read()
+
+    # 1. Check data constants
+    assert 'OKINAWA_FLIGHTS' in data_text, "Missing OKINAWA_FLIGHTS in data.js"
+    assert 'DEFAULT_OKINAWA_FLIGHT_ID' in data_text, "Missing DEFAULT_OKINAWA_FLIGHT_ID in data.js"
+
+    flight_codes = ['CI120', 'CI121', 'CI122', 'CI123', 'JX870', 'JX871', 'BR112', 'BR113', 'BR186', 'BR185']
+    for fc in flight_codes:
+        assert fc in data_text, f"Missing flight code {fc} in data.js"
+    print(f"  [PASS] All 5 roundtrip flight pairs ({len(flight_codes)} flight legs) for CI, JX, BR confirmed in data.js")
+
+    # 2. Check DOM Elements in HTML
+    critical_flight_dom_ids = [
+        'btn-flight-selector', 'hero-flight-pill', 'hero-flight-name',
+        'planner-flight-badge', 'planner-flight-label', 'btn-planner-change-flight',
+        'flight-modal-overlay', 'flight-modal-sheet', 'flight-modal-title',
+        'btn-close-flight-modal', 'flight-filter-tabs', 'btn-open-custom-flight-form',
+        'flight-cards-container', 'custom-flight-form-card',
+        'custom-flight-airline', 'custom-flight-outbound-no', 'custom-flight-outbound-from',
+        'custom-flight-outbound-to', 'custom-flight-outbound-deptime', 'custom-flight-outbound-arrtime',
+        'custom-flight-inbound-no', 'custom-flight-inbound-from', 'custom-flight-inbound-to',
+        'custom-flight-inbound-deptime', 'custom-flight-inbound-arrtime',
+        'btn-custom-flight-cancel', 'btn-custom-flight-save'
+    ]
+    for cid in critical_flight_dom_ids:
+        assert f'id="{cid}"' in html_text or f"id='{cid}'" in html_text, f"Missing flight DOM ID: {cid}"
+    print(f"  [PASS] All {len(critical_flight_dom_ids)} flight selector & modal DOM elements verified in index.html")
+
+    # 3. Test JSC dynamic time sync
+    import subprocess
+    jsc_bin = "/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc"
+    if not os.path.exists(jsc_bin):
+        print("  [SKIP] JSC not available for flight dynamic time sync test")
+        return
+
+    test_flight_js = """
+    var setTimeout = function(cb) { return 1; };
+    var clearTimeout = function() {};
+    var setInterval = function(cb) { return 1; };
+    var clearInterval = function() {};
+    var console = { log: print, warn: print, error: print };
+
+    function makeElement() {
+      return {
+        addEventListener: function() {},
+        querySelector: function() { return makeElement(); },
+        querySelectorAll: function() { return []; },
+        style: {},
+        classList: { add: function() {}, remove: function() {} },
+        setAttribute: function() {},
+        appendChild: function() {},
+        removeChild: function() {}
+      };
+    }
+    var document = {
+      documentElement: makeElement(),
+      addEventListener: function(event, cb) { this.cb = cb; },
+      getElementById: function(id) { return makeElement(); },
+      querySelectorAll: function() { return []; },
+      querySelector: function() { return makeElement(); },
+      createElement: function() { return makeElement(); },
+      body: makeElement()
+    };
+    var window = { innerWidth: 1200, addEventListener: function() {}, scrollTo: function() {}, isSecureContext: true };
+    var localStorage = { getItem: function() { return null; }, setItem: function() {} };
+    var navigator = {};
+    var L = {
+      map: function() { return { setView: function() {}, on: function() {}, invalidateSize: function() {}, fitBounds: function() {}, removeLayer: function() {} }; },
+      tileLayer: function() { return { addTo: function() {} }; },
+      marker: function() { return { addTo: function() { return { bindPopup: function() { return { on: function() {} }; } }; } }; },
+      polyline: function() { return { addTo: function() {} }; },
+      latLngBounds: function() { return { isValid: function() { return false; } }; },
+      divIcon: function() {},
+      featureGroup: function() { return { getBounds: function() { return { pad: function() { return {}; } }; } }; }
+    };
+
+    load("data.js");
+    load("app.js");
+    document.cb();
+
+    var engine = window.__okinawaApp__;
+    if (!engine) throw new Error("window.__okinawaApp__ is missing!");
+
+    // Case 1: CI Morning (CI120 arr 10:45 / CI121 dep 11:55)
+    var ciMorning = OKINAWA_FLIGHTS.find(function(f) { return f.id === 'ci-oka-morning-roundtrip'; });
+    engine.syncFlightToItinerary(ciMorning, false);
+    var d1_1 = SCHEDULE_ITEMS.find(function(it) { return it.id === 'd1-1'; });
+    var d5_5 = SCHEDULE_ITEMS.find(function(it) { return it.id === 'd5-5'; });
+    if (d1_1.time !== "11:45") throw new Error("CI120 Day 1 pickup time expected 11:45, got: " + d1_1.time);
+    if (d5_5.time !== "09:55") throw new Error("CI121 Day 5 car return expected 09:55, got: " + d5_5.time);
+    if (engine.state.plannerData.days[0].startTime !== "11:45") {
+      throw new Error("CI120 Day 1 planner startTime expected 11:45, got: " + engine.state.plannerData.days[0].startTime);
+    }
+
+    // Case 2: STARLUX (JX870 arr 12:05 / JX871 dep 13:15)
+    var jx = OKINAWA_FLIGHTS.find(function(f) { return f.id === 'starlux-oka-roundtrip'; });
+    engine.syncFlightToItinerary(jx, false);
+    if (d1_1.time !== "13:05") throw new Error("JX870 Day 1 pickup time expected 13:05, got: " + d1_1.time);
+    if (d5_5.time !== "11:15") throw new Error("JX871 Day 5 car return expected 11:15, got: " + d5_5.time);
+
+    // Case 3: EVA Air Early (BR112 arr 09:15 / BR113 dep 10:15)
+    var brEarly = OKINAWA_FLIGHTS.find(function(f) { return f.id === 'eva-oka-early-roundtrip'; });
+    engine.syncFlightToItinerary(brEarly, false);
+    if (d1_1.time !== "10:15") throw new Error("BR112 Day 1 pickup time expected 10:15, got: " + d1_1.time);
+    if (d5_5.time !== "08:15") throw new Error("BR113 Day 5 car return expected 08:15, got: " + d5_5.time);
+
+    // Case 4: EVA Air Afternoon (BR186 arr 18:25 / BR185 dep 19:25)
+    var brAft = OKINAWA_FLIGHTS.find(function(f) { return f.id === 'eva-oka-afternoon-roundtrip'; });
+    engine.syncFlightToItinerary(brAft, false);
+    if (d1_1.time !== "19:25") throw new Error("BR186 Day 1 pickup time expected 19:25, got: " + d1_1.time);
+    if (d5_5.time !== "17:25") throw new Error("BR185 Day 5 car return expected 17:25, got: " + d5_5.time);
+
+    // Case 5: Custom Flight (arr 15:00, dep 16:30)
+    var customFlight = {
+      id: "custom",
+      airline: "樂桃航空",
+      outbound: { flightNo: "MM924", arrTime: "15:00", depTime: "12:30" },
+      inbound: { flightNo: "MM927", depTime: "16:30", arrTime: "17:15" }
+    };
+    engine.syncFlightToItinerary(customFlight, false);
+    if (d1_1.time !== "16:00") throw new Error("Custom Day 1 pickup time expected 16:00, got: " + d1_1.time);
+    if (d5_5.time !== "14:30") throw new Error("Custom Day 5 car return expected 14:30, got: " + d5_5.time);
+
+    // Verify SCHEDULE_ITEMS length integrity
+    if (SCHEDULE_ITEMS.length !== 40) throw new Error("SCHEDULE_ITEMS length mutated: " + SCHEDULE_ITEMS.length);
+
+    print("ALL FLIGHT TIME SYNC ASSERTIONS PASSED!");
+    """
+
+    res = subprocess.run([jsc_bin, "-e", test_flight_js], cwd=BASE_DIR, capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"  [FAIL] JSC Flight Sync Error:\n{res.stderr}\n{res.stdout}")
+        sys.exit(1)
+    else:
+        print("  [PASS] Live JavaScriptCore runtime confirmed Day 1 (+60m) and Day 5 (-120m) dynamic ripple sync across all flights & custom input")
+
 def main():
     print("==================================================")
     print(" Okinawa 2026 Trip Planner - Automated Verification")
@@ -405,9 +546,10 @@ def main():
     test_dom_references()
     test_css_classes()
     test_jsc_execution()
+    test_flight_selector_and_sync()
 
     print("\n==================================================")
-    print(" ALL 6 TEST SUITES PASSED WITH 100% SUCCESS! ")
+    print(" ALL 7 TEST SUITES PASSED WITH 100% SUCCESS! ")
     print("==================================================")
 
 if __name__ == '__main__':

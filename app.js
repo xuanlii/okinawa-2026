@@ -428,7 +428,10 @@ document.addEventListener('DOMContentLoaded', () => {
     polyline: null,
     plannerMarkers: [],
     plannerPolyline: null,
-    plannerData: getInitialPlannerData()
+    plannerData: getInitialPlannerData(),
+    selectedFlightId: safeStorageGet('okinawa_selected_flight', (typeof DEFAULT_OKINAWA_FLIGHT_ID !== 'undefined' ? DEFAULT_OKINAWA_FLIGHT_ID : 'ci-oka-morning-roundtrip')),
+    customFlightData: JSON.parse(safeStorageGet('okinawa_custom_flight_data', 'null')),
+    flightFilter: 'all'
   };
 
   function savePlannerData() {
@@ -467,6 +470,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initBudgetTracker();
   initChicTripSharing();
   initModal();
+  initFlightSelector();
+  syncFlightToItinerary(getSelectedFlight(), false);
   initScrollspyAndBackToTop();
 
   /* ==========================================================================
@@ -3127,6 +3132,402 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
+     Flight Selector & Dynamic Time Sync Module (華航/星宇/長榮)
+     ========================================================================== */
+  function parseTimeToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const match = String(timeStr).match(/(\d{1,2}):(\d{2})/);
+    if (!match) return 0;
+    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  }
+
+  function getSelectedFlight() {
+    if (state.selectedFlightId === 'custom' && state.customFlightData) {
+      return state.customFlightData;
+    }
+    const flights = (typeof OKINAWA_FLIGHTS !== 'undefined') ? OKINAWA_FLIGHTS : (window.OKINAWA_FLIGHTS || []);
+    const found = flights.find(f => f.id === state.selectedFlightId);
+    return found || flights[0] || null;
+  }
+
+  function updateFlightUI(flight) {
+    if (!flight) flight = getSelectedFlight();
+    if (!flight) return;
+
+    // 更新頂部 Hero 晶片
+    const heroFlightName = document.getElementById('hero-flight-name');
+    if (heroFlightName) {
+      const outNo = flight.outbound ? flight.outbound.flightNo : '';
+      const inNo = flight.inbound ? flight.inbound.flightNo : '';
+      heroFlightName.textContent = `${flight.airline} ${outNo}/${inNo}`;
+    }
+
+    // 更新規劃區工具列晶片
+    const plannerFlightLabel = document.getElementById('planner-flight-label');
+    if (plannerFlightLabel) {
+      const outNo = flight.outbound ? flight.outbound.flightNo : '';
+      const inNo = flight.inbound ? flight.inbound.flightNo : '';
+      plannerFlightLabel.textContent = `${outNo}/${inNo}`;
+    }
+  }
+
+  function syncFlightToItinerary(flight, showToastMsg = true) {
+    if (!flight) return;
+
+    // 1. 同步 Day 1 (入境取車：保留約 60 分鐘通關、提行李與接駁取車手續)
+    const day1Items = (typeof SCHEDULE_ITEMS !== 'undefined') ? SCHEDULE_ITEMS.filter(it => it.day === 1) : [];
+    if (day1Items.length > 0 && flight.outbound) {
+      const arrTime = flight.outbound.arrTime || '10:45';
+      const arrMins = parseTimeToMinutes(arrTime);
+      const pickupMins = arrMins + 60; // 落地後預留 60 分鐘入境與租車手續
+
+      // Day 1 首站：d1-1 (Toyota租車 沖繩那霸機場店)
+      day1Items[0].time = formatMinutesToTime(pickupMins);
+      day1Items[0].desc = `搭乘 ${flight.airline} ${flight.outbound.flightNo} (${flight.outbound.depTime} ➔ ${flight.outbound.arrTime}) 抵達沖繩那霸機場。落地預留約 60 分鐘入境通關、提領行李與接駁取車手續。完成手續後展開自駕旅程！`;
+
+      // 連鎖推算 Day 1 後續所有景點抵達時刻
+      for (let i = 1; i < day1Items.length; i++) {
+        const prev = day1Items[i - 1];
+        const curr = day1Items[i];
+        const prevMins = parseTimeToMinutes(prev.time);
+        const prevDur = (prev.durationMinutes !== undefined) ? prev.durationMinutes : 60;
+        const transit = calculateTransit(prev, curr);
+        const transitMins = (transit && transit.durationMins) ? transit.durationMins : 20;
+        curr.time = formatMinutesToTime(prevMins + prevDur + transitMins);
+      }
+    }
+
+    // 2. 同步 Day 5 (機場還車報到：起飛前約 120 分鐘抵達租車營業所還車)
+    const day5Items = (typeof SCHEDULE_ITEMS !== 'undefined') ? SCHEDULE_ITEMS.filter(it => it.day === 5) : [];
+    if (day5Items.length > 0 && flight.inbound) {
+      const depTime = flight.inbound.depTime || '11:55';
+      const depMins = parseTimeToMinutes(depTime);
+      const targetReturnMins = depMins - 120; // 起飛前 120 分鐘抵達營業所還車
+
+      let returnIdx = day5Items.findIndex(it => it.id === 'd5-5');
+      if (returnIdx < 0) returnIdx = Math.max(0, day5Items.length - 2);
+
+      // 倒推計算 Day 5 出發時間：使還車處正好在 targetReturnMins 抵達
+      let elapsedBeforeReturn = 0;
+      for (let i = 0; i < returnIdx; i++) {
+        const it = day5Items[i];
+        const dur = (it.durationMinutes !== undefined) ? it.durationMinutes : 60;
+        elapsedBeforeReturn += dur;
+        const transit = calculateTransit(it, day5Items[i + 1]);
+        elapsedBeforeReturn += (transit && transit.durationMins ? transit.durationMins : 20);
+      }
+
+      let computedDay5Start = targetReturnMins - elapsedBeforeReturn;
+      while (computedDay5Start < 0) computedDay5Start += 24 * 60;
+      computedDay5Start = computedDay5Start % (24 * 60);
+
+      // 設定 Day 5 第一站時間
+      day5Items[0].time = formatMinutesToTime(computedDay5Start);
+
+      // 順推連鎖更新 Day 5 所有站點時刻
+      for (let i = 1; i < day5Items.length; i++) {
+        const prev = day5Items[i - 1];
+        const curr = day5Items[i];
+        const prevMins = parseTimeToMinutes(prev.time);
+        const prevDur = (prev.durationMinutes !== undefined) ? prev.durationMinutes : 60;
+        const transit = calculateTransit(prev, curr);
+        const transitMins = (transit && transit.durationMins) ? transit.durationMins : 20;
+        curr.time = formatMinutesToTime(prevMins + prevDur + transitMins);
+      }
+
+      // 更新還車處與航廈註記
+      if (day5Items[returnIdx]) {
+        day5Items[returnIdx].desc = `搭乘 ${flight.airline} ${flight.inbound.flightNo} (${flight.inbound.depTime} ➔ ${flight.inbound.arrTime}) 返台。起飛前 120 分鐘抵達豐田租車站，辦理驗車與油單核對，搭乘免費接駁車前往航廈。`;
+      }
+
+      const airportItem = day5Items[day5Items.length - 1];
+      if (airportItem) {
+        airportItem.nameZh = `那霸機場 國際線航廈 (${flight.inbound.flightNo} 登機返台)`;
+        airportItem.desc = `抵達那霸機場辦理航空公司登機報到與行李託運手續（${flight.inbound.flightNo} ${flight.inbound.depTime}起飛）。通關後至DFS免稅提貨櫃台領貨，候機準備返台！`;
+      }
+    }
+
+    // 3. 同步 Planner 自訂行程資料庫
+    if (state.plannerData && Array.isArray(state.plannerData.days)) {
+      // Day 1
+      if (state.plannerData.days.length >= 1 && flight.outbound) {
+        const arrTime = flight.outbound.arrTime || '10:45';
+        const arrMins = parseTimeToMinutes(arrTime);
+        state.plannerData.days[0].startTime = formatMinutesToTime(arrMins + 60);
+      }
+
+      // Day 5
+      if (state.plannerData.days.length >= 5 && flight.inbound) {
+        const depTime = flight.inbound.depTime || '11:55';
+        const depMins = parseTimeToMinutes(depTime);
+        const targetReturnMins = depMins - 120;
+
+        const day5Stops = state.plannerData.days[4].stops || [];
+        if (day5Stops.length > 0) {
+          let elapsedBeforeLast = 0;
+          for (let i = 0; i < day5Stops.length - 1; i++) {
+            const s = day5Stops[i];
+            const dur = (s.durationMinutes !== undefined) ? s.durationMinutes : 60;
+            elapsedBeforeLast += dur;
+            const transit = calculateTransit(s, day5Stops[i + 1]);
+            elapsedBeforeLast += (transit && transit.durationMins ? transit.durationMins : 20);
+          }
+          let day5StartMins = targetReturnMins - elapsedBeforeLast;
+          while (day5StartMins < 0) day5StartMins += 24 * 60;
+          day5StartMins = day5StartMins % (24 * 60);
+          state.plannerData.days[4].startTime = formatMinutesToTime(day5StartMins);
+        }
+      }
+      savePlannerData();
+    }
+
+    // 4. 更新 UI 與重繪時間軸
+    updateFlightUI(flight);
+    if (typeof renderTimeline === 'function') renderTimeline();
+    if (typeof renderPlannerStudio === 'function') renderPlannerStudio();
+
+    if (showToastMsg) {
+      showToast(`✈️ 已成功切換為【${flight.name}】！Day 1 抵達與 Day 5 機場還車時間已智慧同步連鎖推算。`);
+    }
+  }
+
+  function renderFlightCards(filter = 'all') {
+    const container = document.getElementById('flight-cards-container');
+    const customForm = document.getElementById('custom-flight-form-card');
+    if (!container) return;
+
+    if (filter === 'custom') {
+      container.style.display = 'none';
+      if (customForm) customForm.style.display = 'block';
+      return;
+    }
+
+    container.style.display = 'flex';
+    if (customForm) customForm.style.display = 'none';
+
+    const flights = (typeof OKINAWA_FLIGHTS !== 'undefined') ? OKINAWA_FLIGHTS : (window.OKINAWA_FLIGHTS || []);
+    let filtered = flights;
+    if (filter === 'JX') filtered = flights.filter(f => f.airlineCode === 'JX');
+    else if (filter === 'CI') filtered = flights.filter(f => f.airlineCode === 'CI');
+    else if (filter === 'BR') filtered = flights.filter(f => f.airlineCode === 'BR');
+    else if (filter === 'all' && state.customFlightData) {
+      filtered = [state.customFlightData, ...flights];
+    }
+
+    const currentFlight = getSelectedFlight();
+
+    container.innerHTML = filtered.map(flight => {
+      const isCurrent = currentFlight && (currentFlight.id === flight.id);
+      return `
+        <div class="flight-card ${isCurrent ? 'active-flight' : ''}" style="border-left-color: ${flight.airlineColor || '#0284c7'};" data-flight-id="${flight.id}">
+          <div class="flight-card-header">
+            <div class="flight-card-airline-title">
+              <span style="font-size:1.3rem;">${flight.airlineLogo || '✈️'}</span>
+              <span class="flight-airline-badge" style="color:${flight.airlineColor || '#0f172a'};">${escapeHtml(flight.name)}</span>
+            </div>
+            <div class="flight-card-tags">
+              <span class="badge ${flight.badgeClass || 'badge-primary'}">${escapeHtml(flight.badge || flight.tag)}</span>
+              ${isCurrent ? '<span class="badge badge-success" style="font-weight:700;">✓ 當前套用中</span>' : ''}
+            </div>
+          </div>
+
+          <div class="flight-legs-grid">
+            <div class="flight-leg-box">
+              <span class="flight-leg-label">🛫 去程班機 (${flight.outbound.flightNo})</span>
+              <div class="flight-leg-route">
+                <span>${escapeHtml(flight.outbound.from)}</span>
+                <span class="flight-route-arrow">➔</span>
+                <span>${escapeHtml(flight.outbound.to)}</span>
+              </div>
+              <div class="flight-leg-timing">
+                <span>起降：<strong>${flight.outbound.depTime}</strong> 起飛 ➔ <strong>${flight.outbound.arrTime}</strong> 抵達</span>
+                <span style="color:var(--text-subtle, #64748b);">(${flight.outbound.duration})</span>
+              </div>
+            </div>
+
+            <div class="flight-leg-box">
+              <span class="flight-leg-label">🛬 回程班機 (${flight.inbound.flightNo})</span>
+              <div class="flight-leg-route">
+                <span>${escapeHtml(flight.inbound.from)}</span>
+                <span class="flight-route-arrow">➔</span>
+                <span>${escapeHtml(flight.inbound.to)}</span>
+              </div>
+              <div class="flight-leg-timing">
+                <span>起降：<strong>${flight.inbound.depTime}</strong> 起飛 ➔ <strong>${flight.inbound.arrTime}</strong> 抵達</span>
+                <span style="color:var(--text-subtle, #64748b);">(${flight.inbound.duration})</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flight-card-footer">
+            <div class="flight-notes-text">
+              💡 ${escapeHtml(flight.notes || '')}
+            </div>
+            <div>
+              <button type="button" class="btn-apply-flight ${isCurrent ? 'is-current' : 'btn-primary'}" data-flight-id="${flight.id}">
+                ${isCurrent ? '✓ 當前航班' : '✈️ 選擇此航班'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 綁定選擇此航班按鈕
+    container.querySelectorAll('.btn-apply-flight').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const fId = btn.dataset.flightId;
+        let targetFlight = null;
+        if (state.customFlightData && state.customFlightData.id === fId) {
+          targetFlight = state.customFlightData;
+        } else {
+          targetFlight = flights.find(f => f.id === fId);
+        }
+        if (targetFlight) {
+          state.selectedFlightId = targetFlight.id;
+          safeStorageSet('okinawa_selected_flight', targetFlight.id);
+          syncFlightToItinerary(targetFlight, true);
+          renderFlightCards(state.flightFilter);
+          closeFlightModal();
+        }
+      });
+    });
+  }
+
+  function openFlightModal() {
+    const modal = document.getElementById('flight-modal-overlay');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }, 10);
+    renderFlightCards(state.flightFilter);
+  }
+
+  function closeFlightModal() {
+    const modal = document.getElementById('flight-modal-overlay');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 250);
+  }
+
+  function initFlightSelector() {
+    const triggerBtn = document.getElementById('btn-flight-selector');
+    if (triggerBtn) triggerBtn.addEventListener('click', openFlightModal);
+
+    const heroPill = document.getElementById('hero-flight-pill');
+    if (heroPill) heroPill.addEventListener('click', openFlightModal);
+
+    const plannerChangeBtn = document.getElementById('btn-planner-change-flight');
+    if (plannerChangeBtn) plannerChangeBtn.addEventListener('click', openFlightModal);
+
+    const plannerBadge = document.getElementById('planner-flight-badge');
+    if (plannerBadge) plannerBadge.addEventListener('click', openFlightModal);
+
+    const closeBtn = document.getElementById('btn-close-flight-modal');
+    if (closeBtn) closeBtn.addEventListener('click', closeFlightModal);
+
+    const modalOverlay = document.getElementById('flight-modal-overlay');
+    if (modalOverlay) {
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeFlightModal();
+      });
+    }
+
+    // Filter tabs
+    const filterTabs = document.getElementById('flight-filter-tabs');
+    if (filterTabs) {
+      filterTabs.querySelectorAll('.flight-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterTabs.querySelectorAll('.flight-filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.flightFilter = btn.dataset.filter || 'all';
+          renderFlightCards(state.flightFilter);
+        });
+      });
+    }
+
+    // Custom flight form buttons
+    const btnCancelCustom = document.getElementById('btn-custom-flight-cancel');
+    if (btnCancelCustom) {
+      btnCancelCustom.addEventListener('click', () => {
+        state.flightFilter = 'all';
+        if (filterTabs) {
+          filterTabs.querySelectorAll('.flight-filter-btn').forEach(b => b.classList.remove('active'));
+          const allBtn = filterTabs.querySelector('.flight-filter-btn[data-filter="all"]');
+          if (allBtn) allBtn.classList.add('active');
+        }
+        renderFlightCards('all');
+      });
+    }
+
+    const btnSaveCustom = document.getElementById('btn-custom-flight-save');
+    if (btnSaveCustom) {
+      btnSaveCustom.addEventListener('click', () => {
+        const airline = (document.getElementById('custom-flight-airline') && document.getElementById('custom-flight-airline').value.trim()) || '自訂航班';
+        const outNo = (document.getElementById('custom-flight-outbound-no') && document.getElementById('custom-flight-outbound-no').value.trim()) || '自訂去程';
+        const outFrom = (document.getElementById('custom-flight-outbound-from') && document.getElementById('custom-flight-outbound-from').value.trim()) || 'TPE 桃園 (T2)';
+        const outTo = (document.getElementById('custom-flight-outbound-to') && document.getElementById('custom-flight-outbound-to').value.trim()) || 'OKA 那霸 (國際線)';
+        const outDep = (document.getElementById('custom-flight-outbound-deptime') && document.getElementById('custom-flight-outbound-deptime').value) || '08:15';
+        const outArr = (document.getElementById('custom-flight-outbound-arrtime') && document.getElementById('custom-flight-outbound-arrtime').value) || '10:45';
+
+        const inNo = (document.getElementById('custom-flight-inbound-no') && document.getElementById('custom-flight-inbound-no').value.trim()) || '自訂回程';
+        const inFrom = (document.getElementById('custom-flight-inbound-from') && document.getElementById('custom-flight-inbound-from').value.trim()) || 'OKA 那霸 (國際線)';
+        const inTo = (document.getElementById('custom-flight-inbound-to') && document.getElementById('custom-flight-inbound-to').value.trim()) || 'TPE 桃園 (T2)';
+        const inDep = (document.getElementById('custom-flight-inbound-deptime') && document.getElementById('custom-flight-inbound-deptime').value) || '11:55';
+        const inArr = (document.getElementById('custom-flight-inbound-arrtime') && document.getElementById('custom-flight-inbound-arrtime').value) || '12:35';
+
+        const customObj = {
+          id: 'custom',
+          airline: airline,
+          airlineEn: airline,
+          airlineCode: 'CUSTOM',
+          airlineColor: '#8b5cf6',
+          airlineLogo: '✈️',
+          name: `${airline} · 自訂班機`,
+          routeType: 'tpe-oka',
+          badge: '自訂航班',
+          badgeClass: 'badge-secondary',
+          tag: '自訂',
+          outbound: {
+            flightNo: outNo,
+            airline: airline,
+            from: outFrom,
+            to: outTo,
+            airportCode: 'OKA',
+            depTime: outDep,
+            arrTime: outArr,
+            duration: '自訂時長'
+          },
+          inbound: {
+            flightNo: inNo,
+            airline: airline,
+            from: inFrom,
+            to: inTo,
+            airportCode: 'OKA',
+            depTime: inDep,
+            arrTime: inArr,
+            duration: '自訂時長'
+          },
+          notes: '使用者自訂航班與起降時刻，已智慧同步 Day 1 入境與 Day 5 機場還車時間。'
+        };
+
+        state.selectedFlightId = 'custom';
+        state.customFlightData = customObj;
+        safeStorageSet('okinawa_selected_flight', 'custom');
+        safeStorageSet('okinawa_custom_flight_data', JSON.stringify(customObj));
+        syncFlightToItinerary(customObj, true);
+        closeFlightModal();
+      });
+    }
+  }
+
+  /* ==========================================================================
      Toast Notification System
      ========================================================================== */
   function showToast(msg) {
@@ -3154,11 +3555,14 @@ document.addEventListener('DOMContentLoaded', () => {
     calcDistanceKm,
     calculateTransit,
     formatMinutesToTime,
+    parseTimeToMinutes,
     calculateDayTimeline,
     createPlannerStop,
     findCatalogSpot,
     addSpotToPlannerDay,
     addSpotToCurrentPlannerDay,
+    getSelectedFlight,
+    syncFlightToItinerary,
     state
   };
 });

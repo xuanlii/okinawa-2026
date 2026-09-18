@@ -2,7 +2,189 @@
  * 2026/12 沖繩 5天4夜自駕行程資料庫
  * 行程名稱：2026/12沖繩
  * 行程來源：去趣 ChicTrip (https://chictrip-share.app.link/SOyJSS7fi6b)
+/**
+ * 2026/12 沖繩航線航班資訊庫 (CHINA AIRLINES 華航, STARLUX 星宇, EVA AIR 長榮)
+ * 台北 ⇄ 沖繩那霸 (TPE ⇄ OKA)
  */
+const OKINAWA_FLIGHTS = [
+  // ==================== 中華航空 CHINA AIRLINES (CI) ====================
+  {
+    id: "ci-oka-morning-roundtrip",
+    airline: "中華航空",
+    airlineEn: "China Airlines",
+    airlineCode: "CI",
+    airlineColor: "#a31d24",
+    airlineLogo: "🌸",
+    name: "中華航空 · 早去午回 (經典早班首選)",
+    routeType: "tpe-oka",
+    badge: "早去午回 · 首日玩滿",
+    badgeClass: "badge-primary",
+    tag: "長輩早班機",
+    outbound: {
+      flightNo: "CI120",
+      airline: "中華航空",
+      from: "TPE 桃園 (T2)",
+      to: "OKA 那霸 (國際線)",
+      airportCode: "OKA",
+      depTime: "08:15",
+      arrTime: "10:45",
+      duration: "1小時30分"
+    },
+    inbound: {
+      flightNo: "CI121",
+      airline: "中華航空",
+      from: "OKA 那霸 (國際線)",
+      to: "TPE 桃園 (T2)",
+      airportCode: "OKA",
+      depTime: "11:55",
+      arrTime: "12:35",
+      duration: "1小時40分"
+    },
+    notes: "上午 10:45 準時抵達沖繩，通關取車後中午直接享用道地午餐或採買，首日擁有完整的下午自駕時段。"
+  },
+  {
+    id: "ci-oka-afternoon-roundtrip",
+    airline: "中華航空",
+    airlineEn: "China Airlines",
+    airlineCode: "CI",
+    airlineColor: "#a31d24",
+    airlineLogo: "🌸",
+    name: "中華航空 · 午去晚回 (免早起血拼玩滿)",
+    routeType: "tpe-oka",
+    badge: "午去晚回 · 採買滿載",
+    badgeClass: "badge-secondary",
+    tag: "免起大早",
+    outbound: {
+      flightNo: "CI122",
+      airline: "中華航空",
+      from: "TPE 桃園 (T2)",
+      to: "OKA 那霸 (國際線)",
+      airportCode: "OKA",
+      depTime: "16:15",
+      arrTime: "18:45",
+      duration: "1小時30分"
+    },
+    inbound: {
+      flightNo: "CI123",
+      airline: "中華航空",
+      from: "OKA 那霸 (國際線)",
+      to: "TPE 桃園 (T2)",
+      airportCode: "OKA",
+      depTime: "19:45",
+      arrTime: "20:25",
+      duration: "1小時40分"
+    },
+    notes: "免受清晨趕赴機場之苦，下午從容登機；Day 5 晚間 19:45 起飛，最後一天可在那霸市區與小祿採買至傍晚。"
+  },
+
+  // ==================== 星宇航空 STARLUX (JX) ====================
+  {
+    id: "starlux-oka-roundtrip",
+    airline: "星宇航空",
+    airlineEn: "STARLUX Airlines",
+    airlineCode: "JX",
+    airlineColor: "#c5a059",
+    airlineLogo: "⭐",
+    name: "星宇航空 · 早去午回精品航空 (極致舒適體驗)",
+    routeType: "tpe-oka",
+    badge: "精品航空 · 時段宜人",
+    badgeClass: "badge-success",
+    tag: "星宇特調",
+    outbound: {
+      flightNo: "JX870",
+      airline: "星宇航空",
+      from: "TPE 桃園 (T1)",
+      to: "OKA 那霸 (國際線)",
+      airportCode: "OKA",
+      depTime: "09:30",
+      arrTime: "12:05",
+      duration: "1小時35分"
+    },
+    inbound: {
+      flightNo: "JX871",
+      airline: "星宇航空",
+      from: "OKA 那霸 (國際線)",
+      to: "TPE 桃園 (T1)",
+      airportCode: "OKA",
+      depTime: "13:15",
+      arrTime: "13:50",
+      duration: "1小時35分"
+    },
+    notes: "09:30 出發免起大早，機上享受精緻餐點與特調；中午 12:05 抵達沖繩，取車後正好展開南部行程。"
+  },
+
+  // ==================== 長榮航空 EVA AIR (BR) ====================
+  {
+    id: "eva-oka-early-roundtrip",
+    airline: "長榮航空",
+    airlineEn: "EVA Air",
+    airlineCode: "BR",
+    airlineColor: "#007a3d",
+    airlineLogo: "🌲",
+    name: "長榮航空 · 早去早回 (超早鳥衝刺型)",
+    routeType: "tpe-oka",
+    badge: "超早鳥 · 09:15抵達",
+    badgeClass: "badge-info",
+    tag: "最早抵達",
+    outbound: {
+      flightNo: "BR112",
+      airline: "長榮航空",
+      from: "TPE 桃園 (T2)",
+      to: "OKA 那霸 (國際線)",
+      airportCode: "OKA",
+      depTime: "06:45",
+      arrTime: "09:15",
+      duration: "1小時30分"
+    },
+    inbound: {
+      flightNo: "BR113",
+      airline: "長榮航空",
+      from: "OKA 那霸 (國際線)",
+      to: "TPE 桃園 (T2)",
+      airportCode: "OKA",
+      depTime: "10:15",
+      arrTime: "10:55",
+      duration: "1小時40分"
+    },
+    notes: "清晨 06:45 起飛，上午 09:15 即落地那霸！10:15 完成取車手續，首日玩樂時間全日最為充裕。"
+  },
+  {
+    id: "eva-oka-afternoon-roundtrip",
+    airline: "長榮航空",
+    airlineEn: "EVA Air",
+    airlineCode: "BR",
+    airlineColor: "#007a3d",
+    airlineLogo: "🌲",
+    name: "長榮航空 · 午去晚回 (晚班回台玩好玩滿)",
+    routeType: "tpe-oka",
+    badge: "午去晚回 · 晚班回台",
+    badgeClass: "badge-warning",
+    tag: "血拼晚歸",
+    outbound: {
+      flightNo: "BR186",
+      airline: "長榮航空",
+      from: "TPE 桃園 (T2)",
+      to: "OKA 那霸 (國際線)",
+      airportCode: "OKA",
+      depTime: "15:55",
+      arrTime: "18:25",
+      duration: "1小時30分"
+    },
+    inbound: {
+      flightNo: "BR185",
+      airline: "長榮航空",
+      from: "OKA 那霸 (國際線)",
+      to: "TPE 桃園 (T2)",
+      airportCode: "OKA",
+      depTime: "19:25",
+      arrTime: "20:05",
+      duration: "1小時40分"
+    },
+    notes: "下午 15:55 起飛，Day 5 晚間 19:25 起飛返台，最後一天可在小祿 AEON 或國際通痛快採買至下午 17:00。"
+  }
+];
+
+const DEFAULT_OKINAWA_FLIGHT_ID = "ci-oka-morning-roundtrip";
 
 const TRIP_METADATA = {
   id: "okinawa-2026-12",
