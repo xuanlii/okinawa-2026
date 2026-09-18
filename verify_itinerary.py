@@ -535,6 +535,129 @@ def test_flight_selector_and_sync():
     else:
         print("  [PASS] Live JavaScriptCore runtime confirmed Day 1 (+60m) and Day 5 (-120m) dynamic ripple sync across all flights & custom input")
 
+def test_google_maps_integration():
+    print("\n--- Testing Google Maps Full Integration (Nav URL, Embed, JS API & Spot Actions) ---")
+    import subprocess
+    jsc_bin = "/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc"
+    if not os.path.exists(jsc_bin):
+        print("  [SKIP] macOS JSC binary not found at default path")
+        return
+
+    test_gmaps_js = """
+    var setTimeout = function(cb) { return 1; };
+    var clearTimeout = function() {};
+    var setInterval = function(cb) { return 1; };
+    var clearInterval = function() {};
+    var console = { log: print, warn: print, error: print };
+
+    function makeElement() {
+      return {
+        addEventListener: function() {},
+        querySelector: function() { return makeElement(); },
+        querySelectorAll: function() { return []; },
+        style: {},
+        classList: { add: function() {}, remove: function() {}, toggle: function() {} },
+        setAttribute: function() {},
+        appendChild: function() {},
+        removeChild: function() {}
+      };
+    }
+    var document = {
+      documentElement: makeElement(),
+      addEventListener: function(event, cb) { this.cb = cb; },
+      getElementById: function(id) { return makeElement(); },
+      querySelectorAll: function() { return []; },
+      querySelector: function() { return makeElement(); },
+      createElement: function() { return makeElement(); },
+      body: makeElement(),
+      head: makeElement()
+    };
+    var window = {
+      innerWidth: 1200,
+      addEventListener: function() {},
+      scrollTo: function() {},
+      isSecureContext: true
+    };
+    var localStorage = {
+      getItem: function() { return null; },
+      setItem: function() {}
+    };
+    var navigator = {};
+    var L = {
+      map: function() { return { setView: function() {}, on: function() {}, invalidateSize: function() {}, fitBounds: function() {}, removeLayer: function() {} }; },
+      tileLayer: function() { return { addTo: function() {} }; },
+      marker: function() { return { addTo: function() { return { bindPopup: function() { return { on: function() {} }; } }; } }; },
+      polyline: function() { return { addTo: function() {} }; },
+      latLngBounds: function() { return { isValid: function() { return false; } }; },
+      divIcon: function() {},
+      featureGroup: function() { return { getBounds: function() { return { pad: function() { return {}; } }; } }; }
+    };
+
+    load("data.js");
+    load("app.js");
+
+    document.cb();
+
+    var engine = window.__okinawaApp__ || window.OKINAWA_GMAPS;
+    if (!engine) throw new Error("Google Maps engine export missing!");
+
+    // 1. Test Day Nav URL scheme
+    var emptyNav = engine.buildGoogleMapsDayNavUrl([]);
+    if (emptyNav !== "https://www.google.com/maps") throw new Error("Empty stops nav URL mismatch: " + emptyNav);
+
+    var stop1 = { lat: 26.2124, lng: 127.6809, nameZh: "那霸出發" };
+    var nav1 = engine.buildGoogleMapsDayNavUrl([stop1]);
+    if (nav1.indexOf("destination=26.2124%2C127.6809") === -1 || nav1.indexOf("travelmode=driving") === -1) {
+      throw new Error("Single stop nav URL mismatch: " + nav1);
+    }
+
+    var stop2 = { lat: 26.5915, lng: 127.9774, nameZh: "美麗海水族館" };
+    var nav2 = engine.buildGoogleMapsDayNavUrl([stop1, stop2]);
+    if (nav2.indexOf("origin=26.2124%2C127.6809") === -1 || nav2.indexOf("destination=26.5915%2C127.9774") === -1) {
+      throw new Error("2-stop nav URL mismatch: " + nav2);
+    }
+
+    var stopMid = { lat: 26.3167, lng: 127.7570, nameZh: "美國村" };
+    var nav3 = engine.buildGoogleMapsDayNavUrl([stop1, stopMid, stop2]);
+    if (nav3.indexOf("waypoints=26.3167%2C127.757") === -1) {
+      throw new Error("3-stop nav URL waypoints mismatch: " + nav3);
+    }
+
+    // 2. Test Embed URL generator
+    var embedNoKey = engine.buildGoogleMapsEmbedUrl([stop1, stopMid, stop2], "");
+    if (embedNoKey.indexOf("maps.google.com/maps") === -1 || embedNoKey.indexOf("output=embed") === -1 || embedNoKey.indexOf("+to:") === -1) {
+      throw new Error("Embed without key mismatch: " + embedNoKey);
+    }
+
+    var embedWithKey = engine.buildGoogleMapsEmbedUrl([stop1, stopMid, stop2], "AIzaSyTestKey");
+    if (embedWithKey.indexOf("google.com/maps/embed/v1/directions") === -1 || embedWithKey.indexOf("key=AIzaSyTestKey") === -1) {
+      throw new Error("Embed with key mismatch: " + embedWithKey);
+    }
+
+    // 3. Test Spot Actions Links
+    var spotLinks = engine.getSpotGmapLinks(stopMid);
+    if (!spotLinks.hasCoords || spotLinks.navUrl.indexOf("destination=26.3167%2C127.757") === -1) {
+      throw new Error("Spot nav link mismatch: " + JSON.stringify(spotLinks));
+    }
+    if (spotLinks.infoUrl.indexOf("search/?api=1&query=") === -1) {
+      throw new Error("Spot info link mismatch: " + spotLinks.infoUrl);
+    }
+    if (spotLinks.streetViewUrl.indexOf("map_action=pano") === -1 || spotLinks.streetViewUrl.indexOf("viewpoint=26.3167,127.757") === -1) {
+      throw new Error("Spot streetview link mismatch: " + spotLinks.streetViewUrl);
+    }
+
+    print("ALL GOOGLE MAPS INTEGRATION ASSERTIONS PASSED!");
+    """
+
+    res = subprocess.run([jsc_bin, "-e", test_gmaps_js], cwd=BASE_DIR, capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"  [FAIL] JSC Google Maps Integration Error:\n{res.stderr}\n{res.stdout}")
+        sys.exit(1)
+
+    print("  [PASS] Google Maps Directions URL Scheme (origin, waypoints, destination) verified")
+    print("  [PASS] Google Maps Dynamic Embed URL generation (no key + official API key) verified")
+    print("  [PASS] Spot card 3-action links (📍即時導航, 🔍老饕評價, 🏙️街景預覽) verified")
+
 def main():
     print("==================================================")
     print(" Okinawa 2026 Trip Planner - Automated Verification")
@@ -552,9 +675,10 @@ def main():
     test_css_classes()
     test_jsc_execution()
     test_flight_selector_and_sync()
+    test_google_maps_integration()
 
     print("\n==================================================")
-    print(" ALL 7 TEST SUITES PASSED WITH 100% SUCCESS! ")
+    print(" ALL 8 TEST SUITES PASSED WITH 100% SUCCESS! ")
     print("==================================================")
 
 if __name__ == '__main__':

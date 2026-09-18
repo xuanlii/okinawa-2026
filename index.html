@@ -398,10 +398,24 @@
 
         <!-- Right: Interactive Map Sticky Column -->
         <div class="map-sticky-wrapper" id="map-section">
+          <!-- 🚗 在 Google Maps 開啟當日完整自駕導航 -->
+          <div class="gmaps-day-nav-card" style="margin-bottom:0.75rem;">
+            <a id="btn-open-gmaps-day-nav" href="#" target="_blank" rel="noopener" class="btn-gmaps-primary-nav" aria-label="在 Google Maps 開啟當日完整自駕導航">
+              <span class="gmaps-icon">🚗</span>
+              <div class="gmaps-nav-text">
+                <span class="gmaps-nav-title">在 Google Maps 開啟當日完整自駕導航</span>
+                <span class="gmaps-nav-sub" id="gmaps-day-nav-stops-sub">一鍵串連當日所有中繼景點與終點飯店</span>
+              </div>
+              <span class="gmaps-arrow">↗</span>
+            </a>
+          </div>
+
           <div class="map-card-container">
             <div class="map-card-header">
-              <div class="map-title">
-                <span>🗺️ 沖繩自駕路線地圖</span>
+              <div class="map-title" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                <span>🗺️ Google Maps 沖繩自駕路網</span>
+                <span id="gmaps-mode-badge" class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:var(--radius-full);">Google Maps 嵌入模式</span>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-open-gmap-key-modal" title="設定個人 Google Maps API Key 解鎖路況與衛星圖">🔑 API Key</button>
               </div>
               <div class="map-legend">
                 <span><span class="legend-dot" style="background:#ef4444;"></span>美食</span>
@@ -412,9 +426,12 @@
               </div>
             </div>
 
-            <!-- Leaflet Map Container -->
+            <!-- Google Maps Container -->
             <div class="map-wrapper" style="position: relative;">
-              <div id="map"></div>
+              <div id="map" class="google-map-container">
+                <iframe id="okinawa-gmap-iframe" title="Google Maps Okinawa Directions" class="gmap-embed-iframe" loading="lazy" allowfullscreen src="about:blank"></iframe>
+                <div id="okinawa-gmap-canvas" class="gmap-js-canvas" style="display:none; width:100%; height:100%;"></div>
+              </div>
               <!-- Mobile Map Gesture Protection Overlay -->
               <div class="map-gesture-overlay" id="map-gesture-overlay">
                 <button type="button" class="btn-map-gesture-toggle" id="btn-map-gesture-toggle" aria-label="切換地圖互動模式">
@@ -432,8 +449,12 @@
             </div>
 
             <div class="map-card-footer">
-              <span>💡 提示：點擊圖標可查看亮點並快速導航</span>
-              <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" style="color:var(--primary); font-weight:600;">去趣 App 導航 →</a>
+              <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-traffic" title="切換即時路況圖層 (需 JS API 模式)" style="display:none;">🚦 即時路況</button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-mode" title="在嵌入模式與 JS API 模式間切換">🔄 切換視圖</button>
+                <span>💡 提示：點擊圖標可查看亮點並啟動導航</span>
+              </div>
+              <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" style="color:var(--primary); font-weight:600; font-size:0.8rem;">去趣 App 導航 →</a>
             </div>
           </div>
         </div>
@@ -823,9 +844,12 @@
           <button id="btn-modal-add-to-custom" class="btn btn-primary" style="font-size: 0.85rem;">➕ 加入自訂行程</button>
         </div>
         <button id="modal-copy-mapcode-btn" class="btn btn-secondary" style="font-size: 0.85rem;">📋 複製 MapCode</button>
-        <a id="modal-nav-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🗺️ Google Maps 導航</a>
+        <a id="modal-nav-link" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size: 0.85rem;">📍 即時導航</a>
+        <a id="modal-reviews-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🔍 老饕評價</a>
+        <a id="modal-streetview-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🏙️ 街景實景</a>
       </div>
     </div>
+  </div>
   <!-- ✈️ 航班選擇器彈窗 (Modal & Mobile Bottom Sheet) -->
   <div class="modal-overlay" id="flight-modal-overlay" style="display:none;" aria-hidden="true">
     <div class="modal-dialog modal-dialog-wide flight-modal-sheet" id="flight-modal-sheet" role="dialog" aria-labelledby="flight-modal-title">
@@ -960,6 +984,34 @@
       <span class="mobile-nav-label">去趣 App</span>
     </a>
   </nav>
+
+  <!-- 🔑 Google Maps API Key 設置彈窗 -->
+  <div class="modal-overlay" id="gmap-key-modal" style="display:none;" aria-hidden="true">
+    <div class="modal-dialog" style="max-width:500px;">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size:1.2rem; font-weight:800; margin:0;">🔑 Google Maps API Key 設置</h3>
+          <p style="font-size:0.8rem; color:var(--text-muted); margin:0.2rem 0 0;">解鎖 Google Maps JavaScript API 原生路況、衛星與街景</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-gmap-key-modal" aria-label="關閉">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;">
+        <p style="font-size:0.875rem; color:var(--text-main); line-height:1.6; margin-top:0;">
+          網站預設提供<strong>免 Key 動態 Google Maps 嵌入模式</strong>，已具備完整自駕路線與多站視圖。<br>
+          若您擁有 Google Cloud <strong>Google Maps API Key</strong>，填寫後可解鎖<strong>原生多站圖釘、路況圖層 (TrafficLayer)、衛星空照圖與街景</strong>！
+        </p>
+        <div style="margin:1rem 0;">
+          <label for="input-gmap-api-key" style="display:block; font-size:0.85rem; font-weight:700; margin-bottom:0.4rem; color:var(--text-main);">Google Maps API Key：</label>
+          <input type="text" id="input-gmap-api-key" class="form-control" placeholder="AIzaSy..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:monospace; font-size:0.9rem; background:var(--bg-surface); color:var(--text-main);">
+          <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.3rem;">金鑰僅儲存在您的瀏覽器本機 (localStorage)，安全無虞。</span>
+        </div>
+        <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1.25rem;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-gmap-key">清除金鑰</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-save-gmap-key">儲存並套用</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ==========================================================================
        Site Footer

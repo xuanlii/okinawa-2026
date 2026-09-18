@@ -431,7 +431,14 @@ document.addEventListener('DOMContentLoaded', () => {
     plannerData: getInitialPlannerData(),
     selectedFlightId: safeStorageGet('okinawa_selected_flight', (typeof DEFAULT_OKINAWA_FLIGHT_ID !== 'undefined' ? DEFAULT_OKINAWA_FLIGHT_ID : 'ci-oka-morning-roundtrip')),
     customFlightData: JSON.parse(safeStorageGet('okinawa_custom_flight_data', 'null')),
-    flightFilter: 'all'
+    flightFilter: 'all',
+    gmapMode: safeStorageGet('okinawa_gmap_mode', 'embed'),
+    gmapApiKey: safeStorageGet('google_maps_api_key', ''),
+    googleMap: null,
+    googleMarkers: [],
+    googlePolyline: null,
+    googleTrafficLayer: null,
+    googleTrafficEnabled: false
   };
 
   function savePlannerData() {
@@ -1125,6 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const isFav = state.favorites.includes(item.id);
       const isLast = index === filtered.length - 1;
       const nextItem = filtered[index + 1];
+      const itemGmapLinks = getSpotGmapLinks(item);
 
       // Accurate Haversine Transit calculation
       let transitHtml = '';
@@ -1194,6 +1202,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 </a>
               </div>
             </div>
+
+            <!-- Google Maps 三合一導航與資訊整合操作列 -->
+            <div class="spot-gmap-actions-bar">
+              <a href="${itemGmapLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
+                <span class="btn-gmap-icon">📍</span>
+                <span>即時導航</span>
+              </a>
+              <a href="${itemGmapLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與老饕評價">
+                <span class="btn-gmap-icon">🔍</span>
+                <span>老饕評價</span>
+              </a>
+              <a href="${itemGmapLinks.streetViewUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-streetview" title="開啟 Google Maps 街景實景 360° 預覽">
+                <span class="btn-gmap-icon">🏙️</span>
+                <span>街景預覽</span>
+              </a>
+            </div>
           </div>
           ${transitHtml}
         </div>
@@ -1262,33 +1286,199 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
-     Leaflet Map System
+     Google Maps 全方位自駕路網與雙模地圖 (Google Maps Embed & JS API System)
      ========================================================================== */
   let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
 
+  function getSpotGmapLinks(itemOrSpot) {
+    if (!itemOrSpot) {
+      return {
+        navUrl: 'https://www.google.com/maps',
+        infoUrl: 'https://www.google.com/maps',
+        streetViewUrl: 'https://www.google.com/maps',
+        hasCoords: false,
+        lat: null,
+        lng: null,
+        nameZh: '沖繩景點'
+      };
+    }
+    const spotMeta = (typeof findCatalogSpot === 'function' ? findCatalogSpot(itemOrSpot.id || itemOrSpot.spotId) : null) || itemOrSpot.spotData || itemOrSpot;
+    const lat = typeof itemOrSpot.lat === 'number' ? itemOrSpot.lat : (typeof spotMeta.lat === 'number' ? spotMeta.lat : null);
+    const lng = typeof itemOrSpot.lng === 'number' ? itemOrSpot.lng : (typeof spotMeta.lng === 'number' ? spotMeta.lng : null);
+    const nameZh = itemOrSpot.nameZh || spotMeta.nameZh || itemOrSpot.name || '沖繩景點';
+    const nameJa = spotMeta.nameJa || itemOrSpot.nameJa || '';
+    const address = spotMeta.address || itemOrSpot.address || '';
+
+    const hasCoords = (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng));
+    const coordStr = hasCoords ? `${lat},${lng}` : '';
+
+    // 1. 📍 Google Maps 即時導航
+    const navUrl = hasCoords
+      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(coordStr)}&travelmode=driving`
+      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nameZh)}&travelmode=driving`;
+
+    // 2. 🔍 Google Maps 地點資訊與老饕評價
+    const queryParts = [nameZh, nameJa, address].filter(Boolean);
+    const infoQuery = queryParts.length > 0 ? queryParts.join(' ') : nameZh;
+    const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(infoQuery)}`;
+
+    // 3. 🏙️ Google Maps 街景實景預覽
+    const streetViewUrl = hasCoords
+      ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${coordStr}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(nameZh)}`;
+
+    return { navUrl, infoUrl, streetViewUrl, hasCoords, lat, lng, nameZh };
+  }
+
+  function buildGoogleMapsDayNavUrl(stops) {
+    if (!stops || stops.length === 0) {
+      return 'https://www.google.com/maps';
+    }
+    const validStops = stops.filter(s => {
+      const lat = typeof s.lat === 'number' ? s.lat : (s.spotData && s.spotData.lat);
+      const lng = typeof s.lng === 'number' ? s.lng : (s.spotData && s.spotData.lng);
+      return typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng);
+    });
+
+    if (validStops.length === 0) {
+      return 'https://www.google.com/maps';
+    }
+
+    const getCoord = (s) => {
+      const lat = typeof s.lat === 'number' ? s.lat : (s.spotData && s.spotData.lat);
+      const lng = typeof s.lng === 'number' ? s.lng : (s.spotData && s.spotData.lng);
+      return `${lat},${lng}`;
+    };
+
+    if (validStops.length === 1) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(getCoord(validStops[0]))}&travelmode=driving`;
+    }
+
+    const origin = getCoord(validStops[0]);
+    const destination = getCoord(validStops[validStops.length - 1]);
+
+    if (validStops.length === 2) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    }
+
+    // 中繼站點以 | 連接
+    const waypoints = validStops.slice(1, -1).map(getCoord).join('|');
+    return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=driving`;
+  }
+
+  function buildGoogleMapsEmbedUrl(stops, apiKey) {
+    const defaultCenter = { lat: 26.3, lng: 127.8 };
+    if (!stops || stops.length === 0) {
+      return `https://maps.google.com/maps?q=${defaultCenter.lat},${defaultCenter.lng}&z=10&hl=zh-TW&output=embed`;
+    }
+
+    const validStops = stops.filter(s => {
+      const lat = typeof s.lat === 'number' ? s.lat : (s.spotData && s.spotData.lat);
+      const lng = typeof s.lng === 'number' ? s.lng : (s.spotData && s.spotData.lng);
+      return typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng);
+    });
+
+    if (validStops.length === 0) {
+      return `https://maps.google.com/maps?q=${defaultCenter.lat},${defaultCenter.lng}&z=10&hl=zh-TW&output=embed`;
+    }
+
+    const getCoord = (s) => {
+      const lat = typeof s.lat === 'number' ? s.lat : (s.spotData && s.spotData.lat);
+      const lng = typeof s.lng === 'number' ? s.lng : (s.spotData && s.spotData.lng);
+      return `${lat},${lng}`;
+    };
+
+    if (validStops.length === 1) {
+      const s0 = validStops[0];
+      const name = s0.nameZh || s0.name || (s0.spotData && (s0.spotData.nameZh || s0.spotData.name)) || '';
+      return `https://maps.google.com/maps?q=${getCoord(s0)}+(${encodeURIComponent(name)})&z=13&hl=zh-TW&output=embed`;
+    }
+
+    // 若使用者設定了個人 API Key，優先啟用 Google Embed API 官方自駕路線
+    if (apiKey) {
+      const origin = getCoord(validStops[0]);
+      const destination = getCoord(validStops[validStops.length - 1]);
+      const waypoints = validStops.slice(1, -1).map(getCoord).join('|');
+      let url = `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(apiKey)}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=driving&language=zh-TW`;
+      if (waypoints) {
+        url += `&waypoints=${encodeURIComponent(waypoints)}`;
+      }
+      return url;
+    }
+
+    // 免 API Key 動態 Google Maps 路線嵌入模式
+    const origin = getCoord(validStops[0]);
+    const destParts = [];
+    for (let i = 1; i < validStops.length; i++) {
+      destParts.push(getCoord(validStops[i]));
+    }
+    const daddr = destParts.join('+to:');
+    return `https://maps.google.com/maps?saddr=${origin}&daddr=${daddr}&hl=zh-TW&output=embed`;
+  }
+
+  function updateGoogleMapsDayNavBtn(validStops) {
+    const navBtn = document.getElementById('btn-open-gmaps-day-nav');
+    const subText = document.getElementById('gmaps-day-nav-stops-sub');
+    if (!navBtn) return;
+
+    if (!validStops || validStops.length === 0) {
+      navBtn.href = 'https://www.google.com/maps';
+      if (subText) subText.textContent = '本日尚無排定景點';
+      return;
+    }
+
+    navBtn.href = buildGoogleMapsDayNavUrl(validStops);
+
+    if (subText) {
+      if (validStops.length === 1) {
+        subText.textContent = `單站直達：${escapeHtml(validStops[0].nameZh || validStops[0].name || '景點')}`;
+      } else {
+        const first = validStops[0].nameZh || validStops[0].name || '出發點';
+        const last = validStops[validStops.length - 1].nameZh || validStops[validStops.length - 1].name || '終點';
+        const intermediateCount = Math.max(0, validStops.length - 2);
+        subText.textContent = intermediateCount > 0 
+          ? `共 ${validStops.length} 站：${escapeHtml(first)} ➔ 途經 ${intermediateCount} 處中繼站 ➔ ${escapeHtml(last)}`
+          : `起迄 2 站：${escapeHtml(first)} ➔ ${escapeHtml(last)}`;
+      }
+    }
+  }
+
   function syncMapGestureState() {
     const btn = document.getElementById('btn-map-gesture-toggle');
-    if (!state.map) return;
+    const iframe = document.getElementById('okinawa-gmap-iframe');
+    const canvas = document.getElementById('okinawa-gmap-canvas');
 
-    if (window.innerWidth > 768) {
-      state.map.dragging.enable();
-      if (state.map.touchZoom) state.map.touchZoom.enable();
+    if (typeof window !== 'undefined' && window.innerWidth > 768) {
+      if (iframe) iframe.style.pointerEvents = 'auto';
+      if (canvas) canvas.style.pointerEvents = 'auto';
       if (btn) btn.style.display = 'none';
+      if (state.map && state.map.dragging) {
+        state.map.dragging.enable();
+        if (state.map.touchZoom) state.map.touchZoom.enable();
+      }
       return;
     }
 
     if (btn) btn.style.display = 'flex';
 
     if (mapGestureLocked) {
-      state.map.dragging.disable();
-      if (state.map.touchZoom) state.map.touchZoom.disable();
+      if (iframe) iframe.style.pointerEvents = 'none';
+      if (canvas) canvas.style.pointerEvents = 'none';
+      if (state.map && state.map.dragging) {
+        state.map.dragging.disable();
+        if (state.map.touchZoom) state.map.touchZoom.disable();
+      }
       if (btn) {
         btn.classList.remove('unlocked');
         btn.innerHTML = `<span class="gesture-icon">🔒</span><span class="gesture-text">地圖已鎖定（滑動不卡手）· 點擊啟用互動</span>`;
       }
     } else {
-      state.map.dragging.enable();
-      if (state.map.touchZoom) state.map.touchZoom.enable();
+      if (iframe) iframe.style.pointerEvents = 'auto';
+      if (canvas) canvas.style.pointerEvents = 'auto';
+      if (state.map && state.map.dragging) {
+        state.map.dragging.enable();
+        if (state.map.touchZoom) state.map.touchZoom.enable();
+      }
       if (btn) {
         btn.classList.add('unlocked');
         btn.innerHTML = `<span class="gesture-icon">🔓</span><span class="gesture-text">地圖互動中 · 點擊鎖定（恢復順暢滑動）</span>`;
@@ -1296,62 +1486,342 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function initMap() {
+  function initGoogleMap() {
     const mapContainer = document.getElementById('map');
     if (!mapContainer) return;
 
-    if (typeof L === 'undefined') {
-      renderMapOfflineFallback(mapContainer);
-      return;
+    const gestureBtn = document.getElementById('btn-map-gesture-toggle');
+    if (gestureBtn) {
+      gestureBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mapGestureLocked = !mapGestureLocked;
+        syncMapGestureState();
+      });
     }
 
-    try {
-      state.map = L.map('map', {
-        center: [26.2124, 127.6809],
-        zoom: 11,
-        zoomControl: true,
-        scrollWheelZoom: false
+    // 視圖切換 (Embed 路線 vs JS API)
+    const modeBtn = document.getElementById('btn-toggle-gmap-mode');
+    if (modeBtn) {
+      modeBtn.addEventListener('click', () => {
+        if (state.gmapMode === 'embed') {
+          if (!state.gmapApiKey) {
+            openGmapKeyModal('您目前尚未設置 Google Maps API Key。輸入金鑰即可啟用原生 JS API 模式與即時路況圖層！');
+            return;
+          }
+          state.gmapMode = 'js';
+        } else {
+          state.gmapMode = 'embed';
+        }
+        safeStorageSet('okinawa_gmap_mode', state.gmapMode);
+        if (state.itineraryMode === 'planner') {
+          const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+          updatePlannerMapMarkers(timeline.computedStops);
+        } else {
+          updateMapMarkers();
+        }
+        showToast(state.gmapMode === 'js' ? '已切換至 Google Maps JS API 模式' : '已切換至 Google Maps 嵌入模式');
       });
+    }
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 19
-      }).addTo(state.map);
+    // 即時路況切換按鈕
+    const trafficBtn = document.getElementById('btn-toggle-gmap-traffic');
+    if (trafficBtn) {
+      trafficBtn.addEventListener('click', () => {
+        if (!state.googleMap || typeof google === 'undefined' || !google.maps) {
+          showToast('即時路況僅支援 Google Maps JS API 模式');
+          return;
+        }
+        state.googleTrafficEnabled = !state.googleTrafficEnabled;
+        if (!state.googleTrafficLayer) {
+          state.googleTrafficLayer = new google.maps.TrafficLayer();
+        }
+        state.googleTrafficLayer.setMap(state.googleTrafficEnabled ? state.googleMap : null);
+        trafficBtn.classList.toggle('active', state.googleTrafficEnabled);
+        trafficBtn.textContent = state.googleTrafficEnabled ? '🚦 路況開啟中' : '🚦 即時路況';
+        showToast(state.googleTrafficEnabled ? '已開啟 Google Maps 即時路況圖層' : '已關閉即時路況圖層');
+      });
+    }
 
-      const gestureBtn = document.getElementById('btn-map-gesture-toggle');
-      if (gestureBtn) {
-        gestureBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          mapGestureLocked = !mapGestureLocked;
-          syncMapGestureState();
-        });
-      }
-
-      syncMapGestureState();
+    initGmapKeyModal();
+    syncMapGestureState();
+    if (typeof window !== 'undefined') {
       window.addEventListener('resize', syncMapGestureState);
+    }
 
-      updateMapMarkers();
-    } catch (e) {
-      if (typeof console !== 'undefined' && console.error) {
-        console.error('Leaflet initialization failed', e);
-      }
-      renderMapOfflineFallback(mapContainer);
+    // 嘗試初始化 Google Maps JS SDK (若有儲存金鑰)
+    if (state.gmapApiKey && state.gmapMode === 'js') {
+      loadGoogleMapsJsApi(state.gmapApiKey);
+    }
+
+    updateMapMarkers();
+  }
+
+  function initMap() {
+    initGoogleMap();
+  }
+
+  function initGmapKeyModal() {
+    const modal = document.getElementById('gmap-key-modal');
+    const openBtn = document.getElementById('btn-open-gmap-key-modal');
+    const closeBtn = document.getElementById('btn-close-gmap-key-modal');
+    const saveBtn = document.getElementById('btn-save-gmap-key');
+    const clearBtn = document.getElementById('btn-clear-gmap-key');
+    const keyInput = document.getElementById('input-gmap-api-key');
+    if (!modal) return;
+
+    if (openBtn) {
+      openBtn.addEventListener('click', () => {
+        if (keyInput) keyInput.value = state.gmapApiKey || '';
+        modal.style.display = 'flex';
+        modal.classList.add('open');
+      });
+    }
+
+    const closeModal = () => {
+      modal.classList.remove('open');
+      modal.style.display = 'none';
+    };
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const key = (keyInput ? keyInput.value.trim() : '');
+        if (!key) {
+          alert('請輸入有效的 Google Maps API Key');
+          return;
+        }
+        state.gmapApiKey = key;
+        state.gmapMode = 'js';
+        safeStorageSet('google_maps_api_key', key);
+        safeStorageSet('okinawa_gmap_mode', 'js');
+        loadGoogleMapsJsApi(key);
+        closeModal();
+        if (state.itineraryMode === 'planner') {
+          const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+          updatePlannerMapMarkers(timeline.computedStops);
+        } else {
+          updateMapMarkers();
+        }
+        showToast('Google Maps API Key 已成功儲存並套用！');
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        state.gmapApiKey = '';
+        state.gmapMode = 'embed';
+        safeStorageSet('google_maps_api_key', '');
+        safeStorageSet('okinawa_gmap_mode', 'embed');
+        if (keyInput) keyInput.value = '';
+        closeModal();
+        if (state.itineraryMode === 'planner') {
+          const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+          updatePlannerMapMarkers(timeline.computedStops);
+        } else {
+          updateMapMarkers();
+        }
+        showToast('已清除 API Key，已切換回免 Key 嵌入模式');
+      });
     }
   }
 
-  function renderMapOfflineFallback(container) {
-    container.innerHTML = `
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 2rem; text-align: center; background: var(--bg-surface);">
-        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🗺️</div>
-        <h4 style="font-size: 1.1rem; margin-bottom: 0.35rem;">地圖正在離線待命</h4>
-        <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 280px; line-height: 1.5;">
-          若尚未載入 OpenStreetMap 圖資，您仍可點擊左側列表的「查看攻略」或「Google Maps 導航」按鈕直接啟動手機導航。
-        </p>
-      </div>
-    `;
+  function openGmapKeyModal(msg) {
+    const modal = document.getElementById('gmap-key-modal');
+    const keyInput = document.getElementById('input-gmap-api-key');
+    if (modal) {
+      if (keyInput) keyInput.value = state.gmapApiKey || '';
+      modal.style.display = 'flex';
+      modal.classList.add('open');
+      if (msg) showToast(msg);
+    }
+  }
+
+  function loadGoogleMapsJsApi(apiKey) {
+    if (typeof window === 'undefined') return;
+    if (typeof google !== 'undefined' && google.maps) {
+      ensureGoogleMapCanvasReady();
+      return;
+    }
+    if (document.querySelector('#google-maps-js-sdk')) return;
+
+    const script = document.createElement('script');
+    script.id = 'google-maps-js-sdk';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places,geometry`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      ensureGoogleMapCanvasReady();
+      if (state.itineraryMode === 'planner') {
+        const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+        updatePlannerMapMarkers(timeline.computedStops);
+      } else {
+        updateMapMarkers();
+      }
+    };
+    script.onerror = () => {
+      console.warn('Google Maps JS API 載入失敗，降級至嵌入模式');
+      state.gmapMode = 'embed';
+      if (state.itineraryMode === 'planner') {
+        const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+        updatePlannerMapMarkers(timeline.computedStops);
+      } else {
+        updateMapMarkers();
+      }
+    };
+    document.head.appendChild(script);
+  }
+
+  function ensureGoogleMapCanvasReady() {
+    const canvas = document.getElementById('okinawa-gmap-canvas');
+    if (!canvas || typeof google === 'undefined' || !google.maps) return;
+    if (!state.googleMap) {
+      state.googleMap = new google.maps.Map(canvas, {
+        center: { lat: 26.3, lng: 127.8 },
+        zoom: 10,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: false,
+        zoomControl: true
+      });
+    }
+  }
+
+  function updateGoogleMapsView(stops) {
+    const validStops = (stops || []).filter(s => {
+      const lat = typeof s.lat === 'number' ? s.lat : (s.spotData && s.spotData.lat);
+      const lng = typeof s.lng === 'number' ? s.lng : (s.spotData && s.spotData.lng);
+      return typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng);
+    });
+
+    const iframe = document.getElementById('okinawa-gmap-iframe');
+    const canvas = document.getElementById('okinawa-gmap-canvas');
+    const modeBadge = document.getElementById('gmaps-mode-badge');
+    const trafficBtn = document.getElementById('btn-toggle-gmap-traffic');
+
+    if (state.gmapMode === 'js' && state.gmapApiKey && typeof google !== 'undefined' && google.maps) {
+      if (iframe) iframe.style.display = 'none';
+      if (canvas) canvas.style.display = 'block';
+      if (modeBadge) {
+        modeBadge.textContent = 'Google Maps JS API 模式';
+        modeBadge.style.background = '#dcfce7';
+        modeBadge.style.color = '#15803d';
+      }
+      if (trafficBtn) trafficBtn.style.display = 'inline-block';
+
+      renderGoogleMapsJsRoute(validStops);
+    } else {
+      if (canvas) canvas.style.display = 'none';
+      if (iframe) {
+        iframe.style.display = 'block';
+        const embedUrl = buildGoogleMapsEmbedUrl(validStops, state.gmapApiKey);
+        if (iframe.src !== embedUrl) {
+          iframe.src = embedUrl;
+        }
+      }
+      if (modeBadge) {
+        modeBadge.textContent = 'Google Maps 嵌入模式';
+        modeBadge.style.background = '#e0f2fe';
+        modeBadge.style.color = '#0284c7';
+      }
+      if (trafficBtn) trafficBtn.style.display = 'none';
+    }
+  }
+
+  function renderGoogleMapsJsRoute(validStops) {
+    if (!state.googleMap || typeof google === 'undefined' || !google.maps) return;
+
+    state.googleMarkers.forEach(m => m.setMap(null));
+    state.googleMarkers = [];
+    if (state.googlePolyline) {
+      state.googlePolyline.setMap(null);
+      state.googlePolyline = null;
+    }
+
+    if (validStops.length === 0) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    const pathCoords = [];
+
+    validStops.forEach((stop, idx) => {
+      const lat = typeof stop.lat === 'number' ? stop.lat : (stop.spotData && stop.spotData.lat);
+      const lng = typeof stop.lng === 'number' ? stop.lng : (stop.spotData && stop.spotData.lng);
+      const pos = { lat, lng };
+      bounds.extend(pos);
+      pathCoords.push(pos);
+
+      const gLinks = getSpotGmapLinks(stop);
+      const nameZh = stop.nameZh || stop.name || '景點';
+
+      const marker = new google.maps.Marker({
+        position: pos,
+        map: state.googleMap,
+        title: nameZh,
+        label: {
+          text: String(idx + 1),
+          color: '#ffffff',
+          fontWeight: 'bold',
+          fontSize: '12px'
+        },
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 14,
+          fillColor: '#0284c7',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2
+        }
+      });
+
+      const infoContent = `
+        <div style="font-family:sans-serif; min-width:200px; padding:4px;">
+          <div style="font-weight:800; font-size:14px; margin-bottom:4px; color:#0f172a;">${idx + 1}. ${escapeHtml(nameZh)}</div>
+          <div style="font-size:12px; color:#64748b; margin-bottom:8px;">${stop.time ? `抵達：${stop.time} | ` : ''}MC: ${escapeHtml(stop.mapCode || '無')}</div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <a href="${gLinks.navUrl}" target="_blank" rel="noopener" style="color:#0284c7; font-size:12px; font-weight:700; text-decoration:none;">📍 即時導航 ↗</a>
+            <a href="${gLinks.infoUrl}" target="_blank" rel="noopener" style="color:#1d4ed8; font-size:12px; font-weight:700; text-decoration:none;">🔍 地點資訊與評價 ↗</a>
+            <a href="${gLinks.streetViewUrl}" target="_blank" rel="noopener" style="color:#7e22ce; font-size:12px; font-weight:700; text-decoration:none;">🏙️ 街景實景預覽 ↗</a>
+          </div>
+        </div>
+      `;
+
+      const infoWindow = new google.maps.InfoWindow({ content: infoContent });
+      marker.addListener('click', () => {
+        infoWindow.open(state.googleMap, marker);
+      });
+
+      state.googleMarkers.push(marker);
+    });
+
+    if (pathCoords.length > 1) {
+      state.googlePolyline = new google.maps.Polyline({
+        path: pathCoords,
+        geodesic: true,
+        strokeColor: '#0284c7',
+        strokeOpacity: 0.85,
+        strokeWeight: 4
+      });
+      state.googlePolyline.setMap(state.googleMap);
+      state.googleMap.fitBounds(bounds);
+    } else if (pathCoords.length === 1) {
+      state.googleMap.setCenter(pathCoords[0]);
+      state.googleMap.setZoom(13);
+    }
   }
 
   function updateMapMarkers() {
+    const filtered = getFilteredItems();
+    renderMapSpotsScroller();
+
+    // 1. 更新「🚗 在 Google Maps 開啟當日完整自駕導航」操作鈕
+    updateGoogleMapsDayNavBtn(filtered);
+
+    // 2. 更新 Google Maps 視圖 (Embed 或 JS API)
+    updateGoogleMapsView(filtered);
+
     if (!state.map) return;
 
     // Clear existing official markers & polyline
@@ -1371,9 +1841,6 @@ document.addEventListener('DOMContentLoaded', () => {
       state.map.removeLayer(state.plannerPolyline);
       state.plannerPolyline = null;
     }
-
-    const filtered = getFilteredItems();
-    renderMapSpotsScroller();
 
     if (filtered.length === 0) return;
 
@@ -1454,6 +1921,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updatePlannerMapMarkers(computedStops) {
+    // 1. 更新「🚗 在 Google Maps 開啟當日完整自駕導航」操作鈕
+    updateGoogleMapsDayNavBtn(computedStops);
+
+    // 2. 更新 Google Maps 視圖 (Embed 或 JS API)
+    updateGoogleMapsView(computedStops);
+
     if (!state.map) return;
 
     // Clear official markers & polylines
@@ -1863,6 +2336,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Generation highlights
           const genCardsHtml = renderGenerationCardHtml(stop.generation);
+          const stopGLinks = getSpotGmapLinks(stop);
 
           // Duration options
           const durations = [15, 30, 45, 60, 90, 120, 150, 180, 240];
@@ -1889,10 +2363,10 @@ document.addEventListener('DOMContentLoaded', () => {
                       </select>
                       <button type="button" class="btn-stop-dur-step btn-stop-dur-plus" data-index="${idx}" title="增加15分鐘" aria-label="增加15分鐘">＋</button>
                     </div>
-                    ${days.length > 1 ? `
-                      <select class="stop-move-day-select" data-index="${idx}" title="將此景點移動至其他天">
-                        <option value="">移至其他天...</option>
-                        ${days.map((d, dIdx) => dIdx !== state.plannerData.activeDayIndex ? `<option value="${dIdx}">移至 Day ${d.day}</option>` : '').join('')}
+                    ${state.plannerData.days.length > 1 ? `
+                      <select class="stop-move-day-select" data-index="${idx}" title="移動此站點至其他天數">
+                        <option value="" disabled selected>移至天數...</option>
+                        ${state.plannerData.days.map((d, dIdx) => dIdx !== state.plannerData.activeDayIndex ? `<option value="${dIdx}">移至 Day ${dIdx + 1}</option>` : '').join('')}
                       </select>
                     ` : ''}
                   </div>
@@ -1926,6 +2400,22 @@ document.addEventListener('DOMContentLoaded', () => {
                       <span>🗺️ 導航</span>
                     </a>
                   </div>
+                </div>
+
+                <!-- Google Maps 三合一導航與資訊整合操作列 -->
+                <div class="spot-gmap-actions-bar">
+                  <a href="${stopGLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
+                    <span class="btn-gmap-icon">📍</span>
+                    <span>即時導航</span>
+                  </a>
+                  <a href="${stopGLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與評價">
+                    <span class="btn-gmap-icon">🔍</span>
+                    <span>老饕評價</span>
+                  </a>
+                  <a href="${stopGLinks.streetViewUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-streetview" title="開啟 Google Maps 街景實景 360° 預覽">
+                    <span class="btn-gmap-icon">🏙️</span>
+                    <span>街景預覽</span>
+                  </a>
                 </div>
               </div>
             </div>
@@ -2635,7 +3125,13 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    document.getElementById('modal-nav-link').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.nameZh || item.name)}`;
+    const gLinks = getSpotGmapLinks(item);
+    const navLink = document.getElementById('modal-nav-link');
+    const reviewsLink = document.getElementById('modal-reviews-link');
+    const streetviewLink = document.getElementById('modal-streetview-link');
+    if (navLink) navLink.href = gLinks.navUrl;
+    if (reviewsLink) reviewsLink.href = gLinks.infoUrl;
+    if (streetviewLink) streetviewLink.href = gLinks.streetViewUrl;
 
     const copyBtn = document.getElementById('modal-copy-mapcode-btn');
     if (copyBtn) {
@@ -2720,10 +3216,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const marker = state.markerMap.get(itemId);
-    if (state.map) {
+    if (state.googleMap && typeof google !== 'undefined' && google.maps) {
+      state.googleMap.setCenter({ lat: item.lat, lng: item.lng });
+      state.googleMap.setZoom(15);
+    } else if (state.map) {
       state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 15), { animate: true });
       if (marker) {
         setTimeout(() => marker.openPopup(), 150);
+      }
+    } else {
+      const iframe = document.getElementById('okinawa-gmap-iframe');
+      if (iframe && state.gmapMode === 'embed' && item.lat && item.lng) {
+        iframe.src = `https://maps.google.com/maps?q=${item.lat},${item.lng}+(${encodeURIComponent(item.nameZh || item.name)})&z=15&hl=zh-TW&output=embed`;
       }
     }
 
@@ -3577,6 +4081,13 @@ document.addEventListener('DOMContentLoaded', () => {
     addSpotToCurrentPlannerDay,
     getSelectedFlight,
     syncFlightToItinerary,
+    buildGoogleMapsDayNavUrl,
+    buildGoogleMapsEmbedUrl,
+    getSpotGmapLinks,
+    updateGoogleMapsDayNavBtn,
+    updateGoogleMapsView,
+    initGoogleMap,
     state
   };
+  window.OKINAWA_GMAPS = window.__okinawaApp__;
 });

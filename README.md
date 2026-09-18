@@ -51,10 +51,18 @@
   4. 🛍️ **分流放風不走散**：商場設定明確集合點（如 Starbucks 或服務台），長輩喝茶年輕人衝刺。
   5. 📸 **美拍耐心券**：年輕人幫長輩拍大方紀念照，長輩體諒年輕人打卡構圖，互敬互重。
 
-### 4. 🗺️ 互動式路線地圖 (Leaflet Map)
-- 支援官方行程圖標展示與自訂客製路徑模式。
-- 自訂行程模式下自動產生編號路標（1, 2, 3...）並繪製連線軌跡，全景自動對焦（fitBounds）。
-- 整合日本車機 MapCode 一鍵複製與 Google Maps 外部即時導航跳轉。
+### 4. 🗺️ Google Maps 全方位自駕路網與雙模地圖 (Google Maps System)
+- 🚗 **「在 Google Maps 開啟當日完整自駕導航」一鍵啟動**：
+  - 依當日排定之中繼站點即時動態生成 Google Maps 官方自駕 Directions URL Scheme（起點 ➔ 中繼景點 1 ➔ 中繼景點 2... ➔ 終點飯店）。
+  - 單鍵點擊即喚醒手機端 Google Maps App 或桌面版多站導航。
+- 🔄 **Google Maps 雙模式架構**：
+  - **免 Key 動態嵌入模式 (Embed Mode)**：無需任何 API 金鑰，自駕路線與多站中繼點動態即時計算並無縫呈現。
+  - **原生 JS API 模式 (Google Maps JavaScript API Mode)**：提供專屬 API Key 彈窗，輸入金鑰後解鎖原生多站彩色圖釘 Marker、資訊視窗 InfoWindow、即時路況圖層 (TrafficLayer)、衛星空照圖與 360° 街景視圖。
+- 📍 **景點卡片與彈窗 3 大 Google Maps 專屬快捷操作**：
+  - 📍 **即時導航**：單點直達 Google Maps 導航模式。
+  - 🔍 **老饕評價**：自動帶入中日雙語關鍵字與地址，一鍵查閱 Google 地點評價、營業時間與人氣照片。
+  - 🏙️ **街景預覽**：精確座標喚起 Google Maps 360° 街景實景全景視圖，行前確認停車場入口與周邊街廓。
+- 📱 **行動端手勢防誤觸鎖定 (Map Gesture Lock)**：手機版瀏覽時預設鎖定滾輪與拖曳防誤觸，點擊解除鎖定即可流暢放大縮小。
 
 ### 5. 🧰 旅行隨身工具箱 (Travel Toolkit)
 - 🎒 **智慧行李清單 (Packing Checklist)**：分類勾選、進度條、自訂新增項目。
