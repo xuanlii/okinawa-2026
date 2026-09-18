@@ -3521,6 +3521,10 @@ const PRESET_ITINERARIES = {
   }
 };
 
+PRESET_ITINERARIES.senior_5d = PRESET_ITINERARIES.senior_3d;
+PRESET_ITINERARIES.young_5d = PRESET_ITINERARIES.young_3d;
+PRESET_ITINERARIES.cross_5d = PRESET_ITINERARIES.cross_2d;
+
 // ============================================================================
 // CROSS-GENERATION ROAD TRIP TRAVEL GUIDELINES
 // ============================================================================

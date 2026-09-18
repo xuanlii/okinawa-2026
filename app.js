@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.days) && parsed.days.length > 0) {
+        if (parsed && Array.isArray(parsed.days) && parsed.days.length >= 5) {
           return parsed;
         }
       } catch (e) {
