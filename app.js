@@ -1,5 +1,6 @@
 /**
  * 2026/12 沖繩 5天4夜自駕行程 - 主應用邏輯
+ * 具備自由客製組合行程、車程時間自動計算、雙世代需求（40~60歲熟齡 vs 25~35歲年輕）深度適配
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -76,10 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
-     Accurate Geodesic Haversine Distance Calculation
+     Accurate Geodesic Haversine Distance & Transit Engine for Okinawa
      ========================================================================== */
   function calcDistanceKm(lat1, lon1, lat2, lon2) {
-    const R = 6371; // km
+    const R = 6371; // Earth radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -89,33 +90,350 @@ document.addEventListener('DOMContentLoaded', () => {
     return R * c;
   }
 
-  function formatTransitInfo(fromItem, toItem) {
-    const dist = calcDistanceKm(fromItem.lat, fromItem.lng, toItem.lat, toItem.lng);
-    if (dist < 0.8) {
-      const meters = Math.max(50, Math.round(dist * 1000));
-      const mins = Math.max(1, Math.round(meters / 75));
-      return `🚶 步行約 ${meters} 公尺 (約 ${mins} 分鐘)`;
+  /**
+   * Calculates realistic Okinawa transit distance and driving duration
+   * Accounts for island winding coastal roads (1.28x factor), downtown Naha vs outer island speeds,
+   * walking mode for short distances (<0.8km), and terminal parking buffer.
+   */
+  function calculateTransit(fromItem, toItem) {
+    if (!fromItem || !toItem || typeof fromItem.lat !== 'number' || typeof toItem.lat !== 'number') {
+      return { distanceKm: 0, durationMins: 0, isWalk: false, text: '無交通數據' };
     }
-    const estMins = Math.max(4, Math.round(dist * 2.2));
-    return `🚗 車程約 ${dist.toFixed(1)} 公里 (預估 ${estMins} 分鐘)`;
+
+    const straightDist = calcDistanceKm(fromItem.lat, fromItem.lng, toItem.lat, toItem.lng);
+
+    // Identical location or same venue within 80m
+    if (straightDist < 0.08 || (fromItem.nameZh && fromItem.nameZh === toItem.nameZh) || (fromItem.id && fromItem.id === toItem.id)) {
+      return {
+        distanceKm: 0,
+        durationMins: 0,
+        isWalk: true,
+        text: '🚶 同地點 / 步行即達 (約 0~2 分鐘)'
+      };
+    }
+
+    // Island terrain winding factor (coastal highways & city grids): 1.28x
+    const roadDist = straightDist * 1.28;
+
+    // Short distance (< 800m) is walking
+    if (roadDist < 0.8) {
+      const meters = Math.max(50, Math.round(roadDist * 1000));
+      const mins = Math.max(1, Math.round(meters / 75)); // 4.5 km/h = 75 m/min
+      return {
+        distanceKm: Number(roadDist.toFixed(2)),
+        durationMins: mins,
+        isWalk: true,
+        text: `🚶 步行約 ${meters} 公尺 (約 ${mins} 分鐘)`
+      };
+    }
+
+    // Driving speed profile:
+    // Downtown Naha (26.18~26.25 Lat, 127.65~127.72 Lng) has heavy traffic: ~26 km/h
+    // Central/Northern coastal highways: ~38 km/h
+    const inNaha = (fromItem.lat >= 26.18 && fromItem.lat <= 26.25 && fromItem.lng >= 127.65 && fromItem.lng <= 127.72) ||
+                   (toItem.lat >= 26.18 && toItem.lat <= 26.25 && toItem.lng >= 127.65 && toItem.lng <= 127.72);
+    const avgSpeed = inNaha ? 26 : 38;
+    // 3 minutes parking/intersection buffer
+    const estMins = Math.max(4, Math.round(3 + (roadDist / avgSpeed) * 60));
+
+    return {
+      distanceKm: Number(roadDist.toFixed(1)),
+      durationMins: estMins,
+      isWalk: false,
+      text: `🚗 車程約 ${roadDist.toFixed(1)} 公里 (預估 ${estMins} 分鐘)`
+    };
   }
 
-  // State Management
+  function formatTransitInfo(fromItem, toItem) {
+    return calculateTransit(fromItem, toItem).text;
+  }
+
+  function formatMinutesToTime(totalMins) {
+    let daysOffset = Math.floor(totalMins / (24 * 60));
+    let mins = totalMins % (24 * 60);
+    if (mins < 0) {
+      mins += 24 * 60;
+      daysOffset -= 1;
+    }
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    return daysOffset > 0 ? `${timeStr} (+${daysOffset}天)` : timeStr;
+  }
+
+  /**
+   * Chains and ripples the full day schedule from start time
+   * Stop 1: arrival = startTime, departure = arrival + duration
+   * Transit to Stop 2: driveMins
+   * Stop 2: arrival = departure1 + driveMins, departure = arrival + duration
+   * ...
+   */
+  function calculateDayTimeline(dayObj) {
+    if (!dayObj) dayObj = {};
+    const startTimeStr = dayObj.startTime || '09:00';
+    const parts = startTimeStr.split(':').map(Number);
+    const startH = isNaN(parts[0]) ? 9 : parts[0];
+    const startM = isNaN(parts[1]) ? 0 : parts[1];
+    let currentMins = startH * 60 + startM;
+
+    const rawStops = Array.isArray(dayObj.stops) ? dayObj.stops : [];
+    let totalDriveMins = 0;
+    let totalDriveKm = 0;
+    let totalActivityMins = 0;
+
+    const computedStops = [];
+    let prevValidStop = null;
+
+    for (let i = 0; i < rawStops.length; i++) {
+      let stop = rawStops[i];
+      if (!stop) continue;
+      if (typeof stop === 'string') {
+        stop = createPlannerStop(stop);
+      }
+      const duration = Math.max(5, Number(stop.durationMinutes || stop.defaultDurationMinutes) || 60);
+      totalActivityMins += duration;
+
+      let transitFromPrev = null;
+      if (prevValidStop) {
+        transitFromPrev = calculateTransit(prevValidStop, stop);
+        totalDriveMins += transitFromPrev.durationMins;
+        totalDriveKm += transitFromPrev.distanceKm;
+        currentMins += transitFromPrev.durationMins;
+      }
+
+      const arrivalMins = currentMins;
+      const departureMins = arrivalMins + duration;
+      currentMins = departureMins;
+
+      computedStops.push({
+        ...stop,
+        durationMinutes: duration,
+        arrivalMins,
+        departureMins,
+        arrivalTime: formatMinutesToTime(arrivalMins),
+        departureTime: formatMinutesToTime(departureMins),
+        transitFromPrev
+      });
+
+      prevValidStop = stop;
+    }
+
+    // Calculate Dual-Generation Metrics
+    let seniorLoadScore = 0;
+    let youngPhotoCount = 0;
+    let harmonySum = 0;
+
+    for (const stop of computedStops) {
+      const gen = stop.generation || {};
+      const senior = gen.senior || {};
+      const young = gen.young || {};
+      const hScore = (gen.harmony && typeof gen.harmony.score === 'number') 
+        ? gen.harmony.score 
+        : (typeof gen.harmonyScore === 'number' ? gen.harmonyScore : 9.5);
+      harmonySum += hScore;
+
+      if (senior.walkingScore === 'red') seniorLoadScore += 3;
+      else if (senior.walkingScore === 'amber') seniorLoadScore += 2;
+      else seniorLoadScore += 1;
+
+      if (young.photoSpot || young.trendyFood) youngPhotoCount += 1;
+    }
+
+    const avgHarmonyScore = computedStops.length > 0 ? Number((harmonySum / computedStops.length).toFixed(1)) : 9.5;
+    let seniorLoadLabel = '🟢 平緩舒活';
+    if (seniorLoadScore >= 12 || computedStops.length >= 7) {
+      seniorLoadLabel = '🔴 步數偏多 (多歇息)';
+    } else if (seniorLoadScore >= 8 || computedStops.length >= 5) {
+      seniorLoadLabel = '🟡 步調適中';
+    }
+
+    return {
+      computedStops,
+      totalDriveMins,
+      totalDriveKm: Number(totalDriveKm.toFixed(1)),
+      totalActivityMins,
+      finishTime: rawStops.length > 0 ? formatMinutesToTime(currentMins) : '--:--',
+      stopsCount: rawStops.length,
+      seniorLoadLabel,
+      youngPhotoCount,
+      avgHarmonyScore
+    };
+  }
+
+  /* ==========================================================================
+     Stop Factory & Catalog Lookups
+     ========================================================================== */
+  function findCatalogSpot(id) {
+    if (!id) return null;
+
+    if (typeof SPOTS_CATALOG !== 'undefined') {
+      const found = SPOTS_CATALOG.find(s => s.id === id);
+      if (found) return found;
+    }
+
+    if (typeof SCHEDULE_ITEMS !== 'undefined') {
+      const foundItem = SCHEDULE_ITEMS.find(s => s.id === id);
+      if (foundItem) {
+        return {
+          id: foundItem.id,
+          name: foundItem.name,
+          nameZh: foundItem.nameZh,
+          nameJa: foundItem.nameJa,
+          category: foundItem.category,
+          categoryLabel: foundItem.categoryLabel,
+          icon: foundItem.icon,
+          lat: foundItem.lat,
+          lng: foundItem.lng,
+          address: foundItem.address,
+          mapCode: foundItem.mapCode,
+          defaultDurationMinutes: foundItem.durationMinutes || 60,
+          tags: foundItem.tags || [],
+          desc: foundItem.desc || '',
+          tips: foundItem.tips || '',
+          generation: foundItem.generation || {}
+        };
+      }
+    }
+
+    // Also search active planner custom stops
+    if (typeof state !== 'undefined' && state.plannerData && Array.isArray(state.plannerData.days)) {
+      for (const d of state.plannerData.days) {
+        if (Array.isArray(d.stops)) {
+          const foundInPlanner = d.stops.find(s => s.id === id || s.instanceId === id);
+          if (foundInPlanner) return foundInPlanner;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function createPlannerStop(spotIdOrObj) {
+    let base = null;
+    if (typeof spotIdOrObj === 'string') {
+      base = findCatalogSpot(spotIdOrObj);
+    } else if (typeof spotIdOrObj === 'object' && spotIdOrObj !== null) {
+      base = spotIdOrObj;
+    }
+
+    const instanceId = 'stop-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+
+    if (base) {
+      return {
+        instanceId,
+        id: base.id || instanceId,
+        name: base.name || '自訂停靠點',
+        nameZh: base.nameZh || base.name || '自訂停靠點',
+        nameJa: base.nameJa || '',
+        category: base.category || 'attraction',
+        categoryLabel: base.categoryLabel || '景點文化',
+        icon: base.icon || '📍',
+        lat: typeof base.lat === 'number' ? base.lat : 26.2124,
+        lng: typeof base.lng === 'number' ? base.lng : 127.6809,
+        address: base.address || '沖繩縣',
+        mapCode: base.mapCode || '無',
+        durationMinutes: base.durationMinutes || base.defaultDurationMinutes || 60,
+        tags: Array.isArray(base.tags) ? [...base.tags] : ['自由行程'],
+        desc: base.desc || '',
+        tips: base.tips || '',
+        generation: base.generation ? JSON.parse(JSON.stringify(base.generation)) : {
+          senior: { walkingLoad: '平緩輕鬆', walkingScore: 'green', seatingRest: '備有座位可休憩', keyTip: '留意步調與洗手間位置' },
+          young: { photoSpot: '特色地標拍照打卡', trendyFood: '周邊特色店家', keyTip: '注意營業時間' },
+          harmony: { score: 9.5, advice: '互相協調停留時間，長輩休息與年輕人探索兼顧。' }
+        }
+      };
+    }
+
+    return {
+      instanceId,
+      id: instanceId,
+      name: '自訂私房節點',
+      nameZh: '自訂私房節點',
+      nameJa: '',
+      category: 'attraction',
+      categoryLabel: '景點文化',
+      icon: '📍',
+      lat: 26.2124,
+      lng: 127.6809,
+      address: '沖繩縣',
+      mapCode: '自訂',
+      durationMinutes: 60,
+      tags: ['自訂'],
+      desc: '',
+      tips: '',
+      generation: {
+        senior: { walkingLoad: '平緩舒適', walkingScore: 'green', seatingRest: '請先確認現場座椅', keyTip: '下車先找洗手間' },
+        young: { photoSpot: '自訂拍攝視角', trendyFood: '私房美食探索', keyTip: '彈性探索' },
+        harmony: { score: 9.2, advice: '自由規劃，隨時依體力調整。' }
+      }
+    };
+  }
+
+  function getInitialPlannerData() {
+    const saved = safeStorageGet('okinawa_custom_planner_data', null);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.days) && parsed.days.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('Failed to parse saved planner data, loading default', e);
+        }
+      }
+    }
+
+    // Default initialization from PRESET_ITINERARIES.official_5d
+    if (typeof PRESET_ITINERARIES !== 'undefined' && PRESET_ITINERARIES.official_5d) {
+      const preset = PRESET_ITINERARIES.official_5d;
+      return {
+        activeDayIndex: 0,
+        days: preset.days.map((d, idx) => ({
+          day: idx + 1,
+          title: d.title || `第 ${idx + 1} 天行程`,
+          startTime: d.startTime || '09:00',
+          stops: d.spotIds.map(id => createPlannerStop(id)).filter(Boolean)
+        }))
+      };
+    }
+
+    // Fallback if preset is missing
+    return {
+      activeDayIndex: 0,
+      days: [
+        { day: 1, title: '首日啟程・經典行程', startTime: '09:00', stops: [] }
+      ]
+    };
+  }
+
+  /* ==========================================================================
+     Application State Management
+     ========================================================================== */
   const state = {
-    activeDay: 0, // 0 = all days, 1..5
+    itineraryMode: 'official', // 'official' | 'planner'
+    generationPerspective: 'both', // 'both' | 'senior' | 'young'
+    activeDay: 0, // 0 = all days, 1..5 for official
     activeCategory: 'all',
     searchQuery: '',
     favorites: JSON.parse(safeStorageGet('okinawa_favorites', '[]')),
     checklist: JSON.parse(safeStorageGet('okinawa_checklist', 'null')),
     expenses: JSON.parse(safeStorageGet('okinawa_expenses', '[]')),
     exchangeRate: parseFloat(safeStorageGet('okinawa_rate', '0.215')),
-    theme: safeStorageGet('okinawa_theme', (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')),
+    theme: safeStorageGet('okinawa_theme', (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')),
     mobileView: 'timeline', // 'timeline' | 'map'
     map: null,
     markers: [],
     markerMap: new Map(),
-    polyline: null
+    polyline: null,
+    plannerMarkers: [],
+    plannerPolyline: null,
+    plannerData: getInitialPlannerData()
   };
+
+  function savePlannerData() {
+    safeStorageSet('okinawa_custom_planner_data', JSON.stringify(state.plannerData));
+  }
 
   // Initialize Theme
   document.documentElement.setAttribute('data-theme', state.theme);
@@ -131,15 +449,19 @@ document.addEventListener('DOMContentLoaded', () => {
     saveChecklist();
   }
 
-  // Initialize Components
+  // Initialize UI Components
   initThemeToggle();
   initCountdown();
+  initModeSwitcher();
+  initPerspectiveSwitcher();
   initDayTabs();
   initCategoryPills();
   initSearch();
   initMobileViewSwitcher();
   initMap();
   renderTimeline();
+  initPlannerStudio();
+  initSpotPickerModal();
   initToolkitTabs();
   initChecklist();
   initBudgetTracker();
@@ -148,11 +470,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollspyAndBackToTop();
 
   /* ==========================================================================
-     Theme Toggler
+     Theme Switcher
      ========================================================================== */
   function initThemeToggle() {
     const toggleBtn = document.getElementById('theme-toggle-btn');
     if (!toggleBtn) return;
+
     toggleBtn.addEventListener('click', () => {
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', state.theme);
@@ -165,32 +488,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateThemeIcon() {
     const toggleBtn = document.getElementById('theme-toggle-btn');
-    if (!toggleBtn) return;
-    toggleBtn.innerHTML = state.theme === 'dark' 
-      ? '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>'
-      : '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>';
+    if (toggleBtn) {
+      toggleBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+    }
   }
 
   function updateThemeMeta() {
-    const metaEl = document.getElementById('meta-theme-color');
-    if (metaEl && typeof metaEl.setAttribute === 'function') {
-      metaEl.setAttribute('content', state.theme === 'dark' ? '#090d16' : '#ffffff');
+    const metaThemeColor = document.getElementById('meta-theme-color');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', state.theme === 'dark' ? '#0f172a' : '#0284c7');
     }
   }
 
   /* ==========================================================================
-     Departure Countdown
+     Countdown Timer
      ========================================================================== */
   function initCountdown() {
-    const targetDate = new Date(TRIP_METADATA.departureDate).getTime();
+    const targetDate = new Date((typeof TRIP_METADATA !== 'undefined' && TRIP_METADATA.departureDate) || '2026-12-12T11:00:00+09:00').getTime();
     const daysEl = document.getElementById('cd-days');
     const hoursEl = document.getElementById('cd-hours');
     const minsEl = document.getElementById('cd-mins');
     const secsEl = document.getElementById('cd-secs');
     const wrapEl = document.getElementById('countdown-wrap');
-
     if (!daysEl) return;
-    let timerId = null;
 
     function update() {
       const now = new Date().getTime();
@@ -198,64 +518,292 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (diff <= 0) {
         if (wrapEl) {
-          wrapEl.innerHTML = '<div class="countdown-val" style="font-size:1.25rem;font-weight:800;color:var(--primary);padding:1rem 0;">🎉 沖繩冬日海風自由行已啟程！祝自駕探險平安順心！</div>';
-        }
-        if (timerId) {
-          clearInterval(timerId);
-          timerId = null;
+          wrapEl.innerHTML = '<div style="font-weight:700;font-size:1.1rem;color:var(--emerald);">🎉 沖繩自駕之旅熱烈出發中！享受冬日海風！</div>';
         }
         return;
       }
 
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
 
-      daysEl.textContent = String(days).padStart(2, '0');
-      hoursEl.textContent = String(hours).padStart(2, '0');
-      minsEl.textContent = String(mins).padStart(2, '0');
-      secsEl.textContent = String(secs).padStart(2, '0');
+      daysEl.textContent = String(d).padStart(2, '0');
+      hoursEl.textContent = String(h).padStart(2, '0');
+      minsEl.textContent = String(m).padStart(2, '0');
+      secsEl.textContent = String(s).padStart(2, '0');
     }
 
     update();
-    timerId = setInterval(update, 1000);
+    setInterval(update, 1000);
   }
 
   /* ==========================================================================
-     Day Tabs & Filter Controls
+     Mode Switcher (Official 5-Day vs Custom Planner Studio)
      ========================================================================== */
-  function initDayTabs() {
-    const container = document.getElementById('day-tabs-container');
-    if (!container) return;
-    container.innerHTML = '';
+  function initModeSwitcher() {
+    const btnOfficial = document.getElementById('btn-mode-official');
+    const btnPlanner = document.getElementById('btn-mode-planner');
+    const navPlannerLink = document.getElementById('nav-planner-link');
+    const heroBtnPlanner = document.getElementById('hero-btn-planner');
+    const navScheduleLink = document.getElementById('nav-schedule-link');
 
-    const allBtn = document.createElement('button');
-    allBtn.className = 'day-tab-btn active';
-    allBtn.dataset.day = '0';
-    allBtn.innerHTML = `<span>🗓️ 全部行程 5天總覽</span> <span class="badge-count">${SCHEDULE_ITEMS.length}</span>`;
-    container.appendChild(allBtn);
+    if (btnOfficial) {
+      btnOfficial.addEventListener('click', () => switchItineraryMode('official'));
+    }
+    if (btnPlanner) {
+      btnPlanner.addEventListener('click', () => switchItineraryMode('planner'));
+    }
+    if (navPlannerLink) {
+      navPlannerLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchItineraryMode('planner');
+        scrollToSchedule();
+      });
+    }
+    if (heroBtnPlanner) {
+      heroBtnPlanner.addEventListener('click', () => {
+        switchItineraryMode('planner');
+        scrollToSchedule();
+      });
+    }
+    if (navScheduleLink) {
+      navScheduleLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchItineraryMode('official');
+        scrollToSchedule();
+      });
+    }
+  }
 
-    DAY_SUMMARIES.forEach(d => {
-      const btn = document.createElement('button');
-      btn.className = 'day-tab-btn';
-      btn.dataset.day = String(d.day);
-      btn.innerHTML = `<span>Day ${d.day} (${d.date.slice(5)})</span> <span class="badge-count">${d.stopsCount}</span>`;
-      container.appendChild(btn);
-    });
+  function scrollToSchedule() {
+    const target = document.getElementById('schedule-section');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 
-    container.addEventListener('click', (e) => {
-      const btn = e.target.closest('.day-tab-btn');
-      if (!btn) return;
-      container.querySelectorAll('.day-tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.activeDay = parseInt(btn.dataset.day, 10);
+  function switchItineraryMode(mode) {
+    state.itineraryMode = mode;
+    const btnOfficial = document.getElementById('btn-mode-official');
+    const btnPlanner = document.getElementById('btn-mode-planner');
+    const officialContainer = document.getElementById('official-schedule-container');
+    const officialFilterControls = document.getElementById('official-filter-controls');
+    const plannerContainer = document.getElementById('custom-planner-container');
+    const scrollerWrap = document.getElementById('map-spots-scroller-wrap');
+
+    if (mode === 'official') {
+      if (btnOfficial) btnOfficial.classList.add('active');
+      if (btnPlanner) btnPlanner.classList.remove('active');
+      if (officialContainer) officialContainer.style.display = 'block';
+      if (officialFilterControls) officialFilterControls.style.display = 'block';
+      if (plannerContainer) plannerContainer.style.display = 'none';
+      if (scrollerWrap) scrollerWrap.style.display = 'block';
       renderTimeline();
       updateMapMarkers();
-      updateCategoryPillCounts();
+      showToast('🗓️ 已切換為「官方推薦行程」模式');
+    } else {
+      if (btnOfficial) btnOfficial.classList.remove('active');
+      if (btnPlanner) btnPlanner.classList.add('active');
+      if (officialContainer) officialContainer.style.display = 'none';
+      if (officialFilterControls) officialFilterControls.style.display = 'none';
+      if (plannerContainer) plannerContainer.style.display = 'flex';
+      if (scrollerWrap) scrollerWrap.style.display = 'none';
+      renderPlannerStudio();
+      showToast('🛠️ 已切換為「自由客製規劃」模式');
+    }
+
+    if (state.map) {
+      setTimeout(() => {
+        state.map.invalidateSize();
+        fitMapToCurrentMarkers();
+      }, 150);
+    }
+  }
+
+  /* ==========================================================================
+     Generation Perspective Switcher (Both / Senior 40~60 / Young 25~35)
+     ========================================================================== */
+  function initPerspectiveSwitcher() {
+    const bar = document.getElementById('generation-perspective-bar');
+    if (!bar) return;
+
+    const btns = bar.querySelectorAll('.gen-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const gen = btn.dataset.gen;
+        if (!gen) return;
+        state.generationPerspective = gen;
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (state.itineraryMode === 'official') {
+          renderTimeline();
+        } else {
+          renderPlannerStudio();
+        }
+
+        if (gen === 'both') {
+          showToast('👥 雙世代全覽：長輩舒活 × 年輕探索雙軌並行');
+        } else if (gen === 'senior') {
+          showToast('🧓 熟齡舒活視角：聚焦低步數、無障礙動線、座椅空調與清淡海味');
+        } else if (gen === 'young') {
+          showToast('📸 年輕探索視角：聚焦IG美拍照、排隊話題美食、潮流服飾與夜生活');
+        }
+      });
     });
   }
 
+  /* ==========================================================================
+     Dual-Generation Card Markup Generator
+     ========================================================================== */
+  function renderGenerationCardHtml(genData) {
+    if (!genData) return '';
+    const senior = genData.senior || {};
+    const young = genData.young || {};
+    const harmonyScore = (genData.harmony && typeof genData.harmony.score === 'number') 
+      ? genData.harmony.score 
+      : (typeof genData.harmonyScore === 'number' ? genData.harmonyScore : 9.5);
+    const harmonyAdvice = (genData.harmony && genData.harmony.advice) 
+      ? genData.harmony.advice 
+      : (genData.harmonyAdvice || '');
+
+    const walkMeterColor = senior.walkingScore === 'green' ? '#10b981' : (senior.walkingScore === 'amber' ? '#f59e0b' : (senior.walkingScore === 'red' ? '#ef4444' : '#10b981'));
+
+    if (state.generationPerspective === 'senior') {
+      return `
+        <div class="card-dual-gen-wrap">
+          <div class="gen-pill-box senior" style="border-left-width: 5px;">
+            <div style="width: 100%;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
+                <span class="gen-pill-label senior-text" style="font-size: 0.9rem;">🧓 40~60歲 熟齡舒活指南</span>
+                <span class="walking-meter-pill" style="border: 1px solid ${walkMeterColor}; color: ${walkMeterColor}; font-size: 0.775rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: var(--radius-full);">
+                  🚶 步數強度：${escapeHtml(senior.walkingLoad || '平緩舒適')}
+                </span>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
+                <strong>🪑 休憩環境：</strong>${escapeHtml(senior.seatingRest || '備有座椅空調可供休息')}
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
+                <strong>🍵 食事養生：</strong>${escapeHtml(senior.foodHighlights || '提供清雅在地風味或熱飲')}
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
+                <strong>⛩️ 文化伴手：</strong>${escapeHtml(senior.cultureShopping || '在地精緻特產與身心祈福')}
+              </div>
+              <div style="background: rgba(16,185,129,0.12); padding: 0.45rem 0.65rem; border-radius: var(--radius-sm); font-size: 0.825rem; font-weight: 600; color: #065f46;">
+                💡 舒活叮嚀：${escapeHtml(senior.keyTip || '出入口多設有平緩坡道與無障礙洗手間，可放慢腳步。')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (state.generationPerspective === 'young') {
+      return `
+        <div class="card-dual-gen-wrap">
+          <div class="gen-pill-box young" style="border-left-width: 5px;">
+            <div style="width: 100%;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
+                <span class="gen-pill-label young-text" style="font-size: 0.9rem;">📸 25~35歲 年輕探索指南</span>
+                <span class="tag-badge" style="background: rgba(245,158,11,0.15); color: #b45309; font-size: 0.775rem;">✨ 潮流打卡必拍</span>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
+                <strong>📷 IG絕景機位：</strong>${escapeHtml(young.photoSpot || '必拍出片取景角度')}
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
+                <strong>🍜 話題美食：</strong>${escapeHtml(young.trendyFood || '網路爆紅排隊必吃')}
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
+                <strong>🛍️ 潮流亮點：</strong>${escapeHtml(young.shoppingNightlife || '特色潮流、露營選品或微醺夜生活')}
+              </div>
+              <div style="background: rgba(245,158,11,0.12); padding: 0.45rem 0.65rem; border-radius: var(--radius-sm); font-size: 0.825rem; font-weight: 600; color: #92400e;">
+                ⚡ 探索攻略：${escapeHtml(young.keyTip || '建議提早拍照排隊，兼顧同伴作息。')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Default: 'both'
+    return `
+      <div class="card-dual-gen-wrap">
+        <div class="gen-pill-box senior">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+              <span class="gen-pill-label senior-text">🧓 熟齡舒活</span>
+              <span style="font-size:0.75rem; color: ${walkMeterColor}; font-weight:700;">${escapeHtml(senior.walkingLoad || '輕鬆')}</span>
+            </div>
+            <div style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.45;">
+              ${escapeHtml(senior.keyTip || senior.seatingRest || '低負擔平坦動線')}
+            </div>
+          </div>
+        </div>
+
+        <div class="gen-pill-box young">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+              <span class="gen-pill-label young-text">📸 年輕探索</span>
+              <span style="font-size:0.75rem; color: #d97706; font-weight:700;">#打卡話題</span>
+            </div>
+            <div style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.45;">
+              ${escapeHtml(young.photoSpot || young.trendyFood || '必訪特色亮點')}
+            </div>
+          </div>
+        </div>
+
+        <div class="gen-pill-box harmony">
+          <div>
+            <span class="gen-pill-label harmony-text">🤝 契合度 ${harmonyScore}/10</span>
+            <div style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.45;">
+              ${escapeHtml(harmonyAdvice || '兼顧不同步調，各取所需全家開心。')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ==========================================================================
+     Official Schedule Day Tabs
+     ========================================================================== */
+  function initDayTabs() {
+    const container = document.getElementById('day-tabs-container');
+    if (!container || typeof DAY_SUMMARIES === 'undefined') return;
+
+    let html = `
+      <button class="day-tab-btn ${state.activeDay === 0 ? 'active' : ''}" data-day="0">
+        🌟 完整 5 天全覽
+      </button>
+    `;
+
+    DAY_SUMMARIES.forEach(d => {
+      const activeClass = state.activeDay === d.day ? 'active' : '';
+      html += `
+        <button class="day-tab-btn ${activeClass}" data-day="${d.day}">
+          Day ${d.day} · ${escapeHtml(d.date.split('/')[1])}/${escapeHtml(d.date.split('/')[2])} (${d.dayOfWeek})
+        </button>
+      `;
+    });
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.day-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.day-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.activeDay = parseInt(btn.dataset.day, 10);
+        renderTimeline();
+        updateMapMarkers();
+        updateCategoryPillCounts();
+      });
+    });
+  }
+
+  /* ==========================================================================
+     Official Schedule Category & Generation Filter Pills
+     ========================================================================== */
   function initCategoryPills() {
     const pills = document.querySelectorAll('.cat-pill');
     pills.forEach(pill => {
@@ -271,6 +819,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateCategoryPillCounts() {
+    if (typeof SCHEDULE_ITEMS === 'undefined') return;
+
     const dayFiltered = state.activeDay === 0 
       ? SCHEDULE_ITEMS 
       : SCHEDULE_ITEMS.filter(i => i.day === state.activeDay);
@@ -281,6 +831,9 @@ document.addEventListener('DOMContentLoaded', () => {
       shopping: dayFiltered.filter(i => i.category === 'shopping').length,
       attraction: dayFiltered.filter(i => i.category === 'attraction').length,
       'transport-hotel': dayFiltered.filter(i => i.category === 'transport' || i.category === 'hotel').length,
+      senior: dayFiltered.filter(i => i.generation && i.generation.senior && i.generation.senior.walkingScore !== 'red').length,
+      young: dayFiltered.filter(i => i.generation && i.generation.young && (i.generation.young.photoSpot || i.generation.young.trendyFood)).length,
+      harmony: dayFiltered.filter(i => ((i.generation && i.generation.harmony && i.generation.harmony.score) || (i.generation && i.generation.harmonyScore) || 0) >= 9.0).length,
       favorites: dayFiltered.filter(i => state.favorites.includes(i.id)).length
     };
 
@@ -290,110 +843,118 @@ document.addEventListener('DOMContentLoaded', () => {
       shopping: '🛍️ 購物商場',
       attraction: '⛩️ 景點文化',
       'transport-hotel': '🚗 交通/住宿',
+      senior: '🧓 40-60長輩首選',
+      young: '📸 25-35年輕熱門',
+      harmony: '🤝 跨世代全家共融',
       favorites: '⭐ 我的收藏'
     };
 
     document.querySelectorAll('.cat-pill').forEach(pill => {
       const cat = pill.dataset.category;
       if (pillLabels[cat] !== undefined) {
-        pill.innerHTML = `${pillLabels[cat]} <span class="badge-count" style="margin-left:0.35rem;font-size:0.75rem;opacity:0.85;">${counts[cat]}</span>`;
+        pill.innerHTML = `${pillLabels[cat]} <span class="badge-count" style="margin-left:0.35rem;font-size:0.75rem;opacity:0.85;">${counts[cat] !== undefined ? counts[cat] : 0}</span>`;
       }
     });
   }
 
+  /* ==========================================================================
+     Search Box Logic
+     ========================================================================== */
   function initSearch() {
     const input = document.getElementById('schedule-search-input');
     const clearBtn = document.getElementById('schedule-search-clear');
-    if (!input) return;
+    if (!input || !clearBtn) return;
 
     input.addEventListener('input', (e) => {
       state.searchQuery = e.target.value.trim().toLowerCase();
-      if (clearBtn) clearBtn.style.display = state.searchQuery ? 'block' : 'none';
+      clearBtn.style.display = state.searchQuery ? 'block' : 'none';
       renderTimeline();
       updateMapMarkers();
     });
 
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        input.value = '';
-        state.searchQuery = '';
-        clearBtn.style.display = 'none';
-        renderTimeline();
-        updateMapMarkers();
-      });
-    }
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      state.searchQuery = '';
+      clearBtn.style.display = 'none';
+      renderTimeline();
+      updateMapMarkers();
+      input.focus();
+    });
   }
 
   /* ==========================================================================
-     Mobile View Mode Switcher (Timeline List <-> Interactive Map)
+     Mobile View Switcher (Timeline vs Map)
      ========================================================================== */
   function initMobileViewSwitcher() {
     const btnTimeline = document.getElementById('btn-view-timeline');
     const btnMap = document.getElementById('btn-view-map');
+    if (!btnTimeline || !btnMap) return;
 
-    if (btnTimeline) {
-      btnTimeline.addEventListener('click', () => switchMobileView('timeline'));
-    }
-    if (btnMap) {
-      btnMap.addEventListener('click', () => switchMobileView('map'));
-    }
+    btnTimeline.addEventListener('click', () => switchMobileView('timeline'));
+    btnMap.addEventListener('click', () => switchMobileView('map'));
   }
 
   function switchMobileView(mode) {
     state.mobileView = mode;
-    const grid = document.getElementById('main-layout-grid');
     const btnTimeline = document.getElementById('btn-view-timeline');
     const btnMap = document.getElementById('btn-view-map');
-    const mobileNavTimeline = document.querySelector('.mobile-bottom-nav [data-target="schedule-section"]');
-    const mobileNavMap = document.querySelector('.mobile-bottom-nav [data-target="map-section"]');
+    const layoutGrid = document.getElementById('main-layout-grid');
+    if (!btnTimeline || !btnMap || !layoutGrid) return;
 
-    if (grid) {
-      if (mode === 'map') {
-        grid.classList.remove('view-mode-timeline');
-        grid.classList.add('view-mode-map');
-        if (btnMap) btnMap.classList.add('active');
-        if (btnTimeline) btnTimeline.classList.remove('active');
-        if (mobileNavMap) mobileNavMap.classList.add('active');
-        if (mobileNavTimeline) mobileNavTimeline.classList.remove('active');
-        renderMapSpotsScroller();
-        setTimeout(() => {
-          if (state.map) {
-            state.map.invalidateSize();
-            fitMapToCurrentMarkers();
-          }
-        }, 120);
-      } else {
-        grid.classList.remove('view-mode-map');
-        grid.classList.add('view-mode-timeline');
-        if (btnTimeline) btnTimeline.classList.add('active');
-        if (btnMap) btnMap.classList.remove('active');
-        if (mobileNavTimeline) mobileNavTimeline.classList.add('active');
-        if (mobileNavMap) mobileNavMap.classList.remove('active');
-      }
+    if (mode === 'timeline') {
+      btnTimeline.classList.add('active');
+      btnMap.classList.remove('active');
+      layoutGrid.classList.remove('view-mode-map');
+      layoutGrid.classList.add('view-mode-timeline');
+    } else {
+      btnMap.classList.add('active');
+      btnTimeline.classList.remove('active');
+      layoutGrid.classList.remove('view-mode-timeline');
+      layoutGrid.classList.add('view-mode-map');
+
+      // Refresh Leaflet map tile layout when switching views
+      setTimeout(() => {
+        if (state.map) {
+          state.map.invalidateSize();
+          fitMapToCurrentMarkers();
+        }
+      }, 200);
     }
   }
 
   function fitMapToCurrentMarkers() {
     if (!state.map) return;
-    const filtered = getFilteredItems();
-    const latlngs = filtered.map(i => [i.lat, i.lng]);
-    if (latlngs.length > 0) {
-      const bounds = L.latLngBounds(latlngs);
-      state.map.fitBounds(bounds, { padding: [35, 35], maxZoom: 14 });
-    } else {
-      state.map.setView([26.35, 127.80], 10);
+    if (state.itineraryMode === 'planner') {
+      if (state.plannerPolyline) {
+        state.map.fitBounds(state.plannerPolyline.getBounds().pad(0.12));
+      } else if (state.plannerMarkers.length > 0) {
+        state.map.setView(state.plannerMarkers[0].getLatLng(), 14);
+      }
+      return;
+    }
+
+    if (state.markers.length > 0 && typeof L !== 'undefined') {
+      const group = (typeof L.featureGroup === 'function') ? L.featureGroup(state.markers) : (L.FeatureGroup ? new L.FeatureGroup(state.markers) : null);
+      if (group && typeof group.getBounds === 'function') {
+        const bounds = group.getBounds();
+        if (bounds && typeof bounds.pad === 'function') {
+          state.map.fitBounds(bounds.pad(0.1));
+        } else {
+          state.map.fitBounds(bounds);
+        }
+      }
     }
   }
 
   function syncScrollerActiveChip(itemId) {
     const scroller = document.getElementById('map-spots-scroller');
     if (!scroller) return;
-    scroller.querySelectorAll('.map-spot-chip').forEach(c => {
-      if (c.dataset.id === itemId) {
-        c.classList.add('active');
-        c.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    scroller.querySelectorAll('.map-spot-chip').forEach(chip => {
+      if (chip.dataset.id === itemId) {
+        chip.classList.add('active');
+        chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       } else {
-        c.classList.remove('active');
+        chip.classList.remove('active');
       }
     });
   }
@@ -431,40 +992,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
-     Filtering Logic (Enhanced with MapCode, Category, Time, and Day Query)
+     Official Schedule Filtering
      ========================================================================== */
   function matchSearchQuery(item, q) {
     if (!q) return true;
-
-    // Direct string match on primary fields
     if (item.name && item.name.toLowerCase().includes(q)) return true;
     if (item.nameZh && item.nameZh.toLowerCase().includes(q)) return true;
     if (item.nameJa && item.nameJa.toLowerCase().includes(q)) return true;
-    if (item.categoryLabel && item.categoryLabel.toLowerCase().includes(q)) return true;
-    if (item.time && item.time.toLowerCase().includes(q)) return true;
-    if (item.duration && item.duration.toLowerCase().includes(q)) return true;
+    if (item.address && item.address.toLowerCase().includes(q)) return true;
+    if (item.mapCode && item.mapCode.toLowerCase().includes(q)) return true;
     if (item.desc && item.desc.toLowerCase().includes(q)) return true;
     if (item.tips && item.tips.toLowerCase().includes(q)) return true;
-    if (item.address && item.address.toLowerCase().includes(q)) return true;
     if (item.tags && item.tags.some(t => t.toLowerCase().includes(q))) return true;
-
-    // MapCode matching (with & without spaces or asterisk)
-    if (item.mapCode) {
-      if (item.mapCode.toLowerCase().includes(q)) return true;
-      const cleanQ = q.replace(/[\s\*\-]/g, '');
-      const cleanMapCode = item.mapCode.replace(/[\s\*\-]/g, '').toLowerCase();
-      if (cleanQ.length >= 2 && cleanMapCode.includes(cleanQ)) return true;
+    if (item.generation) {
+      if (item.generation.senior && JSON.stringify(item.generation.senior).toLowerCase().includes(q)) return true;
+      if (item.generation.young && JSON.stringify(item.generation.young).toLowerCase().includes(q)) return true;
     }
-
-    // Day token match (e.g. "day 1", "d1", "第1天")
-    if (q.includes(`day ${item.day}`) || q.includes(`d${item.day}`) || q.includes(`第${item.day}天`)) {
-      return true;
-    }
-
     return false;
   }
 
   function getFilteredItems() {
+    if (typeof SCHEDULE_ITEMS === 'undefined') return [];
+
     return SCHEDULE_ITEMS.filter(item => {
       // Day Filter
       if (state.activeDay !== 0 && item.day !== state.activeDay) {
@@ -474,12 +1023,17 @@ document.addEventListener('DOMContentLoaded', () => {
       // Category Filter
       if (state.activeCategory === 'favorites') {
         if (!state.favorites.includes(item.id)) return false;
+      } else if (state.activeCategory === 'transport-hotel') {
+        if (item.category !== 'transport' && item.category !== 'hotel') return false;
+      } else if (state.activeCategory === 'senior') {
+        if (!item.generation || !item.generation.senior || item.generation.senior.walkingScore === 'red') return false;
+      } else if (state.activeCategory === 'young') {
+        if (!item.generation || !item.generation.young || (!item.generation.young.photoSpot && !item.generation.young.trendyFood)) return false;
+      } else if (state.activeCategory === 'harmony') {
+        const score = (item.generation && item.generation.harmony && item.generation.harmony.score) || (item.generation && item.generation.harmonyScore) || 0;
+        if (score < 9.0) return false;
       } else if (state.activeCategory !== 'all') {
-        if (state.activeCategory === 'transport-hotel') {
-          if (item.category !== 'transport' && item.category !== 'hotel') return false;
-        } else if (item.category !== state.activeCategory) {
-          return false;
-        }
+        if (item.category !== state.activeCategory) return false;
       }
 
       // Search Query
@@ -492,7 +1046,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
-     Timeline Rendering (Accurate Distances & Cross-linking)
+     Official Schedule Timeline Rendering
      ========================================================================== */
   function renderTimeline() {
     const listContainer = document.getElementById('timeline-items-list');
@@ -551,14 +1105,17 @@ document.addEventListener('DOMContentLoaded', () => {
       // Accurate Haversine Transit calculation
       let transitHtml = '';
       if (!isLast && nextItem && item.day === nextItem.day) {
-        const transitText = formatTransitInfo(item, nextItem);
+        const transitInfo = calculateTransit(item, nextItem);
         transitHtml = `
           <div class="transit-connector">
-            <span>🚗</span>
-            <span>前往下一站：<strong>${escapeHtml(nextItem.nameZh)}</strong> (${transitText})</span>
+            <span>${transitInfo.isWalk ? '🚶' : '🚗'}</span>
+            <span>前往下一站：<strong>${escapeHtml(nextItem.nameZh)}</strong> (${transitInfo.text})</span>
           </div>
         `;
       }
+
+      // Generation Perspective UI
+      const genCardsHtml = renderGenerationCardHtml(item.generation);
 
       html += `
         <div class="timeline-item" id="item-${escapeHtml(item.id)}">
@@ -585,7 +1142,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <p class="card-desc">${escapeHtml(item.desc)}</p>
 
-            <div class="card-tags">
+            ${genCardsHtml}
+
+            <div class="card-tags" style="margin-top:0.75rem;">
               ${item.tags.map(tag => `<span class="tag-badge">#${escapeHtml(tag)}</span>`).join('')}
             </div>
 
@@ -594,7 +1153,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>📍 ${escapeHtml(item.address)}</span>
               </div>
               <div class="card-footer-buttons">
-                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點攻略">
+                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點攻略與雙世代指南">
                   <span>🔍 查看攻略</span>
                 </button>
                 <button class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode">
@@ -602,6 +1161,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
                 <button class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
                   <span>📍 地圖定位</span>
+                </button>
+                <button class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
+                  <span>➕ 加自訂</span>
                 </button>
                 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery || item.name)}" target="_blank" rel="noopener" class="btn-card-action" title="啟動 Google Maps 即時導航">
                   <span>🗺️ 導航</span>
@@ -616,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     listContainer.innerHTML = html;
 
-    // Attach Event Listeners to cards
+    // Attach Event Listeners
     listContainer.querySelectorAll('.btn-star-fav').forEach(btn => {
       btn.addEventListener('click', () => {
         toggleFavorite(btn.dataset.id);
@@ -632,6 +1194,12 @@ document.addEventListener('DOMContentLoaded', () => {
     listContainer.querySelectorAll('[data-action="locate"]').forEach(btn => {
       btn.addEventListener('click', () => {
         window.appFocusOnMap(btn.dataset.id);
+      });
+    });
+
+    listContainer.querySelectorAll('[data-action="add-to-custom"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        addSpotToCurrentPlannerDay(btn.dataset.id);
       });
     });
 
@@ -659,26 +1227,25 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleFavorite(id) {
     if (state.favorites.includes(id)) {
       state.favorites = state.favorites.filter(favId => favId !== id);
-      showToast('已自最愛清單移除');
+      showToast('已從最愛移除');
     } else {
       state.favorites.push(id);
-      showToast('⭐ 已加入最愛清單！');
+      showToast('⭐ 已加入最愛！');
     }
     safeStorageSet('okinawa_favorites', JSON.stringify(state.favorites));
     renderTimeline();
-    updateMapMarkers();
     updateCategoryPillCounts();
   }
 
   /* ==========================================================================
-     Interactive Leaflet Map (Multi-visit Consolidation & Bidirectional Linking)
+     Leaflet Map System
      ========================================================================== */
   function initMap() {
     const mapContainer = document.getElementById('map');
-    if (!mapContainer || typeof L === 'undefined') {
-      if (mapContainer) {
-        renderMapOfflineFallback(mapContainer);
-      }
+    if (!mapContainer) return;
+
+    if (typeof L === 'undefined') {
+      renderMapOfflineFallback(mapContainer);
       return;
     }
 
@@ -686,46 +1253,40 @@ document.addEventListener('DOMContentLoaded', () => {
       state.map = L.map('map', {
         center: [26.2124, 127.6809],
         zoom: 11,
+        zoomControl: true,
         scrollWheelZoom: false
       });
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19
       }).addTo(state.map);
 
-      state.map.on('popupopen', (e) => {
-        const px = e.popup.getLatLng();
-        if (px) {
-          const match = SCHEDULE_ITEMS.find(s => Math.abs(s.lat - px.lat) < 0.0001 && Math.abs(s.lng - px.lng) < 0.0001);
-          if (match) {
-            syncScrollerActiveChip(match.id);
-          }
-        }
-      });
-
       updateMapMarkers();
     } catch (e) {
+      if (typeof console !== 'undefined' && console.error) {
+        console.error('Leaflet initialization failed', e);
+      }
       renderMapOfflineFallback(mapContainer);
     }
   }
 
   function renderMapOfflineFallback(container) {
     container.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:2rem;text-align:center;color:var(--text-muted);background:var(--bg-subtle);">
-        <div style="font-size:2.5rem;margin-bottom:0.5rem;">🗺️</div>
-        <div style="font-weight:700;font-size:1.05rem;color:var(--text-main);margin-bottom:0.35rem;">地圖離線備援模式</div>
-        <p style="font-size:0.85rem;line-height:1.5;max-width:320px;margin-bottom:1rem;">所有景點皆附有 MapCode 與 Google Maps 導航連結，可於各卡片中點擊直接啟動外部導航。</p>
-        <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn btn-chictrip" style="font-size:0.85rem;padding:0.45rem 1rem;">📲 在去趣 App 查看路線圖</a>
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 2rem; text-align: center; background: var(--bg-surface);">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🗺️</div>
+        <h4 style="font-size: 1.1rem; margin-bottom: 0.35rem;">地圖正在離線待命</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 280px; line-height: 1.5;">
+          若尚未載入 OpenStreetMap 圖資，您仍可點擊左側列表的「查看攻略」或「Google Maps 導航」按鈕直接啟動手機導航。
+        </p>
       </div>
     `;
   }
 
   function updateMapMarkers() {
-    if (!state.map || typeof L === 'undefined') return;
+    if (!state.map) return;
 
-    // Clear existing markers & polyline
+    // Clear existing official markers & polyline
     state.markers.forEach(m => state.map.removeLayer(m));
     state.markers = [];
     state.markerMap.clear();
@@ -735,203 +1296,1080 @@ document.addEventListener('DOMContentLoaded', () => {
       state.polyline = null;
     }
 
-    const filtered = getFilteredItems();
-    if (filtered.length === 0) return;
+    // Clear any planner markers if in official mode
+    state.plannerMarkers.forEach(m => state.map.removeLayer(m));
+    state.plannerMarkers = [];
+    if (state.plannerPolyline) {
+      state.map.removeLayer(state.plannerPolyline);
+      state.plannerPolyline = null;
+    }
 
-    // Group items by coordinate to resolve identical positions
-    const coordGroups = new Map();
-    filtered.forEach(item => {
-      const key = `${item.lat.toFixed(4)},${item.lng.toFixed(4)}`;
-      if (!coordGroups.has(key)) {
-        coordGroups.set(key, []);
-      }
-      coordGroups.get(key).push(item);
-    });
+    const filtered = getFilteredItems();
+    renderMapSpotsScroller();
+
+    if (filtered.length === 0) return;
 
     const latlngs = [];
 
-    coordGroups.forEach((itemsAtCoord, key) => {
-      const first = itemsAtCoord[0];
-      const count = itemsAtCoord.length;
-      latlngs.push([first.lat, first.lng]);
+    filtered.forEach(item => {
+      latlngs.push([item.lat, item.lng]);
 
-      const isMulti = count > 1;
-      const pinHtml = isMulti 
-        ? `<div class="custom-pin-wrapper">
-             <div class="custom-pin ${first.category}" title="${escapeHtml(first.nameZh)} (${count}次停靠)">
-               ${first.icon}
-             </div>
-             <span class="pin-multi-badge">×${count}</span>
-           </div>`
-        : `<div class="custom-pin ${first.category}" title="${escapeHtml(first.nameZh)}">
-             ${first.icon}
-           </div>`;
+      const pinEl = document.createElement('div');
+      pinEl.className = 'custom-pin-wrapper';
+      pinEl.innerHTML = `
+        <div class="custom-pin ${item.category}" style="cursor:pointer;">
+          <span>${item.icon}</span>
+        </div>
+      `;
 
-      const pinIcon = L.divIcon({
-        className: 'custom-div-icon',
-        html: pinHtml,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
+      const customIcon = L.divIcon({
+        className: 'custom-pin-container',
+        html: pinEl.innerHTML,
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        popupAnchor: [0, -36]
       });
 
-      const marker = L.marker([first.lat, first.lng], { icon: pinIcon }).addTo(state.map);
-
-      // Popup Content Construction
-      let popupHtml = '';
-      if (!isMulti) {
-        popupHtml = `
-          <div style="font-family: inherit; font-size: 0.885rem; padding: 0.2rem; min-width: 190px;">
-            <strong style="font-size: 0.98rem; display: block; margin-bottom: 0.25rem;">${escapeHtml(first.nameZh)}</strong>
-            <div style="font-size: 0.775rem; margin-bottom: 0.45rem; opacity: 0.85;">⏰ ${first.time} (${first.duration})</div>
-            <p style="font-size: 0.825rem; line-height: 1.4; margin-bottom: 0.55rem; opacity: 0.9;">${escapeHtml(first.desc.slice(0, 75))}...</p>
-            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-              <button onclick="window.appOpenModal('${escapeHtml(first.id)}')" style="background:#0284c7;color:#fff;border:none;padding:0.25rem 0.55rem;border-radius:4px;font-size:0.75rem;cursor:pointer;font-weight:600;">查看攻略</button>
-              <button onclick="window.appScrollToCard('${escapeHtml(first.id)}')" style="background:#e0f2fe;color:#0369a1;border:none;padding:0.25rem 0.55rem;border-radius:4px;font-size:0.75rem;cursor:pointer;font-weight:600;">行程卡片</button>
-              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(first.googleQuery || first.name)}" target="_blank" style="padding:0.25rem 0.55rem;border-radius:4px;font-size:0.75rem;text-decoration:none;font-weight:600;">導航</a>
-            </div>
+      const popupContent = `
+        <div class="map-popup-card" style="min-width: 200px; padding: 0.25rem;">
+          <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">
+            <span>Day ${item.day} · ${item.time}</span>
+            <span class="tag-badge" style="font-size:0.7rem; padding: 0.1rem 0.4rem;">${escapeHtml(item.categoryLabel)}</span>
           </div>
-        `;
-      } else {
-        popupHtml = `
-          <div style="font-family: inherit; font-size: 0.885rem; padding: 0.2rem; min-width: 230px;">
-            <strong style="font-size: 0.98rem; display: block; margin-bottom: 0.2rem;">${escapeHtml(first.nameZh)}</strong>
-            <div style="font-size: 0.775rem; color: #0284c7; font-weight: 700; margin-bottom: 0.45rem;">
-              🏨 本景點共有 ${count} 次停靠節點：
-            </div>
-            <div style="max-height: 175px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.5rem; padding-right: 0.2rem;">
-              ${itemsAtCoord.map(it => `
-                <div style="background: rgba(0,0,0,0.04); padding: 0.35rem 0.5rem; border-radius: 6px; font-size: 0.775rem;">
-                  <div style="display: flex; justify-content: space-between; font-weight: 700;">
-                    <span>Day ${it.day} · ⏰ ${it.time}</span>
-                    <span style="opacity: 0.8;">${it.duration}</span>
-                  </div>
-                  <div style="opacity: 0.85; margin: 0.15rem 0 0.25rem;">${escapeHtml(it.categoryLabel)}</div>
-                  <div style="display: flex; gap: 0.35rem;">
-                    <button onclick="window.appOpenModal('${escapeHtml(it.id)}')" style="background:#0284c7;color:#fff;border:none;padding:0.2rem 0.45rem;border-radius:3px;font-size:0.72rem;cursor:pointer;">攻略</button>
-                    <button onclick="window.appScrollToCard('${escapeHtml(it.id)}')" style="background:#e0f2fe;color:#0369a1;border:none;padding:0.2rem 0.45rem;border-radius:3px;font-size:0.72rem;cursor:pointer;">卡片</button>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-            <div style="display: flex; justify-content: flex-end;">
-              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(first.googleQuery || first.name)}" target="_blank" style="padding:0.25rem 0.55rem;border-radius:4px;font-size:0.75rem;text-decoration:none;font-weight:600;">🗺️ Google 導航</a>
-            </div>
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0 0 0.25rem 0; color: var(--text-main);">${escapeHtml(item.nameZh)}</h4>
+          <div style="font-size: 0.775rem; color: var(--text-muted); margin-bottom: 0.4rem;">${escapeHtml(item.name)}</div>
+          <div style="font-size: 0.775rem; font-family: monospace; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">🚗 MC: ${escapeHtml(item.mapCode)}</div>
+          <div style="display: flex; gap: 0.35rem;">
+            <button class="btn-card-action primary btn-popup-detail" data-id="${escapeHtml(item.id)}" style="flex: 1; padding: 0.3rem 0.5rem; font-size: 0.75rem;">🔍 攻略</button>
+            <button class="btn-card-action btn-popup-locate" data-id="${escapeHtml(item.id)}" style="flex: 1; padding: 0.3rem 0.5rem; font-size: 0.75rem;">📍 定位</button>
           </div>
-        `;
-      }
+        </div>
+      `;
 
-      marker.bindPopup(popupHtml);
+      const marker = L.marker([item.lat, item.lng], { icon: customIcon })
+        .addTo(state.map)
+        .bindPopup(popupContent);
+
+      marker.on('click', () => {
+        syncScrollerActiveChip(item.id);
+      });
+
+      marker.on('popupopen', () => {
+        const popupEl = document.querySelector('.leaflet-popup-content');
+        if (popupEl) {
+          const detailBtn = popupEl.querySelector('.btn-popup-detail');
+          const locateBtn = popupEl.querySelector('.btn-popup-locate');
+          if (detailBtn) {
+            detailBtn.onclick = () => window.appOpenModal(item.id);
+          }
+          if (locateBtn) {
+            locateBtn.onclick = () => window.appScrollToCard(item.id);
+          }
+        }
+      });
+
       state.markers.push(marker);
-
-      itemsAtCoord.forEach(it => {
-        state.markerMap.set(it.id, marker);
-      });
+      state.markerMap.set(item.id, marker);
     });
 
-    // Draw route polyline if single day selected
+    // Draw route polyline if single day is selected and items > 1
     if (state.activeDay !== 0 && latlngs.length > 1) {
       state.polyline = L.polyline(latlngs, {
         color: '#0284c7',
         weight: 4,
-        opacity: 0.85,
+        opacity: 0.75,
         dashArray: '8, 8'
       }).addTo(state.map);
     }
 
-    if (latlngs.length > 0) {
-      const bounds = L.latLngBounds(latlngs);
-      state.map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    fitMapToCurrentMarkers();
+  }
+
+  function updatePlannerMapMarkers(computedStops) {
+    if (!state.map) return;
+
+    // Clear official markers & polylines
+    state.markers.forEach(m => state.map.removeLayer(m));
+    state.markers = [];
+    state.markerMap.clear();
+    if (state.polyline) {
+      state.map.removeLayer(state.polyline);
+      state.polyline = null;
     }
 
-    renderMapSpotsScroller();
+    // Clear previous planner markers & polyline
+    state.plannerMarkers.forEach(m => state.map.removeLayer(m));
+    state.plannerMarkers = [];
+    if (state.plannerPolyline) {
+      state.map.removeLayer(state.plannerPolyline);
+      state.plannerPolyline = null;
+    }
+
+    if (!computedStops || computedStops.length === 0) return;
+
+    const latlngs = [];
+
+    computedStops.forEach((stop, idx) => {
+      if (typeof stop.lat !== 'number' || typeof stop.lng !== 'number') return;
+
+      latlngs.push([stop.lat, stop.lng]);
+
+      const pinHtml = `<div class="custom-route-marker">${idx + 1}</div>`;
+      const customIcon = L.divIcon({
+        className: 'custom-route-marker-wrap',
+        html: pinHtml,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -18]
+      });
+
+      const popupContent = `
+        <div style="min-width: 190px; padding: 0.25rem;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--primary); margin-bottom:0.2rem;">站點 #${idx + 1}</div>
+          <h4 style="font-size:0.95rem; font-weight:800; margin:0 0 0.25rem 0;">${escapeHtml(stop.nameZh || stop.name)}</h4>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.35rem;">⏰ ${stop.arrivalTime} ~ ${stop.departureTime} (${stop.durationMinutes} 分)</div>
+          <div style="font-size:0.75rem; font-family:monospace; color:#0284c7; margin-bottom:0.4rem;">🚗 MC: ${escapeHtml(stop.mapCode || '無')}</div>
+          <button class="btn btn-primary btn-sm btn-planner-popup-info" style="width:100%; font-size:0.75rem; padding:0.3rem;">🔍 查看景點攻略</button>
+        </div>
+      `;
+
+      const marker = L.marker([stop.lat, stop.lng], { icon: customIcon })
+        .addTo(state.map)
+        .bindPopup(popupContent);
+
+      marker.on('popupopen', () => {
+        const popupEl = document.querySelector('.leaflet-popup-content');
+        if (popupEl) {
+          const infoBtn = popupEl.querySelector('.btn-planner-popup-info');
+          if (infoBtn) {
+            infoBtn.onclick = () => window.appOpenModal(stop.id);
+          }
+        }
+      });
+
+      state.plannerMarkers.push(marker);
+    });
+
+    if (latlngs.length > 1) {
+      state.plannerPolyline = L.polyline(latlngs, {
+        color: '#7c3aed',
+        weight: 5,
+        opacity: 0.85,
+        dashArray: '6, 8'
+      }).addTo(state.map);
+    }
+
+    fitMapToCurrentMarkers();
   }
 
   /* ==========================================================================
-     Bidirectional Focus Helpers (Timeline <-> Map)
+     Custom Planner Studio Implementation
      ========================================================================== */
-  window.appFocusOnMap = function(itemId) {
-    const item = SCHEDULE_ITEMS.find(s => s.id === itemId);
-    if (!item) return;
+  function initPlannerStudio() {
+    const addDayBtn = document.getElementById('btn-planner-add-day');
+    const delDayBtn = document.getElementById('btn-planner-del-day');
+    const startTimeInput = document.getElementById('planner-day-start-time');
+    const presetSelect = document.getElementById('planner-preset-select');
+    const openPickerBtn = document.getElementById('btn-planner-open-spot-picker');
+    const copyTextBtn = document.getElementById('btn-planner-copy-text');
+    const printBtn = document.getElementById('btn-planner-print');
+    const exportJsonBtn = document.getElementById('btn-planner-export-json');
+    const importJsonBtn = document.getElementById('btn-planner-import-json-btn');
+    const importFileInput = document.getElementById('planner-import-file-input');
+    const clearDayBtn = document.getElementById('btn-planner-clear-day');
 
-    if (window.innerWidth <= 900) {
-      switchMobileView('map');
+    if (addDayBtn) {
+      addDayBtn.addEventListener('click', () => {
+        const newDayNum = state.plannerData.days.length + 1;
+        state.plannerData.days.push({
+          day: newDayNum,
+          title: `自訂第 ${newDayNum} 天行程`,
+          startTime: '09:00',
+          stops: []
+        });
+        state.plannerData.activeDayIndex = state.plannerData.days.length - 1;
+        savePlannerData();
+        renderPlannerStudio();
+        showToast(`➕ 已新增第 ${newDayNum} 天行程！`);
+      });
     }
 
-    const marker = state.markerMap.get(itemId);
-    if (state.map) {
-      state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 15), { animate: true });
-      if (marker) {
-        setTimeout(() => marker.openPopup(), 150);
+    if (delDayBtn) {
+      delDayBtn.addEventListener('click', () => {
+        if (state.plannerData.days.length <= 1) {
+          alert('至少需保留 1 天自訂行程，無法全數刪除。若需重新編排可點擊「清空當日」。');
+          return;
+        }
+        const curDay = state.plannerData.activeDayIndex + 1;
+        if (confirm(`確定要刪除「第 ${curDay} 天」的所有景點節點嗎？此動作無法復原。`)) {
+          state.plannerData.days.splice(state.plannerData.activeDayIndex, 1);
+          // Renumber days
+          state.plannerData.days.forEach((d, idx) => d.day = idx + 1);
+          state.plannerData.activeDayIndex = Math.max(0, state.plannerData.activeDayIndex - 1);
+          savePlannerData();
+          renderPlannerStudio();
+          showToast(`🗑️ 已刪除第 ${curDay} 天行程`);
+        }
+      });
+    }
+
+    if (startTimeInput) {
+      startTimeInput.addEventListener('change', (e) => {
+        const activeDay = state.plannerData.days[state.plannerData.activeDayIndex];
+        if (activeDay) {
+          activeDay.startTime = e.target.value || '09:00';
+          savePlannerData();
+          renderPlannerStudio();
+          showToast(`⏰ 已將第 ${activeDay.day} 天出發時間更新為 ${activeDay.startTime}`);
+        }
+      });
+    }
+
+    if (presetSelect) {
+      presetSelect.addEventListener('change', (e) => {
+        const presetKey = e.target.value;
+        if (!presetKey || typeof PRESET_ITINERARIES === 'undefined' || !PRESET_ITINERARIES[presetKey]) return;
+
+        const preset = PRESET_ITINERARIES[presetKey];
+        if (confirm(`確定載入範本【${preset.title}】嗎？這將會取代目前自訂規劃中的行程天數。`)) {
+          state.plannerData.days = preset.days.map((d, idx) => ({
+            day: idx + 1,
+            title: d.title || `第 ${idx + 1} 天行程`,
+            startTime: d.startTime || '09:00',
+            stops: d.spotIds.map(id => createPlannerStop(id)).filter(Boolean)
+          }));
+          state.plannerData.activeDayIndex = 0;
+          savePlannerData();
+          renderPlannerStudio();
+          showToast(`🌟 已成功載入【${preset.title}】！`);
+        }
+        presetSelect.value = '';
+      });
+    }
+
+    if (openPickerBtn) {
+      openPickerBtn.addEventListener('click', () => {
+        openSpotPickerModal();
+      });
+    }
+
+    if (copyTextBtn) {
+      copyTextBtn.addEventListener('click', () => {
+        exportPlannerAsText();
+      });
+    }
+
+    if (printBtn) {
+      printBtn.addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    if (exportJsonBtn) {
+      exportJsonBtn.addEventListener('click', () => {
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(state.plannerData, null, 2));
+        const dlAnchor = document.createElement('a');
+        dlAnchor.setAttribute('href', dataStr);
+        dlAnchor.setAttribute('download', `okinawa-trip-custom-plan-${Date.now()}.json`);
+        document.body.appendChild(dlAnchor);
+        dlAnchor.click();
+        dlAnchor.remove();
+        showToast('📤 已匯出自訂行程 JSON 備份檔！');
+      });
+    }
+
+    if (importJsonBtn && importFileInput) {
+      importJsonBtn.addEventListener('click', () => {
+        importFileInput.click();
+      });
+
+      importFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const imported = JSON.parse(event.target.result);
+            if (imported && Array.isArray(imported.days) && imported.days.length > 0) {
+              const sanitizedDays = imported.days.map((day, dIdx) => {
+                const stops = Array.isArray(day.stops) ? day.stops.map(s => createPlannerStop(s)) : [];
+                return {
+                  day: (typeof day.day === 'number') ? day.day : (dIdx + 1),
+                  title: day.title || `第 ${dIdx + 1} 天自訂行程`,
+                  startTime: (typeof day.startTime === 'string' && /^\d{1,2}:\d{2}$/.test(day.startTime)) ? day.startTime : '09:00',
+                  stops: stops
+                };
+              });
+              let activeDayIndex = parseInt(imported.activeDayIndex, 10);
+              if (isNaN(activeDayIndex) || activeDayIndex < 0 || activeDayIndex >= sanitizedDays.length) {
+                activeDayIndex = 0;
+              }
+              state.plannerData = {
+                activeDayIndex: activeDayIndex,
+                days: sanitizedDays
+              };
+              savePlannerData();
+              renderPlannerStudio();
+              showToast('📥 成功匯入自訂行程備份！');
+            } else {
+              alert('匯入失敗：JSON 格式不符合行程結構。');
+            }
+          } catch (err) {
+            alert('檔案讀取解析錯誤，請確認上傳有效的 JSON 檔案。');
+          }
+          importFileInput.value = '';
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    if (clearDayBtn) {
+      clearDayBtn.addEventListener('click', () => {
+        const activeDay = state.plannerData.days[state.plannerData.activeDayIndex];
+        if (!activeDay) return;
+        if (confirm(`確定要清空第 ${activeDay.day} 天的所有景點嗎？`)) {
+          activeDay.stops = [];
+          savePlannerData();
+          renderPlannerStudio();
+          showToast(`🗑️ 已清空第 ${activeDay.day} 天所有景點`);
+        }
+      });
+    }
+  }
+
+  function renderPlannerStudio() {
+    const days = state.plannerData.days;
+    if (!days || days.length === 0) return;
+
+    if (state.plannerData.activeDayIndex >= days.length) {
+      state.plannerData.activeDayIndex = 0;
+    }
+
+    const activeDay = days[state.plannerData.activeDayIndex];
+
+    // 1. Render Planner Day Navigation Tabs
+    const tabsContainer = document.getElementById('planner-day-tabs');
+    if (tabsContainer) {
+      tabsContainer.innerHTML = days.map((d, idx) => `
+        <button class="planner-day-tab-btn ${idx === state.plannerData.activeDayIndex ? 'active' : ''}" data-day-index="${idx}">
+          Day ${d.day} (${d.stops.length} 站)
+        </button>
+      `).join('');
+
+      tabsContainer.querySelectorAll('.planner-day-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.plannerData.activeDayIndex = parseInt(btn.dataset.dayIndex, 10);
+          renderPlannerStudio();
+        });
+      });
+    }
+
+    // 2. Set Start Time Input
+    const startTimeInput = document.getElementById('planner-day-start-time');
+    if (startTimeInput) {
+      startTimeInput.value = activeDay.startTime || '09:00';
+    }
+
+    // 3. Ripple Timeline Propagation Calculation
+    const timeline = calculateDayTimeline(activeDay);
+
+    // 4. Update Dashboard Stats
+    const statDriveTime = document.getElementById('stat-drive-time');
+    const statDriveDist = document.getElementById('stat-drive-dist');
+    const statActivityTime = document.getElementById('stat-activity-time');
+    const statFinishTime = document.getElementById('stat-finish-time');
+    const statStopsCount = document.getElementById('stat-stops-count');
+    const statSeniorLoad = document.getElementById('stat-senior-load');
+    const statYoungScore = document.getElementById('stat-young-score');
+    const statHarmonyScore = document.getElementById('stat-harmony-score');
+
+    if (statDriveTime) {
+      if (timeline.totalDriveMins >= 60) {
+        const dh = Math.floor(timeline.totalDriveMins / 60);
+        const dm = timeline.totalDriveMins % 60;
+        statDriveTime.textContent = `${dh} 時 ${dm} 分`;
+      } else {
+        statDriveTime.textContent = `${timeline.totalDriveMins} 分`;
+      }
+    }
+    if (statDriveDist) statDriveDist.textContent = `${timeline.totalDriveKm} km`;
+    if (statActivityTime) {
+      if (timeline.totalActivityMins >= 60) {
+        const ah = Math.floor(timeline.totalActivityMins / 60);
+        const am = timeline.totalActivityMins % 60;
+        statActivityTime.textContent = `${ah} 時 ${am} 分`;
+      } else {
+        statActivityTime.textContent = `${timeline.totalActivityMins} 分`;
+      }
+    }
+    if (statFinishTime) statFinishTime.textContent = timeline.finishTime;
+    if (statStopsCount) statStopsCount.textContent = `${timeline.stopsCount} 處`;
+
+    if (statSeniorLoad) {
+      statSeniorLoad.textContent = timeline.seniorLoadLabel;
+      if (timeline.seniorLoadLabel.startsWith('🟢')) statSeniorLoad.style.color = '#059669';
+      else if (timeline.seniorLoadLabel.startsWith('🟡')) statSeniorLoad.style.color = '#d97706';
+      else statSeniorLoad.style.color = '#ef4444';
+    }
+    if (statYoungScore) statYoungScore.textContent = `${timeline.youngPhotoCount} 處必拍`;
+    if (statHarmonyScore) statHarmonyScore.textContent = `${timeline.avgHarmonyScore} / 10`;
+
+    // 5. Update Alert Box
+    const alertBox = document.getElementById('planner-alert-box');
+    if (alertBox) {
+      const alerts = [];
+
+      // Check long drive transit segments (>45m)
+      const longTransit = timeline.computedStops.find(s => s.transitFromPrev && s.transitFromPrev.durationMins >= 45);
+      if (longTransit) {
+        alerts.push(`⚠️ <strong>長途行車如廁提醒：</strong> 前往「${escapeHtml(longTransit.nameZh || longTransit.name)}」車程預估 ${longTransit.transitFromPrev.durationMins} 分鐘。依據「90分鐘如廁律」，強烈建議在中途之道之驛（道の駅）或超商停靠5分鐘，維護40~60歲長輩膝關節與如廁舒適。`);
+      }
+
+      // Check late return time (>21:00)
+      if (timeline.finishTime !== '--:--') {
+        const finishH = parseInt(timeline.finishTime.split(':')[0], 10);
+        if (finishH >= 21 || finishH < 4) {
+          alerts.push(`🌙 <strong>熟齡晚間作息提醒：</strong> 預計 ${timeline.finishTime} 返宿，行程偏晚。40~60歲熟齡族群易感體力透支，建議適度精簡最後一站或提早返宿休息。`);
+        }
+      }
+
+      if (timeline.stopsCount === 0) {
+        alerts.push(`📍 <strong>目前此日尚未安排景點：</strong> 請點擊上方「➕ 新增景點」瀏覽30處精選景點或新增自訂停靠站！`);
+      }
+
+      if (alerts.length > 0) {
+        alertBox.innerHTML = alerts.join('<br style="margin-bottom:0.4rem;">');
+        alertBox.style.display = 'block';
+        alertBox.style.borderColor = '#ef4444';
+        alertBox.style.background = 'rgba(239,68,68,0.08)';
+        alertBox.style.color = '#b91c1c';
+      } else {
+        alertBox.innerHTML = `✨ <strong>行程節奏極佳：</strong> 步調兼顧40~60歲長輩舒活休憩與25~35歲年輕探索打卡！`;
+        alertBox.style.display = 'block';
+        alertBox.style.borderColor = '#10b981';
+        alertBox.style.background = 'rgba(16,185,129,0.08)';
+        alertBox.style.color = '#065f46';
       }
     }
 
-    syncScrollerActiveChip(itemId);
+    // 6. Render Ordered Stops Stream
+    const streamContainer = document.getElementById('planner-stops-stream');
+    if (streamContainer) {
+      if (timeline.computedStops.length === 0) {
+        streamContainer.innerHTML = `
+          <div style="text-align:center; padding:3.5rem 1.5rem; background:var(--bg-surface); border:2px dashed var(--border); border-radius:var(--radius-lg);">
+            <div style="font-size:2.5rem; margin-bottom:0.5rem;">🏖️</div>
+            <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:0.35rem;">第 ${activeDay.day} 天尚未加入任何行程</h3>
+            <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.25rem;">可直接從 30 處沖繩精選節點挑選，或快速載入經典範本。</p>
+            <button class="btn btn-primary" onclick="document.getElementById('btn-planner-open-spot-picker').click()">
+              ➕ 立即瀏覽景點庫並加入
+            </button>
+          </div>
+        `;
+      } else {
+        let streamHtml = '';
+        timeline.computedStops.forEach((stop, idx) => {
+          // Transit connector before this stop
+          let transitConnectorHtml = '';
+          if (idx > 0 && stop.transitFromPrev) {
+            transitConnectorHtml = `
+              <div class="planner-transit-connector">
+                <div class="planner-transit-left">
+                  <span>${stop.transitFromPrev.isWalk ? '🚶' : '🚗'}</span>
+                  <span>${stop.transitFromPrev.text}</span>
+                </div>
+                <div class="planner-transit-right">
+                  <span>路段：第 ${idx} 站 ➜ 第 ${idx + 1} 站</span>
+                </div>
+              </div>
+            `;
+          }
 
-    // On smaller screens, scroll smoothly to the map section
-    const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
-    if (targetEl) {
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Generation highlights
+          const genCardsHtml = renderGenerationCardHtml(stop.generation);
+
+          // Duration options
+          const durations = [15, 30, 45, 60, 90, 120, 150, 180, 240];
+          const optionsHtml = durations.map(d => `
+            <option value="${d}" ${stop.durationMinutes === d ? 'selected' : ''}>停留 ${d} 分</option>
+          `).join('');
+
+          streamHtml += `
+            <div class="planner-stop-item" data-index="${idx}" draggable="true">
+              ${transitConnectorHtml}
+              <div class="planner-stop-card">
+                <div class="planner-stop-header">
+                  <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                    <span class="stop-drag-handle" title="按住拖曳可自由調換站點前後順序">⠿</span>
+                    <span class="stop-order-badge">${idx + 1}</span>
+                    <h3 style="font-size:1.05rem; font-weight:800; margin:0; color:var(--text-main);">
+                      ${stop.icon || '📍'} ${escapeHtml(stop.nameZh || stop.name)}
+                    </h3>
+                    <span class="stop-time-chip">⏰ ${stop.arrivalTime} ~ ${stop.departureTime}</span>
+                    <select class="stop-duration-select" data-index="${idx}" title="調整此景點預計停留時間">
+                      ${optionsHtml}
+                    </select>
+                    ${days.length > 1 ? `
+                      <select class="stop-move-day-select" data-index="${idx}" title="將此景點移動至其他天">
+                        <option value="">移至其他天...</option>
+                        ${days.map((d, dIdx) => dIdx !== state.plannerData.activeDayIndex ? `<option value="${dIdx}">移至 Day ${d.day}</option>` : '').join('')}
+                      </select>
+                    ` : ''}
+                  </div>
+                  <div class="stop-reorder-btns">
+                    <button class="btn-stop-ctrl" data-action="stop-up" data-index="${idx}" ${idx === 0 ? 'disabled' : ''} title="上移">⬆️</button>
+                    <button class="btn-stop-ctrl" data-action="stop-down" data-index="${idx}" ${idx === timeline.computedStops.length - 1 ? 'disabled' : ''} title="下移">⬇️</button>
+                    <button class="btn-stop-ctrl btn-stop-delete" data-action="stop-delete" data-index="${idx}" title="刪除此站">✕</button>
+                  </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; font-size:0.8rem; color:var(--text-muted);">
+                  <span>${escapeHtml(stop.name)} · ${escapeHtml(stop.nameJa || '')}</span>
+                  <span class="tag-badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${escapeHtml(stop.categoryLabel || '景點')}</span>
+                  <span style="font-family:monospace; font-weight:700; color:#0284c7;">MC: ${escapeHtml(stop.mapCode || '無')}</span>
+                </div>
+
+                ${genCardsHtml}
+
+                <div class="card-footer" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border);">
+                  <div class="card-address" style="font-size:0.8rem;">
+                    <span>📍 ${escapeHtml(stop.address || '沖繩縣')}</span>
+                  </div>
+                  <div class="card-footer-buttons">
+                    <button class="btn-card-action primary" data-action="view-stop-modal" data-id="${escapeHtml(stop.id)}">
+                      <span>🔍 景點攻略</span>
+                    </button>
+                    <button class="btn-card-action" data-action="locate-planner-stop" data-index="${idx}">
+                      <span>📍 地圖定位</span>
+                    </button>
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.nameZh || stop.name)}" target="_blank" rel="noopener" class="btn-card-action">
+                      <span>🗺️ 導航</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        streamContainer.innerHTML = streamHtml;
+
+        // Attach HTML5 Drag & Drop reordering
+        let draggedIndex = null;
+        streamContainer.querySelectorAll('.planner-stop-item').forEach(itemEl => {
+          itemEl.addEventListener('dragstart', (e) => {
+            draggedIndex = parseInt(itemEl.dataset.index, 10);
+            itemEl.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', String(draggedIndex));
+          });
+
+          itemEl.addEventListener('dragend', () => {
+            itemEl.classList.remove('dragging');
+            streamContainer.querySelectorAll('.planner-stop-item').forEach(el => el.classList.remove('drag-over'));
+          });
+
+          itemEl.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            itemEl.classList.add('drag-over');
+          });
+
+          itemEl.addEventListener('dragleave', () => {
+            itemEl.classList.remove('drag-over');
+          });
+
+          itemEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            itemEl.classList.remove('drag-over');
+            const targetIdx = parseInt(itemEl.dataset.index, 10);
+            if (draggedIndex !== null && !isNaN(targetIdx) && draggedIndex !== targetIdx && activeDay.stops[draggedIndex]) {
+              const moved = activeDay.stops.splice(draggedIndex, 1)[0];
+              activeDay.stops.splice(targetIdx, 0, moved);
+              savePlannerData();
+              renderPlannerStudio();
+              showToast(`🔀 已調整行程順序：【${moved.nameZh || moved.name}】移至第 ${targetIdx + 1} 站`);
+            }
+          });
+        });
+
+        // Attach Inter-day move select
+        streamContainer.querySelectorAll('.stop-move-day-select').forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            const stopIdx = parseInt(e.target.dataset.index, 10);
+            const targetDayIdx = parseInt(e.target.value, 10);
+            if (!isNaN(targetDayIdx) && targetDayIdx >= 0 && targetDayIdx < days.length && activeDay.stops[stopIdx]) {
+              const movedStop = activeDay.stops.splice(stopIdx, 1)[0];
+              days[targetDayIdx].stops.push(movedStop);
+              savePlannerData();
+              renderPlannerStudio();
+              showToast(`🚚 已將【${movedStop.nameZh || movedStop.name}】移至第 ${days[targetDayIdx].day} 天！`);
+            }
+          });
+        });
+
+        // Attach listeners to stop controls
+        streamContainer.querySelectorAll('.stop-duration-select').forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            const stopIdx = parseInt(e.target.dataset.index, 10);
+            const val = parseInt(e.target.value, 10);
+            if (!isNaN(val) && activeDay.stops[stopIdx]) {
+              activeDay.stops[stopIdx].durationMinutes = val;
+              savePlannerData();
+              renderPlannerStudio();
+            }
+          });
+        });
+
+        streamContainer.querySelectorAll('[data-action="stop-up"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.index, 10);
+            if (idx > 0) {
+              const temp = activeDay.stops[idx];
+              activeDay.stops[idx] = activeDay.stops[idx - 1];
+              activeDay.stops[idx - 1] = temp;
+              savePlannerData();
+              renderPlannerStudio();
+            }
+          });
+        });
+
+        streamContainer.querySelectorAll('[data-action="stop-down"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.index, 10);
+            if (idx < activeDay.stops.length - 1) {
+              const temp = activeDay.stops[idx];
+              activeDay.stops[idx] = activeDay.stops[idx + 1];
+              activeDay.stops[idx + 1] = temp;
+              savePlannerData();
+              renderPlannerStudio();
+            }
+          });
+        });
+
+        streamContainer.querySelectorAll('[data-action="stop-delete"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.index, 10);
+            const removed = activeDay.stops[idx];
+            activeDay.stops.splice(idx, 1);
+            savePlannerData();
+            renderPlannerStudio();
+            showToast(`🗑️ 已移除停靠站：${removed.nameZh || removed.name}`);
+          });
+        });
+
+        streamContainer.querySelectorAll('[data-action="view-stop-modal"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            window.appOpenModal(btn.dataset.id);
+          });
+        });
+
+        streamContainer.querySelectorAll('[data-action="locate-planner-stop"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.index, 10);
+            const stop = timeline.computedStops[idx];
+            if (stop && state.map) {
+              state.map.setView([stop.lat, stop.lng], 15, { animate: true });
+              if (state.plannerMarkers[idx]) {
+                state.plannerMarkers[idx].openPopup();
+              }
+              const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
+              if (targetEl && window.innerWidth <= 900) {
+                switchMobileView('map');
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+              showToast(`📍 地圖已定位至第 ${idx + 1} 站：${stop.nameZh || stop.name}`);
+            }
+          });
+        });
+      }
     }
-    showToast(`📍 已在地圖定位：${item.nameZh}`);
-  };
 
-  window.appScrollToCard = function(itemId) {
-    if (window.innerWidth <= 900) {
-      switchMobileView('timeline');
+    // 7. Update Map Markers for Planner Mode
+    updatePlannerMapMarkers(timeline.computedStops);
+  }
+
+  function addSpotToPlannerDay(spotIdOrObj, dayIndex) {
+    if (!state.plannerData.days || state.plannerData.days.length === 0) {
+      state.plannerData.days = [{ day: 1, title: '第 1 天自訂行程', startTime: '09:00', stops: [] }];
+      state.plannerData.activeDayIndex = 0;
     }
 
-    let cardEl = document.getElementById(`item-${itemId}`);
-    
-    // If card is currently hidden due to day filter, switch to that day first
-    if (!cardEl) {
-      const item = SCHEDULE_ITEMS.find(s => s.id === itemId);
-      if (item) {
-        state.activeDay = item.day;
-        const dayTabs = document.querySelectorAll('.day-tab-btn');
-        dayTabs.forEach(b => {
-          if (b.dataset.day === String(item.day)) {
-            b.classList.add('active');
-          } else {
-            b.classList.remove('active');
+    const targetIdx = (typeof dayIndex === 'number' && dayIndex >= 0 && dayIndex < state.plannerData.days.length)
+      ? dayIndex
+      : state.plannerData.activeDayIndex;
+
+    const targetDay = state.plannerData.days[targetIdx];
+    const newStop = createPlannerStop(spotIdOrObj);
+    targetDay.stops.push(newStop);
+
+    savePlannerData();
+
+    if (state.itineraryMode === 'planner') {
+      renderPlannerStudio();
+    }
+
+    showToast(`✅ 已將【${newStop.nameZh || newStop.name}】加入第 ${targetDay.day} 天行程！`);
+  }
+
+  function addSpotToCurrentPlannerDay(spotIdOrObj) {
+    addSpotToPlannerDay(spotIdOrObj, state.plannerData.activeDayIndex);
+  }
+
+  function exportPlannerAsText() {
+    const days = state.plannerData.days;
+    if (!days || days.length === 0) {
+      showToast('尚無任何行程可複製');
+      return;
+    }
+
+    let text = '🚗 2026 沖繩自由客製自駕行程手冊\n';
+    text += '================================\n';
+
+    days.forEach(day => {
+      const timeline = calculateDayTimeline(day);
+      text += `\n📅 第 ${day.day} 天 (${day.title || '當日行程'})\n`;
+      text += `⏰ 出發時刻：${day.startTime} | 🏁 返宿結束：${timeline.finishTime}\n`;
+      text += `🛣️ 總行駛里程：${timeline.totalDriveKm} km | 總行車時間：${timeline.totalDriveMins} 分鐘\n`;
+      text += `⏱️ 景點活動時長：${timeline.totalActivityMins} 分鐘 | 停靠點數：${timeline.stopsCount} 處\n`;
+      text += '--------------------------------\n';
+
+      if (timeline.computedStops.length === 0) {
+        text += '(當日尚未安排景點)\n';
+      } else {
+        timeline.computedStops.forEach((stop, idx) => {
+          if (idx > 0 && stop.transitFromPrev) {
+            text += `   ⬇️  ${stop.transitFromPrev.text}\n`;
+          }
+          text += `${idx + 1}. [${stop.arrivalTime} ~ ${stop.departureTime}] 【${stop.nameZh || stop.name}】 (停留 ${stop.durationMinutes} 分)\n`;
+          text += `   - 日本車機 MapCode: ${stop.mapCode || '無'}\n`;
+          text += `   - 地點/地址: ${stop.address || '沖繩'}\n`;
+          if (stop.generation) {
+            if (stop.generation.senior && stop.generation.senior.keyTip) {
+              text += `   - 🧓 熟齡舒活指南: ${stop.generation.senior.keyTip}\n`;
+            }
+            if (stop.generation.young && stop.generation.young.photoSpot) {
+              text += `   - 📸 年輕探索重點: ${stop.generation.young.photoSpot}\n`;
+            }
           }
         });
-        state.activeCategory = 'all';
-        document.querySelectorAll('.cat-pill').forEach(p => {
-          if (p.dataset.category === 'all') p.classList.add('active');
-          else p.classList.remove('active');
-        });
-        renderTimeline();
-        updateMapMarkers();
-        updateCategoryPillCounts();
-        cardEl = document.getElementById(`item-${itemId}`);
       }
-    }
+    });
 
-    if (cardEl) {
-      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      cardEl.classList.remove('highlight-pulse');
-      void cardEl.offsetWidth; // Trigger reflow
-      cardEl.classList.add('highlight-pulse');
-      setTimeout(() => cardEl.classList.remove('highlight-pulse'), 2400);
-    }
-  };
+    text += '\n================================\n';
+    text += '👥 跨世代共融黃金律：每 60~90 分鐘主動停靠道之驛或超商如廁活動筋骨，全家出遊零負擔！';
+
+    copyTextToClipboard(text, '📋 已複製自訂行程時間表至剪貼簿！');
+  }
 
   /* ==========================================================================
-     Spot Detail Modal
+     Spot Picker Modal
+     ========================================================================== */
+  const pickerState = {
+    category: 'all',
+    gen: 'all',
+    query: ''
+  };
+
+  function initSpotPickerModal() {
+    const modal = document.getElementById('spot-picker-modal');
+    const closeBtn = document.getElementById('picker-modal-close-btn');
+    const searchInput = document.getElementById('picker-search-input');
+    const toggleCustomBtn = document.getElementById('btn-toggle-custom-stop-form');
+    const customForm = document.getElementById('custom-stop-form');
+    const submitCustomBtn = document.getElementById('btn-submit-custom-stop');
+
+    if (closeBtn && modal) {
+      closeBtn.addEventListener('click', () => {
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('open');
+          document.body.style.overflow = '';
+        }
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        pickerState.query = e.target.value.trim().toLowerCase();
+        renderPickerCatalog();
+      });
+    }
+
+    // Category pills in picker
+    const catPills = document.querySelectorAll('[data-picker-cat]');
+    catPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        catPills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        pickerState.category = pill.dataset.pickerCat;
+        renderPickerCatalog();
+      });
+    });
+
+    // Gen pills in picker
+    const genPills = document.querySelectorAll('[data-picker-gen]');
+    genPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        genPills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        pickerState.gen = pill.dataset.pickerGen;
+        renderPickerCatalog();
+      });
+    });
+
+    // Custom Stop toggle & submit
+    if (toggleCustomBtn && customForm) {
+      toggleCustomBtn.addEventListener('click', () => {
+        customForm.style.display = customForm.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+
+    if (submitCustomBtn) {
+      submitCustomBtn.addEventListener('click', () => {
+        const nameInput = document.getElementById('custom-spot-name');
+        const catSelect = document.getElementById('custom-spot-category');
+        const durInput = document.getElementById('custom-spot-duration');
+        const addrInput = document.getElementById('custom-spot-address');
+        const regionSelect = document.getElementById('custom-spot-region');
+
+        const name = nameInput ? nameInput.value.trim() : '';
+        if (!name) {
+          alert('請輸入景點或自訂地點名稱');
+          return;
+        }
+
+        const category = catSelect ? catSelect.value : 'attraction';
+        const duration = durInput ? (parseInt(durInput.value, 10) || 60) : 60;
+        const address = addrInput ? addrInput.value.trim() : '沖繩自訂地點';
+        const selectedRegion = regionSelect ? regionSelect.value : 'naha';
+
+        const catIcons = {
+          food: '🍣',
+          shopping: '🛍️',
+          attraction: '⛩️',
+          hotel: '🏡',
+          transport: '🚗'
+        };
+
+        const regionCoords = {
+          naha: { lat: 26.2124, lng: 127.6809 },
+          south: { lat: 26.1360, lng: 127.6780 },
+          central_west: { lat: 26.3167, lng: 127.7570 },
+          central_north: { lat: 26.4950, lng: 127.8550 },
+          north: { lat: 26.6940, lng: 127.8780 },
+          east: { lat: 26.3350, lng: 127.9150 }
+        };
+
+        let targetCoords = regionCoords[selectedRegion] || regionCoords.naha;
+        const textToCheck = (name + ' ' + address).toLowerCase();
+        if (textToCheck.includes('名護') || textToCheck.includes('本部') || textToCheck.includes('美麗海') || textToCheck.includes('古宇利') || textToCheck.includes('今歸仁')) {
+          targetCoords = regionCoords.north;
+        } else if (textToCheck.includes('恩納') || textToCheck.includes('讀谷') || textToCheck.includes('殘波')) {
+          targetCoords = regionCoords.central_north;
+        } else if (textToCheck.includes('北谷') || textToCheck.includes('美國村') || textToCheck.includes('宜野灣') || textToCheck.includes('浦添') || textToCheck.includes('parco')) {
+          targetCoords = regionCoords.central_west;
+        } else if (textToCheck.includes('糸滿') || textToCheck.includes('南城') || textToCheck.includes('豐見城') || textToCheck.includes('八重瀨') || textToCheck.includes('奧武島')) {
+          targetCoords = regionCoords.south;
+        } else if (textToCheck.includes('宇流麻') || textToCheck.includes('海中道路') || textToCheck.includes('勝連') || textToCheck.includes('伊計')) {
+          targetCoords = regionCoords.east;
+        }
+
+        const customObj = {
+          id: 'custom-' + Date.now(),
+          name: name,
+          nameZh: name,
+          nameJa: '',
+          category: category,
+          categoryLabel: getCategoryLabel(category),
+          icon: catIcons[category] || '📍',
+          lat: targetCoords.lat + (Math.random() - 0.5) * 0.01,
+          lng: targetCoords.lng + (Math.random() - 0.5) * 0.01,
+          address: address || '沖繩自訂地點',
+          mapCode: '自訂私房地點',
+          durationMinutes: duration,
+          tags: ['自訂私房點', getCategoryLabel(category)],
+          desc: `旅客自訂私房節點：${name} (${address})`,
+          tips: '私房自選景點，請依現場開放時間靈活調整。',
+          generation: {
+            senior: {
+              walkingLoad: '平緩舒適',
+              walkingScore: 'green',
+              seatingRest: '設有休憩環境，可依自身步調放鬆歇息',
+              foodHighlights: '品嚐沖繩在地風味小吃或茶飲',
+              cultureShopping: '深入體驗在地南國海島氛圍',
+              keyTip: '抵達時先確認洗手間動線，長輩放慢腳步'
+            },
+            young: {
+              photoSpot: '私房特色取景點，記錄專屬沖繩打卡美照',
+              trendyFood: '發掘巷弄私房美味與潮流亮點',
+              shoppingNightlife: '彈性探索自由拍照',
+              keyTip: '注意營業時間與出發動線'
+            },
+            harmony: {
+              score: 9.3,
+              advice: '自由調配停留時間，長輩舒適品茶、年輕人拍照探索，皆大歡喜。',
+              splitMeetingPoint: '景點大門或就近咖啡沙發座'
+            }
+          }
+        };
+
+        addSpotToCurrentPlannerDay(customObj);
+        nameInput.value = '';
+        if (addrInput) addrInput.value = '';
+        if (customForm) customForm.style.display = 'none';
+        if (modal) modal.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    }
+  }
+
+  function getCategoryLabel(cat) {
+    const labels = {
+      food: '老饕美食',
+      shopping: '購物商場',
+      attraction: '景點文化',
+      hotel: '住宿基地',
+      transport: '交通租還'
+    };
+    return labels[cat] || '景點文化';
+  }
+
+  function openSpotPickerModal() {
+    const modal = document.getElementById('spot-picker-modal');
+    if (!modal) return;
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderPickerCatalog();
+  }
+
+  function renderPickerCatalog() {
+    const grid = document.getElementById('picker-spots-grid');
+    if (!grid || typeof SPOTS_CATALOG === 'undefined') return;
+
+    const filtered = SPOTS_CATALOG.filter(spot => {
+      // Category filter
+      if (pickerState.category !== 'all') {
+        if (spot.category !== pickerState.category) return false;
+      }
+
+      // Gen filter
+      if (pickerState.gen === 'senior') {
+        if (!spot.generation || !spot.generation.senior || spot.generation.senior.walkingScore === 'red') return false;
+      } else if (pickerState.gen === 'young') {
+        if (!spot.generation || !spot.generation.young || (!spot.generation.young.photoSpot && !spot.generation.young.trendyFood)) return false;
+      } else if (pickerState.gen === 'harmony') {
+        const score = (spot.generation && spot.generation.harmony && spot.generation.harmony.score) || (spot.generation && spot.generation.harmonyScore) || 0;
+        if (score < 9.0) return false;
+      }
+
+      // Query filter
+      if (pickerState.query) {
+        const q = pickerState.query;
+        const match = (spot.nameZh && spot.nameZh.toLowerCase().includes(q)) ||
+                      (spot.name && spot.name.toLowerCase().includes(q)) ||
+                      (spot.nameJa && spot.nameJa.toLowerCase().includes(q)) ||
+                      (spot.address && spot.address.toLowerCase().includes(q)) ||
+                      (spot.mapCode && spot.mapCode.toLowerCase().includes(q)) ||
+                      (spot.tags && spot.tags.some(t => t.toLowerCase().includes(q)));
+        if (!match) return false;
+      }
+
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+          <div style="font-size:2rem; margin-bottom:0.4rem;">🔍</div>
+          <div style="font-weight:700;">查無符合條件的景點</div>
+          <div style="font-size:0.8rem; margin-top:0.25rem;">請更換分類標籤或清除關鍵字搜尋</div>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(spot => {
+      const senior = spot.generation ? spot.generation.senior : null;
+      const young = spot.generation ? spot.generation.young : null;
+      const walkScore = senior && senior.walkingScore === 'green' ? '🟢 輕鬆低步數' : (senior && senior.walkingScore === 'amber' ? '🟡 中度平坦' : '🔴 坡度較多');
+
+      return `
+        <div class="picker-spot-card">
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.35rem;">
+              <span style="font-size:1.4rem;">${spot.icon}</span>
+              <span class="tag-badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${escapeHtml(spot.categoryLabel)}</span>
+            </div>
+            <div class="picker-spot-title">${escapeHtml(spot.nameZh)}</div>
+            <div class="picker-spot-cat">${escapeHtml(spot.name)} · 建議 ${spot.defaultDurationMinutes || 60} 分</div>
+            
+            <div style="margin-top:0.5rem; font-size:0.775rem; color:var(--text-muted); display:flex; flex-direction:column; gap:0.25rem;">
+              <div>🧓 <strong>熟齡：</strong><span style="color:#059669;">${walkScore}</span></div>
+              <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(young && young.photoSpot ? young.photoSpot : '')}">
+                📸 <strong>年輕：</strong>${escapeHtml(young && young.photoSpot ? young.photoSpot : '打卡勝地')}
+              </div>
+            </div>
+          </div>
+
+          <div class="picker-spot-footer">
+            <button class="btn btn-secondary btn-sm btn-picker-preview" data-id="${escapeHtml(spot.id)}" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
+              🔍 攻略
+            </button>
+            <button class="btn-picker-add" data-id="${escapeHtml(spot.id)}">
+              ➕ 加入此日
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    grid.querySelectorAll('.btn-picker-add').forEach(btn => {
+      btn.addEventListener('click', () => {
+        addSpotToCurrentPlannerDay(btn.dataset.id);
+        const modal = document.getElementById('spot-picker-modal');
+        if (modal) modal.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
+
+    grid.querySelectorAll('.btn-picker-preview').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.appOpenModal(btn.dataset.id);
+      });
+    });
+  }
+
+  /* ==========================================================================
+     Spot Detail Modal with 3-Perspective Tabs & Planner Action
      ========================================================================== */
   window.appOpenModal = function(id) {
-    const item = SCHEDULE_ITEMS.find(s => s.id === id);
+    const item = findCatalogSpot(id);
     const modalOverlay = document.getElementById('spot-detail-modal');
     if (!item || !modalOverlay) return;
 
     document.getElementById('modal-title').textContent = item.nameZh;
-    document.getElementById('modal-subtitle').textContent = `${item.name} (${item.nameJa})`;
-    
+    document.getElementById('modal-subtitle').textContent = `${item.name} (${item.nameJa || ''})`;
+
+    const gen = item.generation || {};
+    const senior = gen.senior || {};
+    const young = gen.young || {};
+    const harmonyScore = (gen.harmony && typeof gen.harmony.score === 'number') ? gen.harmony.score : (gen.harmonyScore || 9.5);
+    const harmonyAdvice = (gen.harmony && gen.harmony.advice) ? gen.harmony.advice : (gen.harmonyAdvice || '');
+
+    const walkColor = senior.walkingScore === 'green' ? '#10b981' : (senior.walkingScore === 'amber' ? '#f59e0b' : '#ef4444');
+
     document.getElementById('modal-content').innerHTML = `
       <div style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
-        <span class="card-time-badge">⏰ 行程時間：Day ${item.day} · ${item.time}</span>
-        <span class="card-duration-badge">⏱️ 停留時間：${item.duration}</span>
-        <span class="tag-badge" style="background: var(--primary-light); color: var(--primary); font-size: 0.8rem;">${escapeHtml(item.categoryLabel)}</span>
+        <span class="card-duration-badge">⏱️ 建議停留：${item.defaultDurationMinutes || item.duration || '60'} 分鐘</span>
+        <span class="tag-badge" style="background: var(--primary-light); color: var(--primary); font-size: 0.8rem;">${escapeHtml(item.categoryLabel || '沖繩精選')}</span>
+        <button class="btn btn-primary btn-sm btn-modal-quick-add" style="margin-left:auto; font-size:0.8rem;">
+          ➕ 快速加入 (Day ${(state.plannerData.activeDayIndex || 0) + 1})
+        </button>
       </div>
 
       <div style="margin-bottom: 1.25rem;">
@@ -939,15 +2377,72 @@ document.addEventListener('DOMContentLoaded', () => {
         <p style="font-size: 0.925rem; color: var(--text-muted); line-height: 1.6;">${escapeHtml(item.desc)}</p>
       </div>
 
+      <!-- 3 Structured Generation Perspective Cards -->
+      <div style="display:flex; flex-direction:column; gap:0.85rem; margin-bottom:1.25rem;">
+        
+        <!-- Senior Perspective Card -->
+        <div style="background: rgba(16,185,129,0.06); border-left: 4px solid #10b981; border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-wrap:wrap;">
+            <h4 style="font-size: 0.925rem; font-weight: 800; color: #059669; margin:0;">🧓 40~60歲 熟齡舒活指南</h4>
+            <span style="font-size:0.775rem; font-weight:700; color:${walkColor}; border:1px solid ${walkColor}; padding:0.1rem 0.45rem; border-radius:var(--radius-full);">
+              🚶 步數強度：${escapeHtml(senior.walkingLoad || '輕鬆舒適')}
+            </span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
+            <strong>🪑 座椅空調：</strong>${escapeHtml(senior.seatingRest || '設有座位環境可供歇息')}
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
+            <strong>🍵 餐飲解渴：</strong>${escapeHtml(senior.foodHighlights || '提供清淡海鮮、熱茶或在地小點')}
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.35rem;">
+            <strong>⛩️ 文化伴手：</strong>${escapeHtml(senior.cultureShopping || '在地身心祈福與精選特產')}
+          </div>
+          <div style="background:rgba(16,185,129,0.12); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); font-size:0.8rem; color:#065f46; font-weight:600;">
+            💡 舒活實戰對策：${escapeHtml(senior.keyTip || '下車可先確認洗手間與電梯動線，放慢遊覽步調。')}
+          </div>
+        </div>
+
+        <!-- Young Perspective Card -->
+        <div style="background: rgba(245,158,11,0.06); border-left: 4px solid #f59e0b; border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">
+            <h4 style="font-size: 0.925rem; font-weight: 800; color: #d97706; margin:0;">📸 25~35歲 年輕探索指南</h4>
+            <span class="tag-badge" style="background: rgba(245,158,11,0.15); color: #b45309; font-size: 0.75rem;">#打卡熱點</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
+            <strong>📷 IG絕景拍照：</strong>${escapeHtml(young.photoSpot || '熱門出片打卡取景點')}
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
+            <strong>🍜 話題必吃：</strong>${escapeHtml(young.trendyFood || '網路排隊熱門美食')}
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.35rem;">
+            <strong>🛍️ 潮流亮點：</strong>${escapeHtml(young.shoppingNightlife || '特色服飾、露營戶外選品或夜間氛圍')}
+          </div>
+          <div style="background:rgba(245,158,11,0.12); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); font-size:0.8rem; color:#92400e; font-weight:600;">
+            ⚡ 探索實戰攻略：${escapeHtml(young.keyTip || '把握自然光最佳時間拍照，分流採購更加高效。')}
+          </div>
+        </div>
+
+        <!-- Cross-Gen Harmony Advice -->
+        <div style="background: rgba(124,58,237,0.06); border-left: 4px solid #7c3aed; border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+          <h4 style="font-size: 0.925rem; font-weight: 800; color: #7c3aed; margin-bottom: 0.25rem;">
+            🤝 跨世代共榮契合度：${harmonyScore} / 10
+          </h4>
+          <p style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin:0;">
+            ${escapeHtml(harmonyAdvice || '全體各取所需，長輩在舒適座位喝茶看海，年輕人前往打卡拍照，約定集合時間皆大歡喜。')}
+          </p>
+        </div>
+
+      </div>
+
       <div style="background: var(--bg-subtle); border-left: 4px solid var(--accent); padding: 0.85rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem;">
         <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">💡 實用攻略與注意事項</h4>
-        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">${escapeHtml(item.tips)}</p>
+        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">${escapeHtml(item.tips || '自駕導航請優先輸入MapCode，進入停車場請遵從引導。')}</p>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.25rem;">
         <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
           <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">日本車機 MapCode</div>
-          <div style="font-family: monospace; font-size: 1rem; font-weight: 700; color: var(--primary); margin-top: 0.2rem;">${escapeHtml(item.mapCode)}</div>
+          <div style="font-family: monospace; font-size: 1rem; font-weight: 700; color: var(--primary); margin-top: 0.2rem;">${escapeHtml(item.mapCode || '無')}</div>
         </div>
         <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
           <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">地址 / 區域</div>
@@ -956,15 +2451,43 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    document.getElementById('modal-nav-link').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery || item.name)}`;
+    document.getElementById('modal-nav-link').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.nameZh || item.name)}`;
+
     const copyBtn = document.getElementById('modal-copy-mapcode-btn');
     if (copyBtn) {
       copyBtn.textContent = '📋 複製 MapCode';
       copyBtn.onclick = () => {
-        const cleanCode = item.mapCode.trim();
+        const cleanCode = (item.mapCode || '').trim();
         copyTextToClipboard(cleanCode, `📋 已複製 MapCode：${cleanCode}`);
         copyBtn.textContent = '✓ 已複製！';
         setTimeout(() => { copyBtn.textContent = '📋 複製 MapCode'; }, 1600);
+      };
+    }
+
+    // Setup day selector in modal footer
+    const daySelect = document.getElementById('modal-select-planner-day');
+    if (daySelect && state.plannerData && Array.isArray(state.plannerData.days)) {
+      daySelect.innerHTML = state.plannerData.days.map((d, dIdx) => `
+        <option value="${dIdx}" ${dIdx === state.plannerData.activeDayIndex ? 'selected' : ''}>Day ${d.day} (${(d.stops || []).length} 站)</option>
+      `).join('');
+    }
+
+    const addPlannerBtn = document.getElementById('btn-modal-add-to-custom');
+    if (addPlannerBtn) {
+      addPlannerBtn.onclick = () => {
+        const selectedDayIdx = daySelect ? parseInt(daySelect.value, 10) : state.plannerData.activeDayIndex;
+        addSpotToPlannerDay(item, selectedDayIdx);
+        modalOverlay.classList.remove('open');
+        document.body.style.overflow = '';
+      };
+    }
+
+    const quickAddBtn = modalOverlay.querySelector('.btn-modal-quick-add');
+    if (quickAddBtn) {
+      quickAddBtn.onclick = () => {
+        addSpotToCurrentPlannerDay(item);
+        modalOverlay.classList.remove('open');
+        document.body.style.overflow = '';
       };
     }
 
@@ -992,7 +2515,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Touch swipe down on bottom sheet header or drag handle to dismiss
     let touchStartY = 0;
     let isSwiping = false;
 
@@ -1030,6 +2552,74 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  /* ==========================================================================
+     Global Coordinate Helpers
+     ========================================================================== */
+  window.appFocusOnMap = function(itemId) {
+    const item = findCatalogSpot(itemId);
+    if (!item) return;
+
+    if (window.innerWidth <= 900) {
+      switchMobileView('map');
+    }
+
+    const marker = state.markerMap.get(itemId);
+    if (state.map) {
+      state.map.setView([item.lat, item.lng], Math.max(state.map.getZoom(), 15), { animate: true });
+      if (marker) {
+        setTimeout(() => marker.openPopup(), 150);
+      }
+    }
+
+    syncScrollerActiveChip(itemId);
+
+    const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    showToast(`📍 已在地圖定位：${item.nameZh}`);
+  };
+
+  window.appScrollToCard = function(itemId) {
+    if (window.innerWidth <= 900) {
+      switchMobileView('timeline');
+    }
+
+    let cardEl = document.getElementById(`item-${itemId}`);
+    
+    if (!cardEl) {
+      const item = SCHEDULE_ITEMS.find(s => s.id === itemId);
+      if (item) {
+        state.activeDay = item.day;
+        const dayTabs = document.querySelectorAll('.day-tab-btn');
+        dayTabs.forEach(b => {
+          if (b.dataset.day === String(item.day)) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+        state.activeCategory = 'all';
+        document.querySelectorAll('.cat-pill').forEach(p => {
+          if (p.dataset.category === 'all') p.classList.add('active');
+          else p.classList.remove('active');
+        });
+        renderTimeline();
+        updateMapMarkers();
+        updateCategoryPillCounts();
+        cardEl = document.getElementById(`item-${itemId}`);
+      }
+    }
+
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      cardEl.classList.remove('highlight-pulse');
+      void cardEl.offsetWidth; // Trigger reflow
+      cardEl.classList.add('highlight-pulse');
+      setTimeout(() => cardEl.classList.remove('highlight-pulse'), 2400);
+    }
+  };
 
   /* ==========================================================================
      Travel Toolkit Tabs
@@ -1254,7 +2844,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyBtns = document.querySelectorAll('.btn-copy-chictrip');
     copyBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        copyTextToClipboard(TRIP_METADATA.chictripUrl, '🔗 已複製去趣行程專屬分享連結！');
+        if (typeof TRIP_METADATA !== 'undefined') {
+          copyTextToClipboard(TRIP_METADATA.chictripUrl, '🔗 已複製去趣行程專屬分享連結！');
+        }
       });
     });
 
@@ -1278,105 +2870,98 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           backToTopBtn.classList.remove('visible');
         }
-      }, { passive: true });
+      });
 
       backToTopBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     }
 
-    const sections = [
-      document.getElementById('schedule-section'),
-      document.getElementById('map-section'),
-      document.getElementById('toolkit-section'),
-      document.getElementById('chictrip-section')
-    ].filter(Boolean);
-
+    const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-link');
-    const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn:not(.chictrip-btn)');
 
-    // Mobile Bottom Nav Click Handlers with View Mode Routing
-    mobileNavBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const target = btn.dataset.target;
-        if (target === 'map-section') {
-          if (window.innerWidth <= 900) {
-            e.preventDefault();
-            switchMobileView('map');
-            const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
-            if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    function onScroll() {
+      const scrollY = window.pageYOffset;
+      sections.forEach(current => {
+        const sectionHeight = current.offsetHeight;
+        const sectionTop = current.offsetTop - 120;
+        const sectionId = current.getAttribute('id');
+
+        if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+          setActiveNav(sectionId);
+        }
+      });
+    }
+
+    function setActiveNav(targetId) {
+      navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          if (href.substring(1) === targetId) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
           }
-        } else if (target === 'schedule-section') {
-          if (window.innerWidth <= 900) {
-            switchMobileView('timeline');
+        }
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Smooth Anchor Scroll
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        const targetId = link.getAttribute('href');
+        if (targetId && targetId.startsWith('#')) {
+          const targetEl = document.querySelector(targetId);
+          if (targetEl) {
+            e.preventDefault();
+            const headerOffset = 70;
+            const elementPosition = targetEl.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
           }
         }
       });
     });
-
-    // Window Resize Debounce to Keep Leaflet Tiles Perfectly Aligned
-    let resizeTimer = null;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        if (state.map) {
-          state.map.invalidateSize();
-        }
-      }, 150);
-    }, { passive: true });
-
-    function setActiveNav(targetId) {
-      navLinks.forEach(link => {
-        const href = link.getAttribute('href') || '';
-        if (href === '#' + targetId) {
-          link.classList.add('active');
-        } else {
-          link.classList.remove('active');
-        }
-      });
-
-      mobileNavBtns.forEach(btn => {
-        if (btn.dataset.target === targetId) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
-    }
-
-    if ('IntersectionObserver' in window && sections.length > 0) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            let activeId = entry.target.id;
-            if (activeId === 'schedule-section' && state.mobileView === 'map' && window.innerWidth <= 900) {
-              activeId = 'map-section';
-            }
-            setActiveNav(activeId);
-          }
-        });
-      }, { threshold: 0.25 });
-
-      sections.forEach(s => observer.observe(s));
-    }
   }
 
   /* ==========================================================================
-     Toast Notification Helper
+     Toast Notification System
      ========================================================================== */
   function showToast(msg) {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
     const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `<span>${escapeHtml(msg)}</span>`;
+    toast.className = 'toast-message';
+    toast.textContent = msg;
+
     container.appendChild(toast);
 
-    setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 300);
-    }, 2800);
+      toast.style.animation = 'toastOut 0.3s forwards ease-in';
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3200);
   }
+
+  /* Expose internal engine for testing and programmatic automation */
+  window.__okinawaApp__ = {
+    calcDistanceKm,
+    calculateTransit,
+    formatMinutesToTime,
+    calculateDayTimeline,
+    createPlannerStop,
+    findCatalogSpot,
+    addSpotToPlannerDay,
+    addSpotToCurrentPlannerDay,
+    state
+  };
 });
