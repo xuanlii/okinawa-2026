@@ -354,13 +354,19 @@ def test_jsc_execution():
       throw new Error("Corrupted stops resilience failed");
     }
 
-    // 6. Test all preset itineraries
+    // 6. Test all preset itineraries (strictly 5 days each)
     var presets = Object.keys(PRESET_ITINERARIES);
     for (var p = 0; p < presets.length; p++) {
       var pKey = presets[p];
       var preset = PRESET_ITINERARIES[pKey];
+      if (!preset.days || preset.days.length !== 5) {
+        throw new Error("Preset " + pKey + " must strictly contain 5 days, found: " + (preset.days ? preset.days.length : 0));
+      }
       for (var d = 0; d < preset.days.length; d++) {
         var dayObj = preset.days[d];
+        if (dayObj.day !== d + 1) {
+          throw new Error("Preset " + pKey + " day " + (d + 1) + " numbered incorrectly: " + dayObj.day);
+        }
         var dayStops = dayObj.spotIds.map(function(id) {
           var sp = engine.findCatalogSpot(id);
           if (!sp) throw new Error("Missing spot in preset " + pKey + ": " + id);

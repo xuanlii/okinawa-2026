@@ -3298,9 +3298,9 @@ const PRESET_ITINERARIES = {
     ]
   },
   "senior_3d": {
-    "title": "40~60歲 熟齡舒活・海味祈福 3天慢遊",
-    "subtitle": "低步數平緩動線、清雅鮮魚熱湯、心靈古剎祈福與海景休憩沙發",
-    "badge": "40~60歲推薦",
+    "title": "40~60歲 熟齡舒活・海味祈福 5天4夜慢活全景",
+    "subtitle": "低步數平緩動線、清雅鮮魚熱湯、心靈古剎祈福與海景休憩沙發，每日行車輕鬆無負擔",
+    "badge": "40~60歲 5天4夜",
     "days": [
       {
         "day": 1,
@@ -3316,7 +3316,7 @@ const PRESET_ITINERARIES = {
       },
       {
         "day": 2,
-        "title": "糸滿產地鮮甜海鮮・iias海景沙發放鬆・漁民食堂時令煎魚",
+        "title": "糸滿產地鮮甜海鮮・iias海景沙發放鬆・光影水族館・漁民食堂時令煎魚",
         "startTime": "09:00",
         "spotIds": [
           "spot-ocean-tree",
@@ -3329,14 +3329,39 @@ const PRESET_ITINERARIES = {
       },
       {
         "day": 3,
-        "title": "護國神社晨行・波上宮求平安御守・敘敘苑軟嫩和牛・道之驛純黑糖・還車返台",
+        "title": "雙神社平緩參拜・波上宮求平安御守・國際通悠閒漫步・田舍軟骨沖繩麵・瀨長島落日海景",
         "startTime": "09:00",
         "spotIds": [
           "spot-ocean-tree",
           "spot-gokoku-shrine",
           "spot-naminoue-shrine",
+          "spot-kokusai-dori",
+          "spot-inaka-soba",
+          "spot-senagajima",
+          "spot-ocean-tree"
+        ]
+      },
+      {
+        "day": 4,
+        "title": "達磨寺祈福・敘敘苑海景午間燒肉・PARCO CITY海景沙發漫步・勝乃家和風豬排・晚間休整",
+        "startTime": "09:30",
+        "spotIds": [
+          "spot-ocean-tree",
+          "spot-daruma-temple",
           "spot-jojoen",
+          "spot-parco-city",
+          "spot-katsunoya",
+          "spot-ocean-tree"
+        ]
+      },
+      {
+        "day": 5,
+        "title": "豐崎道之驛小農純黑糖・永旺免稅店・通堂清雅和風麵・豐田還車機場返台",
+        "startTime": "09:30",
+        "spotIds": [
+          "spot-ocean-tree",
           "spot-toyosaki-roadside",
+          "spot-aeon-naha",
           "spot-tondo-ramen",
           "spot-toyota",
           "spot-naha-airport"
@@ -3345,9 +3370,9 @@ const PRESET_ITINERARIES = {
     ]
   },
   "young_3d": {
-    "title": "25~35歲 潮流美拍・巨城爆買 3天極速",
-    "subtitle": "IG神級懸崖海景、EIBUN炙燒文青麵、PARCO CITY瘋買、小希臘夕陽客機與阿古豬居酒屋",
-    "badge": "25~35歲推薦",
+    "title": "25~35歲 潮流美拍・巨城爆買 5天4夜打卡全景",
+    "subtitle": "IG神級懸崖海景、EIBUN炙燒文青麵、美國村煙火、PARCO CITY瘋買、小希臘夕陽客機與阿古豬居酒屋",
+    "badge": "25~35歲 5天4夜",
     "days": [
       {
         "day": 1,
@@ -3363,27 +3388,56 @@ const PRESET_ITINERARIES = {
       },
       {
         "day": 2,
-        "title": "糸滿海膽焗烤龍蝦痛風早餐・DMM懸空玻璃水族館・EIBUN炙燒麵・瀨長島飛機日落",
+        "title": "糸滿海膽焗烤龍蝦痛風早餐・DMM懸空玻璃水族館・美麗SUN海灘美拍・漁民食堂奶油煎魚",
         "startTime": "09:00",
         "spotIds": [
+          "spot-ocean-tree",
           "spot-itoman-fish",
+          "spot-iias-toyosaki",
           "spot-dmm-aquarium",
-          "spot-eibun-soba",
-          "spot-dfs-okinawa",
-          "spot-senagajima",
-          "spot-maxvalu"
+          "spot-chura-sun-beach",
+          "spot-itoman-gyomin",
+          "spot-ocean-tree"
         ]
       },
       {
         "day": 3,
-        "title": "達磨寺紅不倒翁美拍・敘敘苑海景燒肉・PARCO CITY血拼・小やじ阿古豬・通堂男人麵返台",
+        "title": "波上宮海崖鳥居大景・DFS免稅精品・EIBUN炙燒五花肉文青麵・瀨長島純白飛機夕陽・MaxValu夜衝",
+        "startTime": "09:00",
+        "spotIds": [
+          "spot-ocean-tree",
+          "spot-naminoue-shrine",
+          "spot-dfs-okinawa",
+          "spot-eibun-soba",
+          "spot-sports-depo",
+          "spot-senagajima",
+          "spot-maxvalu",
+          "spot-ocean-tree"
+        ]
+      },
+      {
+        "day": 4,
+        "title": "達磨寺紅不倒翁海量美拍・敘敘苑海景頂級燒肉・PARCO CITY 5小時瘋狂血拼・Workman Plus機能潮流・小やじ熟成阿古豬居酒屋",
         "startTime": "09:30",
         "spotIds": [
+          "spot-ocean-tree",
           "spot-daruma-temple",
+          "spot-seven-eleven-shuri",
           "spot-jojoen",
           "spot-parco-city",
           "spot-workman-plus",
           "spot-tonkatsu-koyaji",
+          "spot-ocean-tree"
+        ]
+      },
+      {
+        "day": 5,
+        "title": "國際通潮牌伴手禮衝刺・永旺免稅店・通堂濃厚男人麵・豐田還車順利返台",
+        "startTime": "09:30",
+        "spotIds": [
+          "spot-ocean-tree",
+          "spot-kokusai-dori",
+          "spot-aeon-naha",
           "spot-tondo-ramen",
           "spot-toyota",
           "spot-naha-airport"
@@ -3392,16 +3446,29 @@ const PRESET_ITINERARIES = {
     ]
   },
   "cross_2d": {
-    "title": "跨世代雙贏全家歡樂 2天精華版",
-    "subtitle": "精選長幼咸宜高分景點，美食與景觀兼備，零磨擦共融自駕",
-    "badge": "跨世代首選",
+    "title": "跨世代雙贏全家歡樂 5天4夜黃金全景版",
+    "subtitle": "精選長幼咸宜高分景點，美食、購物與海景祈福兼備，零磨擦共融自駕",
+    "badge": "跨世代 5天4夜",
     "days": [
       {
         "day": 1,
-        "title": "取車出發・糸滿現剖海鮮熱魚湯・iias海景觀景台・漁民食堂招牌煎魚",
-        "startTime": "10:30",
+        "title": "首日啟程・潮崎生鮮採購・好市多熱食補給・北谷美國村海風漫步",
+        "startTime": "11:00",
         "spotIds": [
           "spot-toyota",
+          "spot-san-a-shiozaki",
+          "spot-costco-nanjo",
+          "spot-ocean-tree",
+          "spot-american-village",
+          "spot-ocean-tree"
+        ]
+      },
+      {
+        "day": 2,
+        "title": "糸滿現剖海鮮熱魚湯・iias海景觀景台・DMM光影水族館・漁民食堂招牌煎魚",
+        "startTime": "09:00",
+        "spotIds": [
+          "spot-ocean-tree",
           "spot-itoman-fish",
           "spot-iias-toyosaki",
           "spot-dmm-aquarium",
@@ -3410,15 +3477,41 @@ const PRESET_ITINERARIES = {
         ]
       },
       {
-        "day": 2,
-        "title": "波上宮海景祈願・敘敘苑落地海景頂級燒肉・瀨長島純白落日・通堂雙麵返台",
+        "day": 3,
+        "title": "雙神社平緩參拜・DFS精品免稅・國際通伴手禮・田舍軟骨沖繩麵・瀨長島純白落日",
         "startTime": "09:00",
         "spotIds": [
           "spot-ocean-tree",
+          "spot-gokoku-shrine",
           "spot-naminoue-shrine",
+          "spot-dfs-okinawa",
+          "spot-kokusai-dori",
+          "spot-inaka-soba",
+          "spot-senagajima",
+          "spot-ocean-tree"
+        ]
+      },
+      {
+        "day": 4,
+        "title": "達磨寺祈願・敘敘苑海景頂級燒肉・PARCO CITY全海景沙發漫步購物・勝乃家日式炸豬排",
+        "startTime": "09:30",
+        "spotIds": [
+          "spot-ocean-tree",
+          "spot-daruma-temple",
           "spot-jojoen",
           "spot-parco-city",
-          "spot-senagajima",
+          "spot-katsunoya",
+          "spot-ocean-tree"
+        ]
+      },
+      {
+        "day": 5,
+        "title": "豐崎道之驛特色名產・永旺購物中心免稅採買・通堂經典雙麵・豐田還車機場返台",
+        "startTime": "09:30",
+        "spotIds": [
+          "spot-ocean-tree",
+          "spot-toyosaki-roadside",
+          "spot-aeon-naha",
           "spot-tondo-ramen",
           "spot-toyota",
           "spot-naha-airport"
