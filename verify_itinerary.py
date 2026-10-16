@@ -647,9 +647,6 @@ def test_google_maps_integration():
     if (spotLinks.infoUrl.indexOf("search/?api=1&query=") === -1) {
       throw new Error("Spot info link mismatch: " + spotLinks.infoUrl);
     }
-    if (spotLinks.streetViewUrl.indexOf("map_action=pano") === -1 || spotLinks.streetViewUrl.indexOf("viewpoint=26.3167,127.757") === -1) {
-      throw new Error("Spot streetview link mismatch: " + spotLinks.streetViewUrl);
-    }
 
     // 4. Test appFocusOnMap & reset button display
     var sampleSpot = engine.findCatalogSpot("spot-parco-city");
@@ -682,7 +679,7 @@ def test_google_maps_integration():
 
     print("  [PASS] Google Maps Directions URL Scheme (origin, waypoints, destination) verified")
     print("  [PASS] Google Maps Dynamic Embed URL generation (no key + official API key) verified")
-    print("  [PASS] Spot card 3-action links (📍即時導航, 🔍老饕評價, 🏙️街景預覽) verified")
+    print("  [PASS] Spot card action links (📍即時導航, 🔍老饕評價) verified")
     print("  [PASS] Clean removal of Leaflet CDN links and presence of route reset button confirmed")
     print("  [PASS] appFocusOnMap execution, iframe src update & reset button toggle verified")
 

@@ -1404,10 +1404,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="btn-gmap-icon">🔍</span>
                 <span>老饕評價</span>
               </a>
-              <a href="${itemGmapLinks.streetViewUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-streetview" title="開啟 Google Maps 街景實景 360° 預覽">
-                <span class="btn-gmap-icon">🏙️</span>
-                <span>街景預覽</span>
-              </a>
             </div>
           </div>
           ${transitHtml}
@@ -1542,7 +1538,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         navUrl: 'https://www.google.com/maps',
         infoUrl: 'https://www.google.com/maps',
-        streetViewUrl: 'https://www.google.com/maps',
         hasCoords: false,
         lat: null,
         lng: null,
@@ -1567,19 +1562,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. 🔍 Google Maps 地點資訊與評價
     const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
 
-    // 3. 🏙️ Google Maps 街景實景預覽
-    // 僅座標經 OpenStreetMap 交叉驗證的景點直接開啟 360° 街景；
-    // 其餘改開地點頁（可點選地點頁內的街景縮圖），避免概略座標開到錯誤街道。
-    const VERIFIED_PANO_SPOTS = ['spot-ocean-tree', 'spot-costco-nanjo', 'spot-american-village', 'spot-itoman-fish',
-      'spot-iias-toyosaki', 'spot-dmm-aquarium', 'spot-chura-sun-beach', 'spot-gokoku-shrine', 'spot-naminoue-shrine',
-      'spot-eibun-soba', 'spot-senagajima', 'spot-parco-city', 'spot-toyosaki-roadside'];
-    const spotKey = spotMeta.spotId || spotMeta.id || itemOrSpot.spotId || itemOrSpot.id;
-    const usePano = hasCoords && (VERIFIED_PANO_SPOTS.includes(spotKey) || !placeQuery);
-    const streetViewUrl = usePano
-      ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${coordStr}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
-
-    return { navUrl, infoUrl, streetViewUrl, hasCoords, lat, lng, nameZh };
+    return { navUrl, infoUrl, hasCoords, lat, lng, nameZh };
   }
 
   function buildGoogleMapsDayNavUrl(stops) {
@@ -1950,7 +1933,7 @@ document.addEventListener('DOMContentLoaded', () => {
         center: { lat: 26.3, lng: 127.8 },
         zoom: 10,
         mapTypeControl: true,
-        streetViewControl: true,
+        streetViewControl: false,
         fullscreenControl: false,
         zoomControl: true
       });
@@ -2053,7 +2036,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="display:flex; flex-direction:column; gap:4px;">
             <a href="${gLinks.navUrl}" target="_blank" rel="noopener" style="color:#0284c7; font-size:12px; font-weight:700; text-decoration:none;">📍 即時導航 ↗</a>
             <a href="${gLinks.infoUrl}" target="_blank" rel="noopener" style="color:#1d4ed8; font-size:12px; font-weight:700; text-decoration:none;">🔍 地點資訊與評價 ↗</a>
-            <a href="${gLinks.streetViewUrl}" target="_blank" rel="noopener" style="color:#7e22ce; font-size:12px; font-weight:700; text-decoration:none;">🏙️ 街景實景預覽 ↗</a>
           </div>
         </div>
       `;
@@ -2518,10 +2500,6 @@ document.addEventListener('DOMContentLoaded', () => {
                   <a href="${stopGLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與評價">
                     <span class="btn-gmap-icon">🔍</span>
                     <span>老饕評價</span>
-                  </a>
-                  <a href="${stopGLinks.streetViewUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-streetview" title="開啟 Google Maps 街景實景 360° 預覽">
-                    <span class="btn-gmap-icon">🏙️</span>
-                    <span>街景預覽</span>
                   </a>
                 </div>
               </div>
@@ -3248,10 +3226,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const gLinks = getSpotGmapLinks(item);
     const navLink = document.getElementById('modal-nav-link');
     const reviewsLink = document.getElementById('modal-reviews-link');
-    const streetviewLink = document.getElementById('modal-streetview-link');
     if (navLink) navLink.href = gLinks.navUrl;
     if (reviewsLink) reviewsLink.href = gLinks.infoUrl;
-    if (streetviewLink) streetviewLink.href = gLinks.streetViewUrl;
 
     const copyBtn = document.getElementById('modal-copy-mapcode-btn');
     if (copyBtn) {
