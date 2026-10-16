@@ -1568,9 +1568,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
 
     // 3. 🏙️ Google Maps 街景實景預覽
-    const streetViewUrl = hasCoords
+    // 僅座標經 OpenStreetMap 交叉驗證的景點直接開啟 360° 街景；
+    // 其餘改開地點頁（可點選地點頁內的街景縮圖），避免概略座標開到錯誤街道。
+    const VERIFIED_PANO_SPOTS = ['spot-ocean-tree', 'spot-costco-nanjo', 'spot-american-village', 'spot-itoman-fish',
+      'spot-iias-toyosaki', 'spot-dmm-aquarium', 'spot-chura-sun-beach', 'spot-gokoku-shrine', 'spot-naminoue-shrine',
+      'spot-eibun-soba', 'spot-senagajima', 'spot-parco-city', 'spot-toyosaki-roadside'];
+    const spotKey = spotMeta.spotId || spotMeta.id || itemOrSpot.spotId || itemOrSpot.id;
+    const usePano = hasCoords && (VERIFIED_PANO_SPOTS.includes(spotKey) || !placeQuery);
+    const streetViewUrl = usePano
       ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${coordStr}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(nameZh)}`;
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
 
     return { navUrl, infoUrl, streetViewUrl, hasCoords, lat, lng, nameZh };
   }
