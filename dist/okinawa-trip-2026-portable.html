@@ -4386,6 +4386,35 @@ button, input, select, textarea {
 
 
 
+/* ==========================================================================
+   iPhone / iOS Safari Hardening (auto mobile ↔ desktop layout via breakpoints)
+   ========================================================================== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15); touch-action: manipulation; }
+@media (max-width: 900px) {
+  /* iOS 會在 <16px 的輸入框聚焦時自動放大畫面，統一 16px 防止縮放跳動 */
+  input, select, textarea { font-size: 16px !important; }
+  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .btn-gmap-action { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  img { max-width: 100%; height: auto; }
+}
+@supports (height: 100dvh) {
+  @media (max-width: 900px) {
+    .modal-content, .modal-dialog { max-height: 92dvh; }
+  }
+}
+
+/* Grid blowout fix: grid/flex children default to min-width:auto, so long
+   nowrap content (photo strip, CTA labels) widened the timeline to ~5800px */
+.layout-grid > *, .timeline-column, .map-column { min-width: 0; }
+@media (max-width: 900px) {
+  .layout-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero-cta-group { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .hero-cta-group .btn { white-space: normal; text-align: center; line-height: 1.3; min-width: 0; }
+  #btn-flight-selector { white-space: nowrap; writing-mode: horizontal-tb; }
+}
+#btn-flight-selector { width: auto !important; min-width: max-content; flex-shrink: 0; }
+
 </style>
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌺</text></svg>">
@@ -10905,6 +10934,50 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==========================================================================
      Google Maps 全方位自駕路網與雙模地圖 (Google Maps Embed & JS API System)
      ========================================================================== */
+  // 精準 Google Maps 搜尋關鍵字（官方日文店名），null 代表改用座標（如住宿無公開店名）
+  // 以函式宣告提升，避免初始化順序 (TDZ) 問題
+  function getSpotMapQueries() { return {
+    'spot-toyota': 'トヨタレンタカー 那覇空港店',
+    'spot-san-a-shiozaki': 'サンエー しおざきシティ',
+    'spot-ocean-tree': null,
+    'spot-costco-nanjo': 'コストコ 沖縄南城倉庫店',
+    'spot-american-village': '美浜アメリカンビレッジ',
+    'spot-itoman-fish': '糸満漁業協同組合 お魚センター',
+    'spot-iias-toyosaki': 'iias沖縄豊崎',
+    'spot-dmm-aquarium': 'DMMかりゆし水族館',
+    'spot-chura-sun-beach': '豊崎美らSUNビーチ',
+    'spot-itoman-gyomin': '糸満漁民食堂',
+    'spot-gokoku-shrine': '沖縄県護国神社',
+    'spot-naminoue-shrine': '波上宮',
+    'spot-dfs-okinawa': 'Tギャラリア 沖縄 by DFS',
+    'spot-kokusai-dori': '国際通り 那覇',
+    'spot-inaka-soba': '田舎 公設市場南店 ソーキそば',
+    'spot-eibun-soba': 'OKINAWA SOBA EIBUN',
+    'spot-sports-depo': 'スポーツデポ 天久店',
+    'spot-senagajima': '瀬長島ウミカジテラス',
+    'spot-maxvalu': 'マックスバリュ 豊見城店',
+    'spot-daruma-temple': '西来院 達磨寺',
+    'spot-seven-eleven-shuri': 'セブンイレブン 首里城下町JAおきなわ店',
+    'spot-jojoen': '叙々苑 沖縄浦添パルコシティ店',
+    'spot-parco-city': 'サンエー浦添西海岸 PARCO CITY',
+    'spot-workman-plus': 'ワークマンプラス 浦添経塚店',
+    'spot-katsunoya': 'かつ乃屋 那覇メインプレイス店',
+    'spot-tonkatsu-koyaji': '豚かつ 小やじ 那覇',
+    'spot-toyosaki-roadside': '道の駅 豊崎',
+    'spot-aeon-naha': 'イオン那覇店',
+    'spot-tondo-ramen': '琉球新麺 通堂 小禄本店',
+    'spot-naha-airport': '那覇空港'
+  }; }
+
+  function getSpotPlaceQuery(spotId, nameJa) {
+    const queries = getSpotMapQueries();
+    if (spotId && Object.prototype.hasOwnProperty.call(queries, spotId)) {
+      return queries[spotId];
+    }
+    return nameJa ? nameJa.replace(/\s*[\(（][^)）]*[\)）]\s*/g, ' ').trim() : '';
+  }
+  window.getSpotPlaceQuery = getSpotPlaceQuery;
+
   function getSpotGmapLinks(itemOrSpot) {
     if (!itemOrSpot) {
       return {
@@ -10926,16 +10999,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const hasCoords = (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng));
     const coordStr = hasCoords ? `${lat},${lng}` : '';
+    const placeQuery = getSpotPlaceQuery(spotMeta.spotId || spotMeta.id || itemOrSpot.spotId || itemOrSpot.id, nameJa);
+    const destination = placeQuery || coordStr || nameZh;
 
-    // 1. 📍 Google Maps 即時導航
-    const navUrl = hasCoords
-      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(coordStr)}&travelmode=driving`
-      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nameZh)}&travelmode=driving`;
+    // 1. 📍 Google Maps 即時導航（以真實店名/POI 搜尋，避免概略座標造成定位偏差）
+    const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
 
-    // 2. 🔍 Google Maps 地點資訊與老饕評價
-    const queryParts = [nameZh, nameJa, address].filter(Boolean);
-    const infoQuery = queryParts.length > 0 ? queryParts.join(' ') : nameZh;
-    const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(infoQuery)}`;
+    // 2. 🔍 Google Maps 地點資訊與評價
+    const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
 
     // 3. 🏙️ Google Maps 街景實景預覽
     const streetViewUrl = hasCoords
@@ -12723,7 +12794,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       const iframe = document.getElementById('okinawa-gmap-iframe');
       if (iframe && item.lat && item.lng) {
-        iframe.src = `https://maps.google.com/maps?q=${item.lat},${item.lng}+(${encodeURIComponent(item.nameZh || item.name)})&z=15&hl=zh-TW&output=embed`;
+        const q = getSpotPlaceQuery(item.spotId || item.id, item.nameJa) || `${item.lat},${item.lng}`;
+        iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=16&hl=zh-TW&output=embed`;
       }
     }
 
