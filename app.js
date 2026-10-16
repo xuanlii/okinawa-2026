@@ -901,17 +901,15 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = html;
 
     const activeTab = container.querySelector('.day-tab-btn.active');
-    if (activeTab) {
-      setTimeout(() => {
-        activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-      }, 50);
+    if (activeTab && container) {
+      container.scrollLeft = activeTab.offsetLeft - (container.clientWidth / 2) + (activeTab.clientWidth / 2);
     }
 
     container.querySelectorAll('.day-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         container.querySelectorAll('.day-tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        container.scrollLeft = btn.offsetLeft - (container.clientWidth / 2) + (btn.clientWidth / 2);
         state.activeDay = parseInt(btn.dataset.day, 10);
         renderTimeline();
         updateMapMarkers();
@@ -1106,7 +1104,9 @@ document.addEventListener('DOMContentLoaded', () => {
     scroller.querySelectorAll('.map-spot-chip').forEach(chip => {
       if (chip.dataset.id === itemId) {
         chip.classList.add('active');
-        chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        if (scroller) {
+          scroller.scrollLeft = chip.offsetLeft - (scroller.clientWidth / 2) + (chip.clientWidth / 2);
+        }
       } else {
         chip.classList.remove('active');
       }
@@ -2251,14 +2251,13 @@ document.addEventListener('DOMContentLoaded', () => {
       `).join('');
 
       const activeTab = tabsContainer.querySelector('.planner-day-tab-btn.active');
-      if (activeTab) {
-        setTimeout(() => {
-          activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        }, 50);
+      if (activeTab && tabsContainer) {
+        tabsContainer.scrollLeft = activeTab.offsetLeft - (tabsContainer.clientWidth / 2) + (activeTab.clientWidth / 2);
       }
 
       tabsContainer.querySelectorAll('.planner-day-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          tabsContainer.scrollLeft = btn.offsetLeft - (tabsContainer.clientWidth / 2) + (btn.clientWidth / 2);
           state.plannerData.activeDayIndex = parseInt(btn.dataset.dayIndex, 10);
           renderPlannerStudio();
         });
