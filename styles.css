@@ -3094,8 +3094,6 @@ button, input, select, textarea {
   border-style: solid;
 }
 
-.stop-duration-select {
-
 .planner-stop-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -3765,5 +3763,604 @@ button, input, select, textarea {
     page-break-inside: avoid;
     margin-bottom: 1rem !important;
   }
+
+  .day-photo-strip-bar,
+  .btn-mobile-card-expand {
+    display: none !important;
+  }
+
+  .card-collapsible-detail.mobile-detail-collapsed {
+    display: block !important;
+  }
 }
+
+/* ==========================================================================
+   Real Attraction Photo Banners, Quick-Strip & Mobile UX Enhancements
+   ========================================================================== */
+
+/* 1. Day Photo Quick-Strip Bar (Horizontal Swipeable Carousel) */
+.day-photo-strip-bar {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.day-photo-strip-header,
+.photo-strip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.day-photo-strip-title,
+.photo-strip-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.photo-strip-label small {
+  font-weight: 500;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.btn-mobile-compact-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-mobile-compact-toggle.active,
+.btn-mobile-compact-toggle.is-compact {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+.day-photo-strip-scroller,
+.photo-strip-scroller {
+  display: flex;
+  gap: 0.65rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 0.2rem;
+}
+
+.day-photo-strip-scroller::-webkit-scrollbar,
+.photo-strip-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.photo-strip-card {
+  position: relative;
+  flex: 0 0 136px;
+  height: 92px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+  scroll-snap-align: start;
+  background: var(--bg-subtle);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  display: block;
+}
+
+.photo-strip-card:hover,
+.photo-strip-card:active {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.photo-strip-card-img-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.photo-strip-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.photo-strip-card:hover img {
+  transform: scale(1.06);
+}
+
+.photo-strip-time,
+.photo-strip-time-pill {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+  color: #38bdf8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-family: monospace;
+  padding: 0.1rem 0.38rem;
+  border-radius: 5px;
+  line-height: 1.2;
+}
+
+.photo-strip-name,
+.photo-strip-card-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.1rem 0.4rem 0.28rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.48) 65%, transparent 100%);
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2. Official Schedule Card Real Photo Banner */
+.spot-photo-banner {
+  position: relative;
+  margin: -1.35rem -1.5rem 0.95rem -1.5rem;
+  height: 198px;
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-subtle);
+  cursor: pointer;
+}
+
+.spot-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.spot-photo-banner:hover .spot-photo-img {
+  transform: scale(1.04);
+}
+
+.spot-photo-top-badges {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  z-index: 2;
+}
+
+.spot-photo-step-badge,
+.spot-photo-day-chip {
+  background: rgba(2, 132, 199, 0.92);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.73rem;
+  font-weight: 800;
+  padding: 0.18rem 0.6rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.spot-photo-cat-badge {
+  background: rgba(15, 23, 42, 0.74);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.16rem 0.55rem;
+  border-radius: var(--radius-full);
+}
+
+.spot-photo-zoom-pill {
+  flex-shrink: 0;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(4px);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.16rem 0.55rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.spot-photo-caption-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 0.85rem 0.55rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.42) 65%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+.spot-photo-caption-text {
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-copy-mc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--radius-full);
+  border: 1px dashed var(--primary);
+  background: var(--bg-subtle);
+  color: var(--primary);
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-copy-mc-badge:hover,
+.btn-copy-mc-badge:active {
+  background: var(--primary-light);
+  border-style: solid;
+}
+
+/* 3. Custom Planner Stop Card Photo Banner */
+.planner-spot-photo-banner {
+  position: relative;
+  margin: -1.15rem -1.25rem 0.5rem -1.25rem;
+  height: 145px;
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-subtle);
+  cursor: pointer;
+}
+
+.planner-spot-photo-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.planner-spot-photo-banner:hover img {
+  transform: scale(1.04);
+}
+
+.planner-spot-photo-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 1.25rem 0.85rem 0.45rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.86) 0%, rgba(15, 23, 42, 0.35) 65%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.planner-spot-photo-caption {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planner-spot-photo-Order {
+  flex-shrink: 0;
+  background: rgba(2, 132, 199, 0.88);
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+/* 4. Spot Picker Modal Thumbnail Photo */
+.picker-spot-photo-wrap {
+  position: relative;
+  margin: -1rem -1rem 0.65rem -1rem;
+  height: 124px;
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-subtle);
+  cursor: pointer;
+}
+
+.picker-spot-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.picker-spot-card:hover .picker-spot-photo-wrap img {
+  transform: scale(1.05);
+}
+
+.picker-spot-cat-badge {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.picker-spot-dur-badge {
+  position: absolute;
+  bottom: 7px;
+  right: 7px;
+  background: rgba(2, 132, 199, 0.9);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--radius-full);
+}
+
+/* 5. Spot Detail Modal Hero Photo */
+.modal-spot-hero-photo {
+  position: relative;
+  margin: -0.25rem 0 1rem 0;
+  height: 225px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-subtle);
+  cursor: zoom-in;
+  box-shadow: var(--shadow-sm);
+  transition: height 0.3s ease;
+}
+
+.modal-spot-hero-photo.expanded-photo {
+  height: 360px;
+  cursor: zoom-out;
+}
+
+.modal-spot-hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.modal-spot-hero-photo.expanded-photo img {
+  object-fit: contain;
+  background: #0f172a;
+}
+
+.modal-spot-hero-caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 1.4rem 0.85rem 0.55rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.38) 68%, transparent 100%);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.modal-photo-zoom-hint {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 0.12rem 0.48rem;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+}
+
+/* 6. Modal Footer Structured Layout */
+.modal-footer-planner-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-right: auto;
+  flex-wrap: wrap;
+}
+
+.modal-footer-planner-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.modal-select-planner-day {
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.modal-footer-actions-grid {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+/* 7. Mobile Card Collapsible Details & Responsive Refinements */
+.btn-mobile-card-expand {
+  display: none;
+  width: 100%;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.52rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--primary);
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-expand-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.mobile-expand-label {
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .btn-mobile-card-expand {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+@media (max-width: 768px) {
+  .btn-mobile-compact-toggle {
+    display: inline-flex;
+  }
+
+  .btn-mobile-card-expand {
+    display: flex;
+  }
+
+  .timeline-card.mobile-detail-collapsed .card-collapsible-detail,
+  .card-collapsible-detail.mobile-detail-collapsed {
+    display: none;
+  }
+
+  .spot-photo-banner {
+    margin: -1.1rem -1.05rem 0.75rem -1.05rem;
+    height: 168px;
+  }
+
+  .planner-spot-photo-banner {
+    margin: -1rem -1rem 0.5rem -1rem;
+    height: 132px;
+  }
+
+  .planner-stop-card {
+    padding: 1rem;
+  }
+
+  .stop-drag-handle {
+    display: none;
+  }
+
+  /* Sticky day selector inside Custom Planner on mobile */
+  .planner-day-nav {
+    position: sticky;
+    top: 56px;
+    z-index: 82;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 0.5rem 0.65rem;
+    margin: 0 -0.25rem 0.85rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  [data-theme="dark"] .planner-day-nav {
+    background: rgba(30, 41, 59, 0.95);
+  }
+
+  /* Compact Modal Footer on Mobile */
+  #spot-detail-modal .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    gap: 0.55rem;
+  }
+
+  .modal-footer-planner-row {
+    width: 100%;
+    justify-content: space-between;
+    margin-right: 0;
+  }
+
+  .modal-select-planner-day {
+    flex: 1;
+    min-height: 38px;
+  }
+
+  #btn-modal-add-to-custom {
+    min-height: 38px;
+    padding: 0.4rem 0.85rem;
+  }
+
+  .modal-footer-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .modal-footer-actions-grid .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.5rem 0.4rem;
+    font-size: 0.78rem;
+    min-height: 40px;
+  }
+
+  .modal-spot-hero-photo {
+    height: 185px;
+  }
+
+  .modal-spot-hero-photo.expanded-photo {
+    height: 290px;
+  }
+}
+
 

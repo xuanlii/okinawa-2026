@@ -272,10 +272,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (typeof SCHEDULE_ITEMS !== 'undefined') {
-      const foundItem = SCHEDULE_ITEMS.find(s => s.id === id);
+      const foundItem = SCHEDULE_ITEMS.find(s => s.id === id || s.spotId === id);
       if (foundItem) {
         return {
           id: foundItem.id,
+          spotId: foundItem.spotId || foundItem.id,
+          image: foundItem.image || '',
+          imageFallback: foundItem.imageFallback || '',
+          imageCaption: foundItem.imageCaption || foundItem.nameZh || foundItem.name || '',
           name: foundItem.name,
           nameZh: foundItem.nameZh,
           nameJa: foundItem.nameJa,
@@ -308,6 +312,83 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
+  function resolveSpotImage(itemOrSpot) {
+    function withAliases(image, imageFallback, imageCaption) {
+      return {
+        image,
+        imageFallback,
+        imageCaption,
+        src: image,
+        fallback: imageFallback,
+        caption: imageCaption
+      };
+    }
+    if (!itemOrSpot) {
+      return withAliases(
+        'images/spots/spot-ocean-tree.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg',
+        '沖繩海濱實景'
+      );
+    }
+    if (itemOrSpot.image) {
+      return withAliases(
+        itemOrSpot.image,
+        itemOrSpot.imageFallback || itemOrSpot.image,
+        itemOrSpot.imageCaption || itemOrSpot.nameZh || itemOrSpot.name || '沖繩景點實景'
+      );
+    }
+    const refId = itemOrSpot.spotId || itemOrSpot.id;
+    const catMatch = refId ? findCatalogSpot(refId) : null;
+    if (catMatch && catMatch.image) {
+      return withAliases(
+        catMatch.image,
+        catMatch.imageFallback || catMatch.image,
+        catMatch.imageCaption || catMatch.nameZh || itemOrSpot.nameZh || '沖繩景點實景'
+      );
+    }
+    if (typeof SPOTS_CATALOG !== 'undefined' && itemOrSpot.nameZh) {
+      const byName = SPOTS_CATALOG.find(s => s.nameZh === itemOrSpot.nameZh || s.name === itemOrSpot.name);
+      if (byName && byName.image) {
+        return withAliases(
+          byName.image,
+          byName.imageFallback || byName.image,
+          byName.imageCaption || byName.nameZh || '沖繩景點實景'
+        );
+      }
+    }
+    const catFallbacks = {
+      food: 'images/spots/spot-eibun-soba.jpg',
+      shopping: 'images/spots/spot-parco-city.jpg',
+      attraction: 'images/spots/spot-naminoue-shrine.jpg',
+      hotel: 'images/spots/spot-ocean-tree.jpg',
+      transport: 'images/spots/spot-toyota.jpg'
+    };
+    const defaultImg = catFallbacks[itemOrSpot.category] || 'images/spots/spot-chura-sun-beach.jpg';
+    return withAliases(
+      defaultImg,
+      defaultImg,
+      itemOrSpot.nameZh || itemOrSpot.name || '沖繩自駕景點實景'
+    );
+  }
+
+  window.appHandleImgError = function(imgEl) {
+    if (!imgEl) return;
+    const fb = (typeof imgEl.getAttribute === 'function' ? imgEl.getAttribute('data-fallback') : null) || (imgEl.dataset && imgEl.dataset.fallback) || '';
+    const tried = imgEl.dataset && (imgEl.dataset.triedFallback || imgEl.dataset.fallbackTried);
+    if (fb && imgEl.src !== fb && !tried) {
+      if (imgEl.dataset) {
+        imgEl.dataset.triedFallback = '1';
+        imgEl.dataset.fallbackTried = '1';
+      }
+      imgEl.src = fb;
+      return;
+    }
+    const wrapper = typeof imgEl.closest === 'function' ? imgEl.closest('.spot-photo-banner, .picker-spot-photo-wrap, .planner-spot-photo-banner, .modal-spot-hero-photo, .photo-strip-card-img-wrap') : null;
+    if (wrapper) {
+      wrapper.classList.add('img-load-fallback');
+    }
+  };
+
   function createPlannerStop(spotIdOrObj) {
     let base = null;
     if (typeof spotIdOrObj === 'string') {
@@ -319,9 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const instanceId = 'stop-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
 
     if (base) {
+      const imgMeta = resolveSpotImage(base);
       return {
         instanceId,
         id: base.id || instanceId,
+        spotId: base.spotId || base.id || instanceId,
+        image: imgMeta.image,
+        imageFallback: imgMeta.imageFallback,
+        imageCaption: imgMeta.imageCaption,
         name: base.name || '自訂停靠點',
         nameZh: base.nameZh || base.name || '自訂停靠點',
         nameJa: base.nameJa || '',
@@ -344,9 +430,14 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     }
 
+    const defaultImgMeta = resolveSpotImage(null);
     return {
       instanceId,
       id: instanceId,
+      spotId: instanceId,
+      image: defaultImgMeta.image,
+      imageFallback: defaultImgMeta.imageFallback,
+      imageCaption: defaultImgMeta.imageCaption,
       name: '自訂私房節點',
       nameZh: '自訂私房節點',
       nameJa: '',
@@ -440,6 +531,13 @@ document.addEventListener('DOMContentLoaded', () => {
     googlePolyline: null,
     googleTrafficLayer: null,
     googleTrafficEnabled: false
+  };
+
+  let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
+  const pickerState = {
+    category: 'all',
+    gen: 'all',
+    query: ''
   };
 
   function savePlannerData() {
@@ -818,6 +916,12 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTimeline();
         updateMapMarkers();
         updateCategoryPillCounts();
+        if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+          const schedContainer = document.getElementById('official-schedule-container');
+          if (schedContainer && window.scrollY > 420 && typeof schedContainer.scrollIntoView === 'function') {
+            schedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
       });
     });
   }
@@ -909,6 +1013,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function initMobileViewSwitcher() {
     const btnTimeline = document.getElementById('btn-view-timeline');
     const btnMap = document.getElementById('btn-view-map');
+    const btnBackCard = document.getElementById('btn-back-to-timeline-card');
+    if (btnBackCard) {
+      btnBackCard.addEventListener('click', () => {
+        if (state.lastFocusedCardId) {
+          window.appScrollToCard(state.lastFocusedCardId);
+        } else {
+          switchMobileView('timeline');
+        }
+      });
+    }
     if (!btnTimeline || !btnMap) return;
 
     btnTimeline.addEventListener('click', () => switchMobileView('timeline'));
@@ -1085,6 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderTimeline() {
     const listContainer = document.getElementById('timeline-items-list');
     const bannerContainer = document.getElementById('active-day-banner');
+    const photoStripContainer = document.getElementById('day-photo-strip-bar');
     if (!listContainer) return;
 
     const filtered = getFilteredItems();
@@ -1119,6 +1234,54 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Render Horizontal Spot Photo Quick-Strip (Swipeable on Mobile & Desktop)
+    if (photoStripContainer) {
+      if (filtered.length === 0) {
+        photoStripContainer.style.display = 'none';
+      } else {
+        photoStripContainer.style.display = 'block';
+        const stripCardsHtml = filtered.map((item) => {
+          const imgMeta = resolveSpotImage(item);
+          return `
+            <button type="button" class="photo-strip-card" data-jump-id="${escapeHtml(item.id)}" title="點擊滑動至：${escapeHtml(item.nameZh)}">
+              <div class="photo-strip-card-img-wrap">
+                <img src="${escapeHtml(imgMeta.image)}" data-fallback="${escapeHtml(imgMeta.imageFallback)}" alt="${escapeHtml(item.nameZh)}" loading="lazy" decoding="async" onerror="window.appHandleImgError(this)">
+                <span class="photo-strip-time-pill">${state.activeDay === 0 ? `D${item.day} ` : ''}${escapeHtml(item.time)}</span>
+              </div>
+              <div class="photo-strip-card-title">${item.icon} ${escapeHtml(item.nameZh)}</div>
+            </button>
+          `;
+        }).join('');
+
+        photoStripContainer.innerHTML = `
+          <div class="photo-strip-header">
+            <span class="photo-strip-label">📸 景點實景快覽 <small>(左右滑動點選直達卡片)</small></span>
+            <button type="button" class="btn-mobile-compact-toggle ${state.mobileCompactCards ? 'is-compact' : ''}" data-action="toggle-all-mobile-cards">
+              ${state.mobileCompactCards ? '📖 展開全部攻略' : '📱 手機精簡預覽'}
+            </button>
+          </div>
+          <div class="photo-strip-scroller">
+            ${stripCardsHtml}
+          </div>
+        `;
+
+        photoStripContainer.querySelectorAll('.photo-strip-card').forEach(cardBtn => {
+          cardBtn.addEventListener('click', () => {
+            window.appScrollToCard(cardBtn.dataset.jumpId);
+          });
+        });
+
+        const toggleCompactBtn = photoStripContainer.querySelector('[data-action="toggle-all-mobile-cards"]');
+        if (toggleCompactBtn) {
+          toggleCompactBtn.addEventListener('click', () => {
+            state.mobileCompactCards = !state.mobileCompactCards;
+            renderTimeline();
+            showToast(state.mobileCompactCards ? '📱 已切換為「手機精簡預覽」模式（點擊單張卡片可展開攻略）' : '📖 已展開所有景點的雙世代完整攻略');
+          });
+        }
+      }
+    }
+
     if (filtered.length === 0) {
       listContainer.innerHTML = `
         <div style="text-align: center; padding: 4rem 1rem; background: var(--bg-surface); border: 1px dashed var(--border); border-radius: var(--radius-lg);">
@@ -1136,6 +1299,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const isLast = index === filtered.length - 1;
       const nextItem = filtered[index + 1];
       const itemGmapLinks = getSpotGmapLinks(item);
+      const imgMeta = resolveSpotImage(item);
 
       // Accurate Haversine Transit calculation
       let transitHtml = '';
@@ -1151,13 +1315,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Generation Perspective UI
       const genCardsHtml = renderGenerationCardHtml(item.generation);
+      const seniorObj = (item.generation && item.generation.senior) || {};
+      const harmonyScore = (item.generation && item.generation.harmony && item.generation.harmony.score) || 9.5;
+      const isCollapsedMobile = Boolean(state.mobileCompactCards);
 
       html += `
         <div class="timeline-item" id="item-${escapeHtml(item.id)}">
           <div class="timeline-node">${item.icon}</div>
-          <div class="timeline-card">
+          <div class="timeline-card ${isCollapsedMobile ? 'mobile-detail-collapsed' : ''}">
+            <!-- Real Attraction Photo Banner -->
+            <div class="spot-photo-banner" data-action="modal" data-id="${escapeHtml(item.id)}" title="點擊檢視「${escapeHtml(item.nameZh)}」大圖與雙世代詳細攻略">
+              <img class="spot-photo-img" src="${escapeHtml(imgMeta.image)}" data-fallback="${escapeHtml(imgMeta.imageFallback)}" alt="${escapeHtml(item.nameZh)}" loading="lazy" decoding="async" onerror="window.appHandleImgError(this)">
+              <div class="spot-photo-top-badges">
+                <span class="spot-photo-step-badge">${state.activeDay === 0 ? `Day ${item.day}` : `第 ${index + 1} 站`} · ${escapeHtml(item.time)}</span>
+                <span class="spot-photo-cat-badge">${item.icon} ${escapeHtml(item.categoryLabel)}</span>
+              </div>
+              <div class="spot-photo-caption-bar">
+                <span class="spot-photo-caption-text">📸 ${escapeHtml(imgMeta.imageCaption)}</span>
+                <span class="spot-photo-zoom-pill">🔍 大圖與攻略</span>
+              </div>
+            </div>
+
             <div class="card-top">
-              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
                 <span class="card-time-badge">⏰ ${item.time}</span>
                 <span class="card-duration-badge">⏱️ ${item.duration}</span>
                 <span class="tag-badge" style="background: var(--primary-light); color: var(--primary);">${escapeHtml(item.categoryLabel)}</span>
@@ -1177,10 +1357,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <p class="card-desc">${escapeHtml(item.desc)}</p>
 
-            ${genCardsHtml}
+            <!-- Mobile Quick Summary & Expand Button -->
+            <button type="button" class="btn-mobile-card-expand" data-action="toggle-card-detail" aria-expanded="${!isCollapsedMobile}">
+              <span class="mobile-expand-chips">
+                <span>🧓 ${escapeHtml(seniorObj.walkingLoad || '輕鬆')}</span>
+                <span>🤝 契合 ${harmonyScore}/10</span>
+              </span>
+              <span class="mobile-expand-label">${isCollapsedMobile ? '展開雙世代攻略 ▾' : '收合詳細攻略 ▴'}</span>
+            </button>
 
-            <div class="card-tags" style="margin-top:0.75rem;">
-              ${item.tags.map(tag => `<span class="tag-badge">#${escapeHtml(tag)}</span>`).join('')}
+            <div class="card-collapsible-detail">
+              ${genCardsHtml}
+
+              <div class="card-tags" style="margin-top:0.75rem;">
+                ${item.tags.map(tag => `<span class="tag-badge">#${escapeHtml(tag)}</span>`).join('')}
+              </div>
             </div>
 
             <div class="card-footer">
@@ -1188,8 +1379,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>📍 ${escapeHtml(item.address)}</span>
               </div>
               <div class="card-footer-buttons">
-                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點攻略與雙世代指南">
-                  <span>🔍 查看攻略</span>
+                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
+                  <span>🔍 實景與攻略</span>
                 </button>
                 <button class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode">
                   <span>📋 複製MC</span>
@@ -1230,6 +1421,20 @@ document.addEventListener('DOMContentLoaded', () => {
     listContainer.querySelectorAll('.btn-star-fav').forEach(btn => {
       btn.addEventListener('click', () => {
         toggleFavorite(btn.dataset.id);
+      });
+    });
+
+    listContainer.querySelectorAll('[data-action="toggle-card-detail"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const card = btn.closest('.timeline-card');
+        if (!card) return;
+        const collapsed = card.classList.toggle('mobile-detail-collapsed');
+        btn.setAttribute('aria-expanded', String(!collapsed));
+        const labelEl = btn.querySelector('.mobile-expand-label');
+        if (labelEl) {
+          labelEl.textContent = collapsed ? '展開雙世代攻略 ▾' : '收合詳細攻略 ▴';
+        }
       });
     });
 
@@ -1288,8 +1493,6 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==========================================================================
      Google Maps 全方位自駕路網與雙模地圖 (Google Maps Embed & JS API System)
      ========================================================================== */
-  let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
-
   function getSpotGmapLinks(itemOrSpot) {
     if (!itemOrSpot) {
       return {
@@ -2186,6 +2389,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Generation highlights
           const genCardsHtml = renderGenerationCardHtml(stop.generation);
           const stopGLinks = getSpotGmapLinks(stop);
+          const stopImg = resolveSpotImage(stop);
 
           // Duration options
           const durations = [15, 30, 45, 60, 90, 120, 150, 180, 240];
@@ -2194,9 +2398,18 @@ document.addEventListener('DOMContentLoaded', () => {
           `).join('');
 
           streamHtml += `
-            <div class="planner-stop-item" data-index="${idx}" draggable="true">
+            <div class="planner-stop-item" data-index="${idx}" draggable="${window.innerWidth > 900 ? 'true' : 'false'}">
               ${transitConnectorHtml}
               <div class="planner-stop-card">
+                ${stopImg.src ? `
+                  <div class="planner-spot-photo-banner" data-action="view-stop-modal" data-id="${escapeHtml(stop.id)}" title="點擊檢視景點實景大圖與深度攻略">
+                    <img src="${escapeHtml(stopImg.src)}" data-fallback="${escapeHtml(stopImg.fallback)}" alt="${escapeHtml(stop.nameZh || stop.name)}" loading="lazy" onerror="window.appHandleImgError(this)">
+                    <div class="planner-spot-photo-overlay">
+                      <span class="planner-spot-photo-caption">📷 ${escapeHtml(stopImg.caption || stop.nameZh || stop.name)}</span>
+                      <span class="planner-spot-photo-Order">第 ${idx + 1} 站 · ${stop.arrivalTime}~${stop.departureTime}</span>
+                    </div>
+                  </div>
+                ` : ''}
                 <div class="planner-stop-header">
                   <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                     <span class="stop-drag-handle" title="按住拖曳可自由調換站點前後順序">⠿</span>
@@ -2524,12 +2737,6 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==========================================================================
      Spot Picker Modal
      ========================================================================== */
-  const pickerState = {
-    category: 'all',
-    gen: 'all',
-    query: ''
-  };
-
   function attachModalBottomSheetGestures(modalEl, closeFn) {
     if (!modalEl) return;
     const dialog = modalEl.querySelector('.modal-dialog');
@@ -2817,14 +3024,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const senior = spot.generation ? spot.generation.senior : null;
       const young = spot.generation ? spot.generation.young : null;
       const walkScore = senior && senior.walkingScore === 'green' ? '🟢 輕鬆低步數' : (senior && senior.walkingScore === 'amber' ? '🟡 中度平坦' : '🔴 坡度較多');
+      const spotImg = resolveSpotImage(spot);
 
       return `
         <div class="picker-spot-card">
           <div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.35rem;">
-              <span style="font-size:1.4rem;">${spot.icon}</span>
-              <span class="tag-badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${escapeHtml(spot.categoryLabel)}</span>
-            </div>
+            ${spotImg.src ? `
+              <div class="picker-spot-photo-wrap btn-picker-preview" data-id="${escapeHtml(spot.id)}" title="點擊查看大圖與完整攻略">
+                <img src="${escapeHtml(spotImg.src)}" data-fallback="${escapeHtml(spotImg.fallback)}" alt="${escapeHtml(spot.nameZh)}" loading="lazy" onerror="window.appHandleImgError(this)">
+                <span class="picker-spot-cat-badge">${spot.icon} ${escapeHtml(spot.categoryLabel)}</span>
+                <span class="picker-spot-dur-badge">⏱️ ${spot.defaultDurationMinutes || 60}分</span>
+              </div>
+            ` : `
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.35rem;">
+                <span style="font-size:1.4rem;">${spot.icon}</span>
+                <span class="tag-badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${escapeHtml(spot.categoryLabel)}</span>
+              </div>
+            `}
             <div class="picker-spot-title">${escapeHtml(spot.nameZh)}</div>
             <div class="picker-spot-cat">${escapeHtml(spot.name)} · 建議 ${spot.defaultDurationMinutes || 60} 分</div>
             
@@ -2882,8 +3098,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const harmonyAdvice = (gen.harmony && gen.harmony.advice) ? gen.harmony.advice : (gen.harmonyAdvice || '');
 
     const walkColor = senior.walkingScore === 'green' ? '#10b981' : (senior.walkingScore === 'amber' ? '#f59e0b' : '#ef4444');
+    const spotImg = resolveSpotImage(item);
 
     document.getElementById('modal-content').innerHTML = `
+      ${spotImg.src ? `
+        <div class="modal-spot-hero-photo" onclick="this.classList.toggle('expanded-photo')" title="點擊可切換放大檢視完整實景照">
+          <img src="${escapeHtml(spotImg.src)}" data-fallback="${escapeHtml(spotImg.fallback)}" alt="${escapeHtml(item.nameZh)}" onerror="window.appHandleImgError(this)">
+          <div class="modal-spot-hero-caption">
+            <span>📷 ${escapeHtml(spotImg.caption || item.nameZh)}</span>
+            <span class="modal-photo-zoom-hint">🔍 點擊放大/縮小</span>
+          </div>
+        </div>
+      ` : ''}
       <div style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
         <span class="card-duration-badge">⏱️ 建議停留：${item.defaultDurationMinutes || item.duration || '60'} 分鐘</span>
         <span class="tag-badge" style="background: var(--primary-light); color: var(--primary); font-size: 0.8rem;">${escapeHtml(item.categoryLabel || '沖繩精選')}</span>
@@ -3056,6 +3282,12 @@ document.addEventListener('DOMContentLoaded', () => {
   window.appFocusOnMap = function(itemId) {
     const item = findCatalogSpot(itemId);
     if (!item) return;
+
+    state.lastFocusedCardId = itemId;
+    const backBtn = document.getElementById('btn-back-to-timeline-card');
+    if (backBtn && window.innerWidth <= 900) {
+      backBtn.style.display = 'inline-flex';
+    }
 
     if (window.innerWidth <= 900) {
       switchMobileView('map');
@@ -3930,6 +4162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     calculateDayTimeline,
     createPlannerStop,
     findCatalogSpot,
+    resolveSpotImage,
     addSpotToPlannerDay,
     addSpotToCurrentPlannerDay,
     getSelectedFlight,

@@ -686,6 +686,165 @@ def test_google_maps_integration():
     print("  [PASS] Clean removal of Leaflet CDN links and presence of route reset button confirmed")
     print("  [PASS] appFocusOnMap execution, iframe src update & reset button toggle verified")
 
+def test_spot_images_and_mobile_ux():
+    print("\n--- Testing Real Attraction Photos (30 Spots + 40 Schedule Items) & Mobile UX ---")
+    import subprocess
+    import zipfile
+
+    spots_dir = os.path.join(BASE_DIR, 'images', 'spots')
+    assert os.path.isdir(spots_dir), "Missing images/spots directory"
+    jpg_files = sorted([f for f in os.listdir(spots_dir) if f.endswith('.jpg')])
+    assert len(jpg_files) == 30, f"Expected 30 spot .jpg files in images/spots/, found {len(jpg_files)}"
+
+    for jf in jpg_files:
+        jpath = os.path.join(spots_dir, jf)
+        size = os.path.getsize(jpath)
+        assert size > 5000, f"Spot image {jf} is suspiciously small ({size} bytes)"
+        with open(jpath, 'rb') as fp:
+            magic = fp.read(2)
+            assert magic == b'\xff\xd8', f"Spot image {jf} does not have valid JPEG SOI marker"
+    print(f"  [PASS] All 30 real attraction JPEG photos verified in images/spots/ (valid JPEG header & size)")
+
+    zip_path = os.path.join(BASE_DIR, 'okinawa-trip-2026.zip')
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+        znames = set(zf.namelist())
+        for jf in jpg_files:
+            assert f"images/spots/{jf}" in znames, f"Missing images/spots/{jf} inside okinawa-trip-2026.zip"
+    print("  [PASS] All 30 real attraction photos bundled in okinawa-trip-2026.zip")
+
+    with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
+        html_text = f.read()
+    with open(os.path.join(BASE_DIR, 'styles.css'), 'r', encoding='utf-8') as f:
+        css_text = f.read()
+
+    for dom_id in ['day-photo-strip-bar', 'btn-back-to-timeline-card']:
+        assert f'id="{dom_id}"' in html_text, f"Missing mobile UX DOM ID in index.html: {dom_id}"
+
+    for css_cls in [
+        'day-photo-strip-bar', 'photo-strip-card', 'spot-photo-banner',
+        'planner-spot-photo-banner', 'picker-spot-photo-wrap',
+        'modal-spot-hero-photo', 'btn-mobile-card-expand',
+        'mobile-detail-collapsed', 'modal-footer-actions-grid'
+    ]:
+        assert css_cls in css_text, f"Missing photo/mobile CSS class in styles.css: {css_cls}"
+    print("  [PASS] Mobile UX & photo banner DOM IDs and CSS classes verified")
+
+    jsc_bin = "/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc"
+    if not os.path.exists(jsc_bin):
+        print("  [SKIP] macOS JSC binary not found")
+        return
+
+    test_img_js = """
+    var setTimeout = function(cb) { return 1; };
+    var clearTimeout = function() {};
+    var setInterval = function(cb) { return 1; };
+    var clearInterval = function() {};
+    var console = { log: print, warn: print, error: print };
+
+    function makeElement() {
+      return {
+        addEventListener: function() {},
+        querySelector: function() { return makeElement(); },
+        querySelectorAll: function() { return []; },
+        style: {},
+        classList: { add: function() {}, remove: function() {}, toggle: function() {}, contains: function() { return false; } },
+        setAttribute: function() {},
+        appendChild: function() {},
+        removeChild: function() {}
+      };
+    }
+    var document = {
+      documentElement: makeElement(),
+      addEventListener: function(event, cb) { this.cb = cb; },
+      getElementById: function(id) { return makeElement(); },
+      querySelectorAll: function() { return []; },
+      querySelector: function() { return makeElement(); },
+      createElement: function() { return makeElement(); },
+      body: makeElement(),
+      head: makeElement()
+    };
+    var window = {
+      innerWidth: 390,
+      addEventListener: function() {},
+      scrollTo: function() {},
+      isSecureContext: true
+    };
+    var localStorage = {
+      getItem: function() { return null; },
+      setItem: function() {}
+    };
+    var navigator = {};
+
+    load("data.js");
+    load("app.js");
+    document.cb();
+
+    var engine = window.__okinawaApp__;
+    if (!engine || typeof engine.resolveSpotImage !== "function") {
+      throw new Error("resolveSpotImage not exported on window.__okinawaApp__");
+    }
+    if (typeof window.appHandleImgError !== "function") {
+      throw new Error("window.appHandleImgError global handler missing");
+    }
+
+    // Check all 30 SPOTS_CATALOG items
+    if (SPOTS_CATALOG.length !== 30) throw new Error("Expected 30 SPOTS_CATALOG items");
+    for (var i = 0; i < SPOTS_CATALOG.length; i++) {
+      var sp = SPOTS_CATALOG[i];
+      if (!sp.image || sp.image.indexOf("images/spots/spot-") !== 0) {
+        throw new Error("Catalog spot missing valid local image: " + sp.id);
+      }
+      if (!sp.imageFallback || sp.imageFallback.indexOf("https://") !== 0 || sp.imageFallback.indexOf("wikimedia.org/") === -1) {
+        throw new Error("Catalog spot missing Wikimedia fallback URL: " + sp.id);
+      }
+      if (!sp.imageCaption || sp.imageCaption.length < 4) {
+        throw new Error("Catalog spot missing imageCaption: " + sp.id);
+      }
+      var resolved = engine.resolveSpotImage(sp);
+      if (resolved.src !== sp.image || resolved.fallback !== sp.imageFallback) {
+        throw new Error("resolveSpotImage mismatch for catalog spot: " + sp.id);
+      }
+      var plannerStop = engine.createPlannerStop(sp);
+      if (plannerStop.image !== sp.image || plannerStop.imageFallback !== sp.imageFallback) {
+        throw new Error("createPlannerStop did not preserve image metadata for: " + sp.id);
+      }
+    }
+
+    // Check all 40 SCHEDULE_ITEMS
+    if (SCHEDULE_ITEMS.length !== 40) throw new Error("Expected 40 SCHEDULE_ITEMS");
+    for (var j = 0; j < SCHEDULE_ITEMS.length; j++) {
+      var it = SCHEDULE_ITEMS[j];
+      if (!it.spotId || !it.image || !it.imageFallback || !it.imageCaption) {
+        throw new Error("Schedule item missing image metadata: " + it.id);
+      }
+      var resIt = engine.resolveSpotImage(it);
+      if (!resIt.src || !resIt.fallback || !resIt.caption) {
+        throw new Error("resolveSpotImage failed on schedule item: " + it.id);
+      }
+    }
+
+    // Test fallback handler behavior
+    var dummyImg = {
+      dataset: { fallback: "https://upload.wikimedia.org/test.jpg" },
+      src: "images/spots/missing.jpg",
+      style: {},
+      closest: function() { return null; }
+    };
+    window.appHandleImgError(dummyImg);
+    if (dummyImg.src !== "https://upload.wikimedia.org/test.jpg" || dummyImg.dataset.fallbackTried !== "1") {
+      throw new Error("appHandleImgError did not switch to fallback URL on first error");
+    }
+
+    print("ALL SPOT IMAGE & MOBILE UX JSC ASSERTIONS PASSED!");
+    """
+
+    res = subprocess.run([jsc_bin, "-e", test_img_js], cwd=BASE_DIR, capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"  [FAIL] JSC Spot Image & Mobile UX Error:\n{res.stderr}\n{res.stdout}")
+        sys.exit(1)
+    else:
+        print("  [PASS] JSC verified all 30 SPOTS_CATALOG + 40 SCHEDULE_ITEMS image paths, fallbacks, captions & error handler")
+
 def main():
     print("==================================================")
     print(" Okinawa 2026 Trip Planner - Automated Verification")
@@ -704,10 +863,12 @@ def main():
     test_jsc_execution()
     test_flight_selector_and_sync()
     test_google_maps_integration()
+    test_spot_images_and_mobile_ux()
 
     print("\n==================================================")
-    print(" ALL 8 TEST SUITES PASSED WITH 100% SUCCESS! ")
+    print(" ALL 9 TEST SUITES PASSED WITH 100% SUCCESS! ")
     print("==================================================")
 
 if __name__ == '__main__':
     main()
+

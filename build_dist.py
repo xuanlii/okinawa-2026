@@ -21,11 +21,14 @@ with open(os.path.join(base_dir, 'app.js'), 'r', encoding='utf-8') as f:
 # Replace CSS link with inline style
 html = html.replace('<link rel="stylesheet" href="styles.css">', f'<style>\n{css}\n</style>')
 
+# For portable single-file HTML, point relative spot image paths to hosted GitHub Pages URLs
+portable_data_js = data_js.replace('"images/spots/', '"https://xuanlii.github.io/okinawa-2026/images/spots/')
+
 # Replace script links with inline scripts
 scripts_bundle = f"""
 <script>
 /* ================= DATA.JS INLINED ================= */
-{data_js}
+{portable_data_js}
 </script>
 <script>
 /* ================= APP.JS INLINED ================= */
@@ -42,13 +45,20 @@ with open(portable_path, 'w', encoding='utf-8') as f:
 
 print(f"Built portable single-file HTML: {portable_path} ({len(html):,} bytes)")
 
-# Update zip file
+# Update zip file (including all 30 real spot photos in images/spots/)
 zip_path = os.path.join(base_dir, 'okinawa-trip-2026.zip')
+spots_img_dir = os.path.join(base_dir, 'images', 'spots')
 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
     for filename in ['index.html', 'styles.css', 'data.js', 'app.js', 'README.md']:
         fpath = os.path.join(base_dir, filename)
         if os.path.exists(fpath):
             zf.write(fpath, arcname=filename)
+    if os.path.isdir(spots_img_dir):
+        for img_name in sorted(os.listdir(spots_img_dir)):
+            if img_name.endswith('.jpg'):
+                img_path = os.path.join(spots_img_dir, img_name)
+                zf.write(img_path, arcname=f'images/spots/{img_name}')
     zf.write(portable_path, arcname='dist/okinawa-trip-2026-portable.html')
 
 print(f"Built zip archive: {zip_path} ({os.path.getsize(zip_path):,} bytes)")
+

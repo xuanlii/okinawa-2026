@@ -266,6 +266,11 @@
               <!-- Injected by app.js -->
             </div>
 
+            <!-- Horizontal Spot Photo Quick-Strip (Swipeable on Mobile & Desktop) -->
+            <div id="day-photo-strip-bar" class="day-photo-strip-bar" aria-label="當日景點實景圖快覽">
+              <!-- Injected by app.js -->
+            </div>
+
             <!-- Timeline Items Container -->
             <div class="timeline-stream" id="timeline-items-list">
               <!-- Injected by app.js -->
@@ -447,6 +452,7 @@
 
             <div class="map-card-footer">
               <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="btn btn-primary btn-xs" id="btn-back-to-timeline-card" title="返回剛才瀏覽的景點卡片" style="display:none; font-weight:700;">📋 返回行程卡片</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-traffic" title="切換即時路況圖層 (需 JS API 模式)" style="display:none;">🚦 即時路況</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-mode" title="在嵌入模式與 JS API 模式間切換">🔄 切換視圖</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-reset-gmap-route" title="返回當日完整自駕路線視圖" style="display:none; color:var(--primary); font-weight:700;">🔄 返回當日路線</button>
@@ -836,15 +842,17 @@
         <!-- Injected dynamically -->
       </div>
       <div class="modal-footer">
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-right: auto;">
+        <div class="modal-footer-planner-row">
           <select id="modal-select-planner-day" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.6rem; width: auto; min-width: 110px; background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm);" title="選擇欲加入的行程天數">
           </select>
           <button id="btn-modal-add-to-custom" class="btn btn-primary" style="font-size: 0.85rem;">➕ 加入自訂行程</button>
         </div>
-        <button id="modal-copy-mapcode-btn" class="btn btn-secondary" style="font-size: 0.85rem;">📋 複製 MapCode</button>
-        <a id="modal-nav-link" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size: 0.85rem;">📍 即時導航</a>
-        <a id="modal-reviews-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🔍 老饕評價</a>
-        <a id="modal-streetview-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🏙️ 街景實景</a>
+        <div class="modal-footer-actions-grid">
+          <button id="modal-copy-mapcode-btn" class="btn btn-secondary" style="font-size: 0.85rem;">📋 複製 MapCode</button>
+          <a id="modal-nav-link" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size: 0.85rem;">📍 即時導航</a>
+          <a id="modal-reviews-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🔍 老饕評價</a>
+          <a id="modal-streetview-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🏙️ 街景實景</a>
+        </div>
       </div>
     </div>
   </div>

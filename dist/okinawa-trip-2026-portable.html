@@ -3115,8 +3115,6 @@ button, input, select, textarea {
   border-style: solid;
 }
 
-.stop-duration-select {
-
 .planner-stop-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -3786,7 +3784,606 @@ button, input, select, textarea {
     page-break-inside: avoid;
     margin-bottom: 1rem !important;
   }
+
+  .day-photo-strip-bar,
+  .btn-mobile-card-expand {
+    display: none !important;
+  }
+
+  .card-collapsible-detail.mobile-detail-collapsed {
+    display: block !important;
+  }
 }
+
+/* ==========================================================================
+   Real Attraction Photo Banners, Quick-Strip & Mobile UX Enhancements
+   ========================================================================== */
+
+/* 1. Day Photo Quick-Strip Bar (Horizontal Swipeable Carousel) */
+.day-photo-strip-bar {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.day-photo-strip-header,
+.photo-strip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.day-photo-strip-title,
+.photo-strip-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.photo-strip-label small {
+  font-weight: 500;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.btn-mobile-compact-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-mobile-compact-toggle.active,
+.btn-mobile-compact-toggle.is-compact {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+.day-photo-strip-scroller,
+.photo-strip-scroller {
+  display: flex;
+  gap: 0.65rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 0.2rem;
+}
+
+.day-photo-strip-scroller::-webkit-scrollbar,
+.photo-strip-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.photo-strip-card {
+  position: relative;
+  flex: 0 0 136px;
+  height: 92px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+  scroll-snap-align: start;
+  background: var(--bg-subtle);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  display: block;
+}
+
+.photo-strip-card:hover,
+.photo-strip-card:active {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.photo-strip-card-img-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.photo-strip-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.photo-strip-card:hover img {
+  transform: scale(1.06);
+}
+
+.photo-strip-time,
+.photo-strip-time-pill {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+  color: #38bdf8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-family: monospace;
+  padding: 0.1rem 0.38rem;
+  border-radius: 5px;
+  line-height: 1.2;
+}
+
+.photo-strip-name,
+.photo-strip-card-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.1rem 0.4rem 0.28rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.48) 65%, transparent 100%);
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2. Official Schedule Card Real Photo Banner */
+.spot-photo-banner {
+  position: relative;
+  margin: -1.35rem -1.5rem 0.95rem -1.5rem;
+  height: 198px;
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-subtle);
+  cursor: pointer;
+}
+
+.spot-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.spot-photo-banner:hover .spot-photo-img {
+  transform: scale(1.04);
+}
+
+.spot-photo-top-badges {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  z-index: 2;
+}
+
+.spot-photo-step-badge,
+.spot-photo-day-chip {
+  background: rgba(2, 132, 199, 0.92);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.73rem;
+  font-weight: 800;
+  padding: 0.18rem 0.6rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.spot-photo-cat-badge {
+  background: rgba(15, 23, 42, 0.74);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.16rem 0.55rem;
+  border-radius: var(--radius-full);
+}
+
+.spot-photo-zoom-pill {
+  flex-shrink: 0;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(4px);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.16rem 0.55rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.spot-photo-caption-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 0.85rem 0.55rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.42) 65%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+.spot-photo-caption-text {
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-copy-mc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--radius-full);
+  border: 1px dashed var(--primary);
+  background: var(--bg-subtle);
+  color: var(--primary);
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-copy-mc-badge:hover,
+.btn-copy-mc-badge:active {
+  background: var(--primary-light);
+  border-style: solid;
+}
+
+/* 3. Custom Planner Stop Card Photo Banner */
+.planner-spot-photo-banner {
+  position: relative;
+  margin: -1.15rem -1.25rem 0.5rem -1.25rem;
+  height: 145px;
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-subtle);
+  cursor: pointer;
+}
+
+.planner-spot-photo-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.planner-spot-photo-banner:hover img {
+  transform: scale(1.04);
+}
+
+.planner-spot-photo-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 1.25rem 0.85rem 0.45rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.86) 0%, rgba(15, 23, 42, 0.35) 65%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.planner-spot-photo-caption {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planner-spot-photo-Order {
+  flex-shrink: 0;
+  background: rgba(2, 132, 199, 0.88);
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+/* 4. Spot Picker Modal Thumbnail Photo */
+.picker-spot-photo-wrap {
+  position: relative;
+  margin: -1rem -1rem 0.65rem -1rem;
+  height: 124px;
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-subtle);
+  cursor: pointer;
+}
+
+.picker-spot-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.picker-spot-card:hover .picker-spot-photo-wrap img {
+  transform: scale(1.05);
+}
+
+.picker-spot-cat-badge {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.picker-spot-dur-badge {
+  position: absolute;
+  bottom: 7px;
+  right: 7px;
+  background: rgba(2, 132, 199, 0.9);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--radius-full);
+}
+
+/* 5. Spot Detail Modal Hero Photo */
+.modal-spot-hero-photo {
+  position: relative;
+  margin: -0.25rem 0 1rem 0;
+  height: 225px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-subtle);
+  cursor: zoom-in;
+  box-shadow: var(--shadow-sm);
+  transition: height 0.3s ease;
+}
+
+.modal-spot-hero-photo.expanded-photo {
+  height: 360px;
+  cursor: zoom-out;
+}
+
+.modal-spot-hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.modal-spot-hero-photo.expanded-photo img {
+  object-fit: contain;
+  background: #0f172a;
+}
+
+.modal-spot-hero-caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 1.4rem 0.85rem 0.55rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.38) 68%, transparent 100%);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.modal-photo-zoom-hint {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 0.12rem 0.48rem;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+}
+
+/* 6. Modal Footer Structured Layout */
+.modal-footer-planner-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-right: auto;
+  flex-wrap: wrap;
+}
+
+.modal-footer-planner-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.modal-select-planner-day {
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.modal-footer-actions-grid {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+/* 7. Mobile Card Collapsible Details & Responsive Refinements */
+.btn-mobile-card-expand {
+  display: none;
+  width: 100%;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.52rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--primary);
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-expand-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.mobile-expand-label {
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .btn-mobile-card-expand {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+@media (max-width: 768px) {
+  .btn-mobile-compact-toggle {
+    display: inline-flex;
+  }
+
+  .btn-mobile-card-expand {
+    display: flex;
+  }
+
+  .timeline-card.mobile-detail-collapsed .card-collapsible-detail,
+  .card-collapsible-detail.mobile-detail-collapsed {
+    display: none;
+  }
+
+  .spot-photo-banner {
+    margin: -1.1rem -1.05rem 0.75rem -1.05rem;
+    height: 168px;
+  }
+
+  .planner-spot-photo-banner {
+    margin: -1rem -1rem 0.5rem -1rem;
+    height: 132px;
+  }
+
+  .planner-stop-card {
+    padding: 1rem;
+  }
+
+  .stop-drag-handle {
+    display: none;
+  }
+
+  /* Sticky day selector inside Custom Planner on mobile */
+  .planner-day-nav {
+    position: sticky;
+    top: 56px;
+    z-index: 82;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 0.5rem 0.65rem;
+    margin: 0 -0.25rem 0.85rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  [data-theme="dark"] .planner-day-nav {
+    background: rgba(30, 41, 59, 0.95);
+  }
+
+  /* Compact Modal Footer on Mobile */
+  #spot-detail-modal .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    gap: 0.55rem;
+  }
+
+  .modal-footer-planner-row {
+    width: 100%;
+    justify-content: space-between;
+    margin-right: 0;
+  }
+
+  .modal-select-planner-day {
+    flex: 1;
+    min-height: 38px;
+  }
+
+  #btn-modal-add-to-custom {
+    min-height: 38px;
+    padding: 0.4rem 0.85rem;
+  }
+
+  .modal-footer-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .modal-footer-actions-grid .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.5rem 0.4rem;
+    font-size: 0.78rem;
+    min-height: 40px;
+  }
+
+  .modal-spot-hero-photo {
+    height: 185px;
+  }
+
+  .modal-spot-hero-photo.expanded-photo {
+    height: 290px;
+  }
+}
+
 
 
 </style>
@@ -4037,6 +4634,11 @@ button, input, select, textarea {
               <!-- Injected by app.js -->
             </div>
 
+            <!-- Horizontal Spot Photo Quick-Strip (Swipeable on Mobile & Desktop) -->
+            <div id="day-photo-strip-bar" class="day-photo-strip-bar" aria-label="當日景點實景圖快覽">
+              <!-- Injected by app.js -->
+            </div>
+
             <!-- Timeline Items Container -->
             <div class="timeline-stream" id="timeline-items-list">
               <!-- Injected by app.js -->
@@ -4218,6 +4820,7 @@ button, input, select, textarea {
 
             <div class="map-card-footer">
               <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="btn btn-primary btn-xs" id="btn-back-to-timeline-card" title="返回剛才瀏覽的景點卡片" style="display:none; font-weight:700;">📋 返回行程卡片</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-traffic" title="切換即時路況圖層 (需 JS API 模式)" style="display:none;">🚦 即時路況</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-mode" title="在嵌入模式與 JS API 模式間切換">🔄 切換視圖</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-reset-gmap-route" title="返回當日完整自駕路線視圖" style="display:none; color:var(--primary); font-weight:700;">🔄 返回當日路線</button>
@@ -4607,15 +5210,17 @@ button, input, select, textarea {
         <!-- Injected dynamically -->
       </div>
       <div class="modal-footer">
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-right: auto;">
+        <div class="modal-footer-planner-row">
           <select id="modal-select-planner-day" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.6rem; width: auto; min-width: 110px; background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm);" title="選擇欲加入的行程天數">
           </select>
           <button id="btn-modal-add-to-custom" class="btn btn-primary" style="font-size: 0.85rem;">➕ 加入自訂行程</button>
         </div>
-        <button id="modal-copy-mapcode-btn" class="btn btn-secondary" style="font-size: 0.85rem;">📋 複製 MapCode</button>
-        <a id="modal-nav-link" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size: 0.85rem;">📍 即時導航</a>
-        <a id="modal-reviews-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🔍 老饕評價</a>
-        <a id="modal-streetview-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🏙️ 街景實景</a>
+        <div class="modal-footer-actions-grid">
+          <button id="modal-copy-mapcode-btn" class="btn btn-secondary" style="font-size: 0.85rem;">📋 複製 MapCode</button>
+          <a id="modal-nav-link" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size: 0.85rem;">📍 即時導航</a>
+          <a id="modal-reviews-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🔍 老饕評價</a>
+          <a id="modal-streetview-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size: 0.85rem;">🏙️ 街景實景</a>
+        </div>
       </div>
     </div>
   </div>
@@ -5081,6 +5686,10 @@ const SCHEDULE_ITEMS = [
   // DAY 1 (2026/12/12)
   {
     id: "d1-1",
+    spotId: "spot-toyota",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-toyota.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Toyota_Rent-A-Lease_center_in_Kyoto%2C_Japan_%282019%29_-_260.jpg/960px-Toyota_Rent-A-Lease_center_in_Kyoto%2C_Japan_%282019%29_-_260.jpg",
+    imageCaption: "Toyota 租車營業所・沖繩右駕自駕取還車基地實景",
     day: 1,
     date: "2026/12/12",
     time: "11:00",
@@ -5125,6 +5734,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d1-2",
+    spotId: "spot-san-a-shiozaki",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-san-a-shiozaki.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/SAN-A_GINOWAN_CONVENTION_CITY.jpg/960px-SAN-A_GINOWAN_CONVENTION_CITY.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "沖繩在地大型連鎖購物中心 SAN-A 商場外觀實景",
     day: 1,
     date: "2026/12/12",
     time: "12:15",
@@ -5169,6 +5782,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d1-3",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 1,
     date: "2026/12/12",
     time: "13:20",
@@ -5213,6 +5830,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d1-4",
+    spotId: "spot-costco-nanjo",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-costco-nanjo.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Costco_Kadoma.jpg/960px-Costco_Kadoma.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "Costco 好市多沖繩南城倉庫店（附設加油站）實景",
     day: 1,
     date: "2026/12/12",
     time: "14:50",
@@ -5257,6 +5878,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d1-5",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 1,
     date: "2026/12/12",
     time: "17:49",
@@ -5301,6 +5926,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d1-6",
+    spotId: "spot-american-village",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-american-village.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Mihama_Town_Resort_American_Village_20160720.jpg/960px-Mihama_Town_Resort_American_Village_20160720.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "北谷美濱美國村（Mihama American Village）繽紛街景",
     day: 1,
     date: "2026/12/12",
     time: "19:38",
@@ -5345,6 +5974,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d1-7",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 1,
     date: "2026/12/12",
     time: "21:25",
@@ -5391,6 +6024,10 @@ const SCHEDULE_ITEMS = [
   // DAY 2 (2026/12/13)
   {
     id: "d2-1",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 2,
     date: "2026/12/13",
     time: "08:00",
@@ -5435,6 +6072,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d2-2",
+    spotId: "spot-itoman-fish",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-itoman-fish.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Roadside-Station_Itoman.jpg/960px-Roadside-Station_Itoman.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "糸滿漁業協同組合 お魚センター 海鮮市場實景",
     day: 2,
     date: "2026/12/13",
     time: "09:06",
@@ -5479,6 +6120,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d2-3",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 2,
     date: "2026/12/13",
     time: "11:11",
@@ -5523,6 +6168,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d2-4",
+    spotId: "spot-iias-toyosaki",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-iias-toyosaki.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/Iias_Okinawa_Toyosaki_202006.jpg/960px-Iias_Okinawa_Toyosaki_202006.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "iias 沖繩豐崎海濱大型購物中心外觀實景",
     day: 2,
     date: "2026/12/13",
     time: "12:21",
@@ -5567,6 +6216,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d2-5",
+    spotId: "spot-dmm-aquarium",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-dmm-aquarium.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/DMM_Kariyushi_Aquarium_202006.jpg/960px-DMM_Kariyushi_Aquarium_202006.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "DMM Kariyushi 水族館奇幻海洋水槽實景",
     day: 2,
     date: "2026/12/13",
     time: "15:28",
@@ -5611,6 +6264,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d2-6",
+    spotId: "spot-chura-sun-beach",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-chura-sun-beach.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/Toyosaki_Chura-Sun_Beach_and_Toyosaki_Seaside_Park.JPG/960px-Toyosaki_Chura-Sun_Beach_and_Toyosaki_Seaside_Park.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "豐崎美麗SUN海灘（Chura Sun Beach）潔白沙灘與碧海",
     day: 2,
     date: "2026/12/13",
     time: "16:05",
@@ -5655,6 +6312,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d2-7",
+    spotId: "spot-itoman-gyomin",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-itoman-gyomin.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Fried_Gurukun_at_Yumenoya.jpg/960px-Fried_Gurukun_at_Yumenoya.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "沖繩南部經典酥炸雙帶烏尾鮗（グルクン唐揚げ）海鮮料理",
     day: 2,
     date: "2026/12/13",
     time: "16:43",
@@ -5701,6 +6362,10 @@ const SCHEDULE_ITEMS = [
   // DAY 3 (2026/12/14)
   {
     id: "d3-1",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 3,
     date: "2026/12/14",
     time: "08:00",
@@ -5745,6 +6410,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-2",
+    spotId: "spot-gokoku-shrine",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-gokoku-shrine.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/Okinawaken_Gokoku_Shrine_haiden.jpg/960px-Okinawaken_Gokoku_Shrine_haiden.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "奧武山公園・沖繩縣護國神社本殿與開闊參道實景",
     day: 3,
     date: "2026/12/14",
     time: "09:22",
@@ -5789,6 +6458,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-3",
+    spotId: "spot-naminoue-shrine",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-naminoue-shrine.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Naha_Naminoue_Beach_%26_Naminoue-gu_33.jpg/960px-Naha_Naminoue_Beach_%26_Naminoue-gu_33.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "波上宮・佇立於珊瑚礁斷崖之上的琉球八社之首實景",
     day: 3,
     date: "2026/12/14",
     time: "10:04",
@@ -5833,6 +6506,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-4",
+    spotId: "spot-dfs-okinawa",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-dfs-okinawa.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/DFS_Galleria_Okinawa_20150316.JPG/960px-DFS_Galleria_Okinawa_20150316.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "T 廣場 by DFS 沖繩那霸店・日本唯一路面免稅旗艦店",
     day: 3,
     date: "2026/12/14",
     time: "10:51",
@@ -5877,6 +6554,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-5",
+    spotId: "spot-kokusai-dori",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-kokusai-dori.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/89/Kokusai-dori08s3s4440.jpg/960px-Kokusai-dori08s3s4440.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "那霸國際通商店街「奇蹟的一英哩」繁華街景",
     day: 3,
     date: "2026/12/14",
     time: "14:03",
@@ -5921,6 +6602,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-6",
+    spotId: "spot-inaka-soba",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-inaka-soba.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Soki_soba_in_Naha.jpg/960px-Soki_soba_in_Naha.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "濃郁柴魚高湯與軟嫩豬軟骨・道地沖繩軟骨麵（ソーキそば）",
     day: 3,
     date: "2026/12/14",
     time: "14:10",
@@ -5965,6 +6650,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-7",
+    spotId: "spot-eibun-soba",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-eibun-soba.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Okinawa_soba_in_Yamabare_2.jpg/960px-Okinawa_soba_in_Yamabare_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "鋪滿炙燒三層肉與特製高湯的沖繩麵名物實景",
     day: 3,
     date: "2026/12/14",
     time: "14:14",
@@ -6009,6 +6698,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-8",
+    spotId: "spot-sports-depo",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-sports-depo.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Sports_Depo_Barajima_20260607.jpg/960px-Sports_Depo_Barajima_20260607.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "Sports Depo 大型運動戶外用品專賣店外觀實景",
     day: 3,
     date: "2026/12/14",
     time: "16:27",
@@ -6053,6 +6746,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-9",
+    spotId: "spot-senagajima",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-senagajima.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Ryukyu_Onsen_Senagajima_Hotel_02.JPG/960px-Ryukyu_Onsen_Senagajima_Hotel_02.JPG",
+    imageCaption: "瀨長島琉球溫泉飯店與蔚藍海岸風光實景",
     day: 3,
     date: "2026/12/14",
     time: "17:54",
@@ -6097,6 +6794,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-10",
+    spotId: "spot-maxvalu",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-maxvalu.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/JP_%E6%B2%96%E7%B9%A9_Okinawa_%E9%82%A3%E9%9C%B8%E5%B8%82_Naha_City_%E6%B2%96%E7%B9%A9_Okinawa_%E6%9D%BE%E5%B1%B1%E9%80%9A_Matsuyama_outdoor_carpark_n_AEON_MaxValu_Store_February_2026_N13P_02.jpg/960px-JP_%E6%B2%96%E7%B9%A9_Okinawa_%E9%82%A3%E9%9C%B8%E5%B8%82_Naha_City_%E6%B2%96%E7%B9%A9_Okinawa_%E6%9D%BE%E5%B1%B1%E9%80%9A_Matsuyama_outdoor_carpark_n_AEON_MaxValu_Store_February_2026_N13P_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "AEON MaxValu 24小時大型超市與平面停車場實景",
     day: 3,
     date: "2026/12/14",
     time: "19:01",
@@ -6141,6 +6842,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-11",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 3,
     date: "2026/12/14",
     time: "20:14",
@@ -6187,6 +6892,10 @@ const SCHEDULE_ITEMS = [
   // DAY 4 (2026/12/15)
   {
     id: "d4-1",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 4,
     date: "2026/12/15",
     time: "08:00",
@@ -6231,6 +6940,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-2",
+    spotId: "spot-daruma-temple",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-daruma-temple.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Sairai-in%2C_Naha.jpg/960px-Sairai-in%2C_Naha.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "首里達摩寺（西來院）莊嚴寺院本堂實景",
     day: 4,
     date: "2026/12/15",
     time: "09:34",
@@ -6275,6 +6988,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-3",
+    spotId: "spot-seven-eleven-shuri",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-seven-eleven-shuri.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Seven_eleven_Kakogawa_Shikata_store.JPG/960px-Seven_eleven_Kakogawa_Shikata_store.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "日本 7-Eleven 便利商店與寬敞自駕停車空間實景",
     day: 4,
     date: "2026/12/15",
     time: "10:36",
@@ -6319,6 +7036,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-4",
+    spotId: "spot-jojoen",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-jojoen.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Jojoen_Yakiniku_Restaurant_01.jpg/960px-Jojoen_Yakiniku_Restaurant_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "頂級日本和牛燒肉・油花細膩的高級燒肉饗宴實景",
     day: 4,
     date: "2026/12/15",
     time: "11:17",
@@ -6363,6 +7084,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-5",
+    spotId: "spot-parco-city",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-parco-city.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/SAN-A_URASOE_WEST_COAST_PARCO_CITY.jpg/960px-SAN-A_URASOE_WEST_COAST_PARCO_CITY.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "SAN-A 浦添西海岸 PARCO CITY 臨海大型購物商城實景",
     day: 4,
     date: "2026/12/15",
     time: "12:21",
@@ -6407,6 +7132,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-6",
+    spotId: "spot-workman-plus",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-workman-plus.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a8/WORKMAN_GIRL_Maebashi_Yoshioka_store.jpg/960px-WORKMAN_GIRL_Maebashi_Yoshioka_store.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "Workman 機能服飾與戶外裝備專門店外觀實景",
     day: 4,
     date: "2026/12/15",
     time: "17:39",
@@ -6451,6 +7180,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-7",
+    spotId: "spot-katsunoya",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-katsunoya.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Tonkatsu_teishoku_of_Katsuraku.jpg/960px-Tonkatsu_teishoku_of_Katsuraku.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "現炸金黃酥脆里肌炸豬排定食與現磨白芝麻實景",
     day: 4,
     date: "2026/12/15",
     time: "18:52",
@@ -6495,6 +7228,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-8",
+    spotId: "spot-tonkatsu-koyaji",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-tonkatsu-koyaji.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/Tonkatsu_of_Kimukatsu.jpg/960px-Tonkatsu_of_Kimukatsu.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "厚切低溫慢炸熟成阿古豬炸豬排金黃酥脆實景",
     day: 4,
     date: "2026/12/15",
     time: "20:03",
@@ -6539,6 +7276,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-9",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 4,
     date: "2026/12/15",
     time: "21:32",
@@ -6585,6 +7326,10 @@ const SCHEDULE_ITEMS = [
   // DAY 5 (2026/12/16)
   {
     id: "d5-1",
+    spotId: "spot-ocean-tree",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    imageCaption: "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     day: 5,
     date: "2026/12/16",
     time: "08:00",
@@ -6629,6 +7374,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d5-2",
+    spotId: "spot-toyosaki-roadside",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-toyosaki-roadside.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Roadside_station_Toyosaki.JPG/960px-Roadside_station_Toyosaki.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "道之驛豐崎（道の駅豊崎）農特產直賣所與休息站實景",
     day: 5,
     date: "2026/12/16",
     time: "10:08",
@@ -6673,6 +7422,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d5-3",
+    spotId: "spot-aeon-naha",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-aeon-naha.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/%C3%86ON_Naha_shopping_center.JPG/960px-%C3%86ON_Naha_shopping_center.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "AEON 那霸店（小祿站直結）大型百貨商場外觀實景",
     day: 5,
     date: "2026/12/16",
     time: "11:20",
@@ -6717,6 +7470,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d5-4",
+    spotId: "spot-tondo-ramen",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-tondo-ramen.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/JP_%E6%97%A5%E6%9C%AC_Japan_%E6%B2%96%E7%B9%A9_OKINAWA_%E9%82%A3%E9%9C%B8_Naha_%E7%90%89%E7%90%83%E6%96%B0%E9%BA%BA_Ryukyu_Shinmen_%E9%80%9A%E5%A0%82_Tondo_Orokuhonten_January_2025_R12S_01.jpg/960px-JP_%E6%97%A5%E6%9C%AC_Japan_%E6%B2%96%E7%B9%A9_OKINAWA_%E9%82%A3%E9%9C%B8_Naha_%E7%90%89%E7%90%83%E6%96%B0%E9%BA%BA_Ryukyu_Shinmen_%E9%80%9A%E5%A0%82_Tondo_Orokuhonten_January_2025_R12S_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "琉球新麵 通堂（小祿本店）沖繩傳奇拉麵名店實景",
     day: 5,
     date: "2026/12/16",
     time: "14:23",
@@ -6761,6 +7518,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d5-5",
+    spotId: "spot-toyota",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-toyota.jpg",
+    imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Toyota_Rent-A-Lease_center_in_Kyoto%2C_Japan_%282019%29_-_260.jpg/960px-Toyota_Rent-A-Lease_center_in_Kyoto%2C_Japan_%282019%29_-_260.jpg",
+    imageCaption: "Toyota 租車營業所・沖繩右駕自駕取還車基地實景",
     day: 5,
     date: "2026/12/16",
     time: "15:27",
@@ -6805,6 +7566,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d5-6",
+    spotId: "spot-naha-airport",
+    image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-naha-airport.jpg",
+    imageFallback: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Naha_Airport_Domestic_Passenger_Terminal_Building_20150318-2.JPG/960px-Naha_Airport_Domestic_Passenger_Terminal_Building_20150318-2.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    imageCaption: "那霸機場（OKA）航廈大廳與挑高玻璃帷幕實景",
     day: 5,
     date: "2026/12/16",
     time: "16:50",
@@ -6915,6 +7680,9 @@ const TRAVEL_TIPS = {
 const SPOTS_CATALOG = [
   {
     "id": "spot-toyota",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-toyota.jpg",
+    "imageFallback": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Toyota_Rent-A-Lease_center_in_Kyoto%2C_Japan_%282019%29_-_260.jpg/960px-Toyota_Rent-A-Lease_center_in_Kyoto%2C_Japan_%282019%29_-_260.jpg",
+    "imageCaption": "Toyota 租車營業所・沖繩右駕自駕取還車基地實景",
     "name": "Toyota Rental Car Naha Airport Branch",
     "nameZh": "Toyota租車 沖繩那霸機場店",
     "nameJa": "トヨタレンタカー 那覇空港店",
@@ -6957,6 +7725,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-san-a-shiozaki",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-san-a-shiozaki.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/SAN-A_GINOWAN_CONVENTION_CITY.jpg/960px-SAN-A_GINOWAN_CONVENTION_CITY.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "沖繩在地大型連鎖購物中心 SAN-A 商場外觀實景",
     "name": "San-A Shiozaki City",
     "nameZh": "SAN-A 潮崎購物城 (San-A Shiozaki)",
     "nameJa": "サンエー しおざきシティ",
@@ -6999,6 +7770,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-ocean-tree",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-ocean-tree.jpg",
+    "imageFallback": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg",
+    "imageCaption": "沖繩南部糸滿海岸線與海濱渡假區蔚藍海景實景",
     "name": "Ocean Tree Okinawa",
     "nameZh": "Ocean Tree (海之樹 旅宿基地)",
     "nameJa": "オーシャンツリー",
@@ -7042,6 +7816,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-costco-nanjo",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-costco-nanjo.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Costco_Kadoma.jpg/960px-Costco_Kadoma.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "Costco 好市多沖繩南城倉庫店（附設加油站）實景",
     "name": "Costco Wholesale Okinawa Nanjo",
     "nameZh": "COSTCO 好市多 沖繩南城倉庫店",
     "nameJa": "コストコホールセール 沖縄南城倉庫店",
@@ -7085,6 +7862,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-american-village",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-american-village.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Mihama_Town_Resort_American_Village_20160720.jpg/960px-Mihama_Town_Resort_American_Village_20160720.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "北谷美濱美國村（Mihama American Village）繽紛街景",
     "name": "Mihama American Village",
     "nameZh": "北谷美國村 週末煙火觀賞點",
     "nameJa": "美浜アメリカンビレッジ 花火ビューポイント",
@@ -7128,6 +7908,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-itoman-fish",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-itoman-fish.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Roadside-Station_Itoman.jpg/960px-Roadside-Station_Itoman.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "糸滿漁業協同組合 お魚センター 海鮮市場實景",
     "name": "Itoman Fish Market",
     "nameZh": "糸滿魚市場 (道之驛糸滿魚市中心)",
     "nameJa": "糸満漁業協同組合 お魚センター",
@@ -7171,6 +7954,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-iias-toyosaki",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-iias-toyosaki.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/Iias_Okinawa_Toyosaki_202006.jpg/960px-Iias_Okinawa_Toyosaki_202006.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "iias 沖繩豐崎海濱大型購物中心外觀實景",
     "name": "iias Okinawa Toyosaki",
     "nameZh": "iias 沖繩豐崎 (大型海濱休閒商城)",
     "nameJa": "イーアス沖縄豊崎",
@@ -7214,6 +8000,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-dmm-aquarium",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-dmm-aquarium.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/DMM_Kariyushi_Aquarium_202006.jpg/960px-DMM_Kariyushi_Aquarium_202006.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "DMM Kariyushi 水族館奇幻海洋水槽實景",
     "name": "DMM Kariyushi Aquarium",
     "nameZh": "DMM Kariyushi水族館 (光影沉浸水族)",
     "nameJa": "DMMかりゆし水族館",
@@ -7257,6 +8046,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-chura-sun-beach",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-chura-sun-beach.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/Toyosaki_Chura-Sun_Beach_and_Toyosaki_Seaside_Park.JPG/960px-Toyosaki_Chura-Sun_Beach_and_Toyosaki_Seaside_Park.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "豐崎美麗SUN海灘（Chura Sun Beach）潔白沙灘與碧海",
     "name": "Toyosaki Seaside Park Chura-SUN Beach",
     "nameZh": "豐崎海濱公園 美麗SUN海灘",
     "nameJa": "豊崎美らSUNビーチ",
@@ -7300,6 +8092,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-itoman-gyomin",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-itoman-gyomin.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Fried_Gurukun_at_Yumenoya.jpg/960px-Fried_Gurukun_at_Yumenoya.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "沖繩南部經典酥炸雙帶烏尾鮗（グルクン唐揚げ）海鮮料理",
     "name": "Itoman Gyomin Shokudo",
     "nameZh": "糸滿漁民食堂 (神級奶油香煎鮮魚)",
     "nameJa": "糸満漁民食堂",
@@ -7343,6 +8138,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-gokoku-shrine",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-gokoku-shrine.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/Okinawaken_Gokoku_Shrine_haiden.jpg/960px-Okinawaken_Gokoku_Shrine_haiden.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "奧武山公園・沖繩縣護國神社本殿與開闊參道實景",
     "name": "Okinawa Gokoku Shrine",
     "nameZh": "沖繩縣護國神社",
     "nameJa": "沖縄県護国神社",
@@ -7386,6 +8184,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-naminoue-shrine",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-naminoue-shrine.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Naha_Naminoue_Beach_%26_Naminoue-gu_33.jpg/960px-Naha_Naminoue_Beach_%26_Naminoue-gu_33.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "波上宮・佇立於珊瑚礁斷崖之上的琉球八社之首實景",
     "name": "Naminoue Shrine",
     "nameZh": "波上宮 (沖繩總鎮守・懸崖海景神社)",
     "nameJa": "波上宮 (なみのうえぐう)",
@@ -7429,6 +8230,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-dfs-okinawa",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-dfs-okinawa.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/DFS_Galleria_Okinawa_20150316.JPG/960px-DFS_Galleria_Okinawa_20150316.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "T 廣場 by DFS 沖繩那霸店・日本唯一路面免稅旗艦店",
     "name": "T Galleria by DFS Okinawa",
     "nameZh": "T 廣場 by DFS 沖繩那霸店",
     "nameJa": "Tギャラリア 沖縄 by DFS",
@@ -7472,6 +8276,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-kokusai-dori",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-kokusai-dori.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/89/Kokusai-dori08s3s4440.jpg/960px-Kokusai-dori08s3s4440.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "那霸國際通商店街「奇蹟的一英哩」繁華街景",
     "name": "Naha Kokusai Dori",
     "nameZh": "那霸國際通商店街",
     "nameJa": "那覇国際通り商店街",
@@ -7515,6 +8322,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-inaka-soba",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-inaka-soba.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Soki_soba_in_Naha.jpg/960px-Soki_soba_in_Naha.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "濃郁柴魚高湯與軟嫩豬軟骨・道地沖繩軟骨麵（ソーキそば）",
     "name": "Inaka Kosetsuichiba Minami-ten",
     "nameZh": "田舍 沖繩麵 (公設市場南店)",
     "nameJa": "ソーキそば 田舎 公設市場南店",
@@ -7558,6 +8368,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-eibun-soba",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-eibun-soba.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Okinawa_soba_in_Yamabare_2.jpg/960px-Okinawa_soba_in_Yamabare_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "鋪滿炙燒三層肉與特製高湯的沖繩麵名物實景",
     "name": "Okinawa Soba EIBUN",
     "nameZh": "沖繩麵 EIBUN (新世代文青話題名店)",
     "nameJa": "OKINAWA SOBA EIBUN",
@@ -7601,6 +8414,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-sports-depo",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-sports-depo.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Sports_Depo_Barajima_20260607.jpg/960px-Sports_Depo_Barajima_20260607.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "Sports Depo 大型運動戶外用品專賣店外觀實景",
     "name": "Sports Depo Ameku",
     "nameZh": "Sports Depo 天久店 (超大運動用品專賣)",
     "nameJa": "スポーツデポ 天久店",
@@ -7644,6 +8460,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-senagajima",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-senagajima.jpg",
+    "imageFallback": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Ryukyu_Onsen_Senagajima_Hotel_02.JPG/960px-Ryukyu_Onsen_Senagajima_Hotel_02.JPG",
+    "imageCaption": "瀨長島琉球溫泉飯店與蔚藍海岸風光實景",
     "name": "Senagajima Umikaji Terrace",
     "nameZh": "瀨長島 Umikaji Terrace (沖繩小希臘)",
     "nameJa": "瀬長島ウミカジテラス",
@@ -7687,6 +8506,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-maxvalu",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-maxvalu.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/JP_%E6%B2%96%E7%B9%A9_Okinawa_%E9%82%A3%E9%9C%B8%E5%B8%82_Naha_City_%E6%B2%96%E7%B9%A9_Okinawa_%E6%9D%BE%E5%B1%B1%E9%80%9A_Matsuyama_outdoor_carpark_n_AEON_MaxValu_Store_February_2026_N13P_02.jpg/960px-JP_%E6%B2%96%E7%B9%A9_Okinawa_%E9%82%A3%E9%9C%B8%E5%B8%82_Naha_City_%E6%B2%96%E7%B9%A9_Okinawa_%E6%9D%BE%E5%B1%B1%E9%80%9A_Matsuyama_outdoor_carpark_n_AEON_MaxValu_Store_February_2026_N13P_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "AEON MaxValu 24小時大型超市與平面停車場實景",
     "name": "MaxValu Tomigusuku",
     "nameZh": "MaxValu 豐見城店 (24小時大型超市)",
     "nameJa": "マックスバリュ 豊見城店",
@@ -7730,6 +8552,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-daruma-temple",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-daruma-temple.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Sairai-in%2C_Naha.jpg/960px-Sairai-in%2C_Naha.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "首里達摩寺（西來院）莊嚴寺院本堂實景",
     "name": "Sairaiin Daruma-dera",
     "nameZh": "西來院 達磨寺 (滿滿開運不倒翁秘境)",
     "nameJa": "西来院 達磨寺 (だるまでら)",
@@ -7773,6 +8598,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-seven-eleven-shuri",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-seven-eleven-shuri.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Seven_eleven_Kakogawa_Shikata_store.JPG/960px-Seven_eleven_Kakogawa_Shikata_store.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "日本 7-Eleven 便利商店與寬敞自駕停車空間實景",
     "name": "7-Eleven Shuri Castle Town JA Okinawa",
     "nameZh": "7-Eleven 首里城下町JA沖繩店",
     "nameJa": "セブン-イレブン 首里城下町JAおきなわ店",
@@ -7816,6 +8644,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-jojoen",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-jojoen.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Jojoen_Yakiniku_Restaurant_01.jpg/960px-Jojoen_Yakiniku_Restaurant_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "頂級日本和牛燒肉・油花細膩的高級燒肉饗宴實景",
     "name": "Jojoen Okinawa Urasoe Parco City",
     "nameZh": "敘敘苑 燒肉 浦添PARCO CITY店",
     "nameJa": "叙々苑 沖縄浦添パルコシティ店",
@@ -7859,6 +8690,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-parco-city",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-parco-city.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/SAN-A_URASOE_WEST_COAST_PARCO_CITY.jpg/960px-SAN-A_URASOE_WEST_COAST_PARCO_CITY.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "SAN-A 浦添西海岸 PARCO CITY 臨海大型購物商城實景",
     "name": "SAN-A Urasoe West Coast PARCO CITY",
     "nameZh": "SAN-A 浦添西海岸 PARCO CITY",
     "nameJa": "サンエー浦添西海岸 PARCO CITY",
@@ -7902,6 +8736,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-workman-plus",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-workman-plus.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a8/WORKMAN_GIRL_Maebashi_Yoshioka_store.jpg/960px-WORKMAN_GIRL_Maebashi_Yoshioka_store.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "Workman 機能服飾與戶外裝備專門店外觀實景",
     "name": "Workman Plus Urasoe Kyozuka",
     "nameZh": "WORKMAN Plus 浦添經塚店",
     "nameJa": "ワークマンプラス 浦添経塚店",
@@ -7945,6 +8782,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-katsunoya",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-katsunoya.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Tonkatsu_teishoku_of_Katsuraku.jpg/960px-Tonkatsu_teishoku_of_Katsuraku.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "現炸金黃酥脆里肌炸豬排定食與現磨白芝麻實景",
     "name": "Katsunoya Naha Main Place",
     "nameZh": "かつ乃屋 那霸Main Place店",
     "nameJa": "かつ乃屋 那覇メインプレイス店",
@@ -7988,6 +8828,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-tonkatsu-koyaji",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-tonkatsu-koyaji.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/Tonkatsu_of_Kimukatsu.jpg/960px-Tonkatsu_of_Kimukatsu.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "厚切低溫慢炸熟成阿古豬炸豬排金黃酥脆實景",
     "name": "Tonkatsu Koyaji Naha",
     "nameZh": "豚かつ 小やじ 那霸店 (隱藏版極品阿古豬)",
     "nameJa": "豚かつ 小やじ (Tonkatsu Koyaji)",
@@ -8031,6 +8874,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-toyosaki-roadside",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-toyosaki-roadside.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Roadside_station_Toyosaki.JPG/960px-Roadside_station_Toyosaki.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "道之驛豐崎（道の駅豊崎）農特產直賣所與休息站實景",
     "name": "Roadside Station Toyosaki",
     "nameZh": "道之驛 豐崎 (日本最西端道之驛)",
     "nameJa": "道の駅 豊崎 (菜々色畑)",
@@ -8074,6 +8920,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-aeon-naha",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-aeon-naha.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/%C3%86ON_Naha_shopping_center.JPG/960px-%C3%86ON_Naha_shopping_center.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "AEON 那霸店（小祿站直結）大型百貨商場外觀實景",
     "name": "AEON Naha Store",
     "nameZh": "永旺 那霸店 (AEON 那霸小祿店)",
     "nameJa": "イオン那覇店",
@@ -8117,6 +8966,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-tondo-ramen",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-tondo-ramen.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/JP_%E6%97%A5%E6%9C%AC_Japan_%E6%B2%96%E7%B9%A9_OKINAWA_%E9%82%A3%E9%9C%B8_Naha_%E7%90%89%E7%90%83%E6%96%B0%E9%BA%BA_Ryukyu_Shinmen_%E9%80%9A%E5%A0%82_Tondo_Orokuhonten_January_2025_R12S_01.jpg/960px-JP_%E6%97%A5%E6%9C%AC_Japan_%E6%B2%96%E7%B9%A9_OKINAWA_%E9%82%A3%E9%9C%B8_Naha_%E7%90%89%E7%90%83%E6%96%B0%E9%BA%BA_Ryukyu_Shinmen_%E9%80%9A%E5%A0%82_Tondo_Orokuhonten_January_2025_R12S_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "琉球新麵 通堂（小祿本店）沖繩傳奇拉麵名店實景",
     "name": "Ryukyu Shinmen Tondo Oroku Honten",
     "nameZh": "琉球新麵 通堂 小祿本店 (男人麵・女人麵)",
     "nameJa": "琉球新麺 通堂 小禄本店",
@@ -8160,6 +9012,9 @@ const SPOTS_CATALOG = [
   },
   {
     "id": "spot-naha-airport",
+    "image": "https://xuanlii.github.io/okinawa-2026/images/spots/spot-naha-airport.jpg",
+    "imageFallback": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Naha_Airport_Domestic_Passenger_Terminal_Building_20150318-2.JPG/960px-Naha_Airport_Domestic_Passenger_Terminal_Building_20150318-2.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "imageCaption": "那霸機場（OKA）航廈大廳與挑高玻璃帷幕實景",
     "name": "Naha Airport International Terminal",
     "nameZh": "那霸機場 國際線航廈 (返程返台)",
     "nameJa": "那覇空港 国際線ターミナル (OKA)",
@@ -8829,10 +9684,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (typeof SCHEDULE_ITEMS !== 'undefined') {
-      const foundItem = SCHEDULE_ITEMS.find(s => s.id === id);
+      const foundItem = SCHEDULE_ITEMS.find(s => s.id === id || s.spotId === id);
       if (foundItem) {
         return {
           id: foundItem.id,
+          spotId: foundItem.spotId || foundItem.id,
+          image: foundItem.image || '',
+          imageFallback: foundItem.imageFallback || '',
+          imageCaption: foundItem.imageCaption || foundItem.nameZh || foundItem.name || '',
           name: foundItem.name,
           nameZh: foundItem.nameZh,
           nameJa: foundItem.nameJa,
@@ -8865,6 +9724,83 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
+  function resolveSpotImage(itemOrSpot) {
+    function withAliases(image, imageFallback, imageCaption) {
+      return {
+        image,
+        imageFallback,
+        imageCaption,
+        src: image,
+        fallback: imageFallback,
+        caption: imageCaption
+      };
+    }
+    if (!itemOrSpot) {
+      return withAliases(
+        'images/spots/spot-ocean-tree.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg/960px-Southern_Beach_Hotel_%5E_Resort_-_panoramio.jpg',
+        '沖繩海濱實景'
+      );
+    }
+    if (itemOrSpot.image) {
+      return withAliases(
+        itemOrSpot.image,
+        itemOrSpot.imageFallback || itemOrSpot.image,
+        itemOrSpot.imageCaption || itemOrSpot.nameZh || itemOrSpot.name || '沖繩景點實景'
+      );
+    }
+    const refId = itemOrSpot.spotId || itemOrSpot.id;
+    const catMatch = refId ? findCatalogSpot(refId) : null;
+    if (catMatch && catMatch.image) {
+      return withAliases(
+        catMatch.image,
+        catMatch.imageFallback || catMatch.image,
+        catMatch.imageCaption || catMatch.nameZh || itemOrSpot.nameZh || '沖繩景點實景'
+      );
+    }
+    if (typeof SPOTS_CATALOG !== 'undefined' && itemOrSpot.nameZh) {
+      const byName = SPOTS_CATALOG.find(s => s.nameZh === itemOrSpot.nameZh || s.name === itemOrSpot.name);
+      if (byName && byName.image) {
+        return withAliases(
+          byName.image,
+          byName.imageFallback || byName.image,
+          byName.imageCaption || byName.nameZh || '沖繩景點實景'
+        );
+      }
+    }
+    const catFallbacks = {
+      food: 'images/spots/spot-eibun-soba.jpg',
+      shopping: 'images/spots/spot-parco-city.jpg',
+      attraction: 'images/spots/spot-naminoue-shrine.jpg',
+      hotel: 'images/spots/spot-ocean-tree.jpg',
+      transport: 'images/spots/spot-toyota.jpg'
+    };
+    const defaultImg = catFallbacks[itemOrSpot.category] || 'images/spots/spot-chura-sun-beach.jpg';
+    return withAliases(
+      defaultImg,
+      defaultImg,
+      itemOrSpot.nameZh || itemOrSpot.name || '沖繩自駕景點實景'
+    );
+  }
+
+  window.appHandleImgError = function(imgEl) {
+    if (!imgEl) return;
+    const fb = (typeof imgEl.getAttribute === 'function' ? imgEl.getAttribute('data-fallback') : null) || (imgEl.dataset && imgEl.dataset.fallback) || '';
+    const tried = imgEl.dataset && (imgEl.dataset.triedFallback || imgEl.dataset.fallbackTried);
+    if (fb && imgEl.src !== fb && !tried) {
+      if (imgEl.dataset) {
+        imgEl.dataset.triedFallback = '1';
+        imgEl.dataset.fallbackTried = '1';
+      }
+      imgEl.src = fb;
+      return;
+    }
+    const wrapper = typeof imgEl.closest === 'function' ? imgEl.closest('.spot-photo-banner, .picker-spot-photo-wrap, .planner-spot-photo-banner, .modal-spot-hero-photo, .photo-strip-card-img-wrap') : null;
+    if (wrapper) {
+      wrapper.classList.add('img-load-fallback');
+    }
+  };
+
   function createPlannerStop(spotIdOrObj) {
     let base = null;
     if (typeof spotIdOrObj === 'string') {
@@ -8876,9 +9812,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const instanceId = 'stop-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
 
     if (base) {
+      const imgMeta = resolveSpotImage(base);
       return {
         instanceId,
         id: base.id || instanceId,
+        spotId: base.spotId || base.id || instanceId,
+        image: imgMeta.image,
+        imageFallback: imgMeta.imageFallback,
+        imageCaption: imgMeta.imageCaption,
         name: base.name || '自訂停靠點',
         nameZh: base.nameZh || base.name || '自訂停靠點',
         nameJa: base.nameJa || '',
@@ -8901,9 +9842,14 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     }
 
+    const defaultImgMeta = resolveSpotImage(null);
     return {
       instanceId,
       id: instanceId,
+      spotId: instanceId,
+      image: defaultImgMeta.image,
+      imageFallback: defaultImgMeta.imageFallback,
+      imageCaption: defaultImgMeta.imageCaption,
       name: '自訂私房節點',
       nameZh: '自訂私房節點',
       nameJa: '',
@@ -8997,6 +9943,13 @@ document.addEventListener('DOMContentLoaded', () => {
     googlePolyline: null,
     googleTrafficLayer: null,
     googleTrafficEnabled: false
+  };
+
+  let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
+  const pickerState = {
+    category: 'all',
+    gen: 'all',
+    query: ''
   };
 
   function savePlannerData() {
@@ -9375,6 +10328,12 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTimeline();
         updateMapMarkers();
         updateCategoryPillCounts();
+        if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+          const schedContainer = document.getElementById('official-schedule-container');
+          if (schedContainer && window.scrollY > 420 && typeof schedContainer.scrollIntoView === 'function') {
+            schedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
       });
     });
   }
@@ -9466,6 +10425,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function initMobileViewSwitcher() {
     const btnTimeline = document.getElementById('btn-view-timeline');
     const btnMap = document.getElementById('btn-view-map');
+    const btnBackCard = document.getElementById('btn-back-to-timeline-card');
+    if (btnBackCard) {
+      btnBackCard.addEventListener('click', () => {
+        if (state.lastFocusedCardId) {
+          window.appScrollToCard(state.lastFocusedCardId);
+        } else {
+          switchMobileView('timeline');
+        }
+      });
+    }
     if (!btnTimeline || !btnMap) return;
 
     btnTimeline.addEventListener('click', () => switchMobileView('timeline'));
@@ -9642,6 +10611,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderTimeline() {
     const listContainer = document.getElementById('timeline-items-list');
     const bannerContainer = document.getElementById('active-day-banner');
+    const photoStripContainer = document.getElementById('day-photo-strip-bar');
     if (!listContainer) return;
 
     const filtered = getFilteredItems();
@@ -9676,6 +10646,54 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Render Horizontal Spot Photo Quick-Strip (Swipeable on Mobile & Desktop)
+    if (photoStripContainer) {
+      if (filtered.length === 0) {
+        photoStripContainer.style.display = 'none';
+      } else {
+        photoStripContainer.style.display = 'block';
+        const stripCardsHtml = filtered.map((item) => {
+          const imgMeta = resolveSpotImage(item);
+          return `
+            <button type="button" class="photo-strip-card" data-jump-id="${escapeHtml(item.id)}" title="點擊滑動至：${escapeHtml(item.nameZh)}">
+              <div class="photo-strip-card-img-wrap">
+                <img src="${escapeHtml(imgMeta.image)}" data-fallback="${escapeHtml(imgMeta.imageFallback)}" alt="${escapeHtml(item.nameZh)}" loading="lazy" decoding="async" onerror="window.appHandleImgError(this)">
+                <span class="photo-strip-time-pill">${state.activeDay === 0 ? `D${item.day} ` : ''}${escapeHtml(item.time)}</span>
+              </div>
+              <div class="photo-strip-card-title">${item.icon} ${escapeHtml(item.nameZh)}</div>
+            </button>
+          `;
+        }).join('');
+
+        photoStripContainer.innerHTML = `
+          <div class="photo-strip-header">
+            <span class="photo-strip-label">📸 景點實景快覽 <small>(左右滑動點選直達卡片)</small></span>
+            <button type="button" class="btn-mobile-compact-toggle ${state.mobileCompactCards ? 'is-compact' : ''}" data-action="toggle-all-mobile-cards">
+              ${state.mobileCompactCards ? '📖 展開全部攻略' : '📱 手機精簡預覽'}
+            </button>
+          </div>
+          <div class="photo-strip-scroller">
+            ${stripCardsHtml}
+          </div>
+        `;
+
+        photoStripContainer.querySelectorAll('.photo-strip-card').forEach(cardBtn => {
+          cardBtn.addEventListener('click', () => {
+            window.appScrollToCard(cardBtn.dataset.jumpId);
+          });
+        });
+
+        const toggleCompactBtn = photoStripContainer.querySelector('[data-action="toggle-all-mobile-cards"]');
+        if (toggleCompactBtn) {
+          toggleCompactBtn.addEventListener('click', () => {
+            state.mobileCompactCards = !state.mobileCompactCards;
+            renderTimeline();
+            showToast(state.mobileCompactCards ? '📱 已切換為「手機精簡預覽」模式（點擊單張卡片可展開攻略）' : '📖 已展開所有景點的雙世代完整攻略');
+          });
+        }
+      }
+    }
+
     if (filtered.length === 0) {
       listContainer.innerHTML = `
         <div style="text-align: center; padding: 4rem 1rem; background: var(--bg-surface); border: 1px dashed var(--border); border-radius: var(--radius-lg);">
@@ -9693,6 +10711,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const isLast = index === filtered.length - 1;
       const nextItem = filtered[index + 1];
       const itemGmapLinks = getSpotGmapLinks(item);
+      const imgMeta = resolveSpotImage(item);
 
       // Accurate Haversine Transit calculation
       let transitHtml = '';
@@ -9708,13 +10727,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Generation Perspective UI
       const genCardsHtml = renderGenerationCardHtml(item.generation);
+      const seniorObj = (item.generation && item.generation.senior) || {};
+      const harmonyScore = (item.generation && item.generation.harmony && item.generation.harmony.score) || 9.5;
+      const isCollapsedMobile = Boolean(state.mobileCompactCards);
 
       html += `
         <div class="timeline-item" id="item-${escapeHtml(item.id)}">
           <div class="timeline-node">${item.icon}</div>
-          <div class="timeline-card">
+          <div class="timeline-card ${isCollapsedMobile ? 'mobile-detail-collapsed' : ''}">
+            <!-- Real Attraction Photo Banner -->
+            <div class="spot-photo-banner" data-action="modal" data-id="${escapeHtml(item.id)}" title="點擊檢視「${escapeHtml(item.nameZh)}」大圖與雙世代詳細攻略">
+              <img class="spot-photo-img" src="${escapeHtml(imgMeta.image)}" data-fallback="${escapeHtml(imgMeta.imageFallback)}" alt="${escapeHtml(item.nameZh)}" loading="lazy" decoding="async" onerror="window.appHandleImgError(this)">
+              <div class="spot-photo-top-badges">
+                <span class="spot-photo-step-badge">${state.activeDay === 0 ? `Day ${item.day}` : `第 ${index + 1} 站`} · ${escapeHtml(item.time)}</span>
+                <span class="spot-photo-cat-badge">${item.icon} ${escapeHtml(item.categoryLabel)}</span>
+              </div>
+              <div class="spot-photo-caption-bar">
+                <span class="spot-photo-caption-text">📸 ${escapeHtml(imgMeta.imageCaption)}</span>
+                <span class="spot-photo-zoom-pill">🔍 大圖與攻略</span>
+              </div>
+            </div>
+
             <div class="card-top">
-              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
                 <span class="card-time-badge">⏰ ${item.time}</span>
                 <span class="card-duration-badge">⏱️ ${item.duration}</span>
                 <span class="tag-badge" style="background: var(--primary-light); color: var(--primary);">${escapeHtml(item.categoryLabel)}</span>
@@ -9734,10 +10769,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <p class="card-desc">${escapeHtml(item.desc)}</p>
 
-            ${genCardsHtml}
+            <!-- Mobile Quick Summary & Expand Button -->
+            <button type="button" class="btn-mobile-card-expand" data-action="toggle-card-detail" aria-expanded="${!isCollapsedMobile}">
+              <span class="mobile-expand-chips">
+                <span>🧓 ${escapeHtml(seniorObj.walkingLoad || '輕鬆')}</span>
+                <span>🤝 契合 ${harmonyScore}/10</span>
+              </span>
+              <span class="mobile-expand-label">${isCollapsedMobile ? '展開雙世代攻略 ▾' : '收合詳細攻略 ▴'}</span>
+            </button>
 
-            <div class="card-tags" style="margin-top:0.75rem;">
-              ${item.tags.map(tag => `<span class="tag-badge">#${escapeHtml(tag)}</span>`).join('')}
+            <div class="card-collapsible-detail">
+              ${genCardsHtml}
+
+              <div class="card-tags" style="margin-top:0.75rem;">
+                ${item.tags.map(tag => `<span class="tag-badge">#${escapeHtml(tag)}</span>`).join('')}
+              </div>
             </div>
 
             <div class="card-footer">
@@ -9745,8 +10791,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>📍 ${escapeHtml(item.address)}</span>
               </div>
               <div class="card-footer-buttons">
-                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點攻略與雙世代指南">
-                  <span>🔍 查看攻略</span>
+                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
+                  <span>🔍 實景與攻略</span>
                 </button>
                 <button class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode">
                   <span>📋 複製MC</span>
@@ -9787,6 +10833,20 @@ document.addEventListener('DOMContentLoaded', () => {
     listContainer.querySelectorAll('.btn-star-fav').forEach(btn => {
       btn.addEventListener('click', () => {
         toggleFavorite(btn.dataset.id);
+      });
+    });
+
+    listContainer.querySelectorAll('[data-action="toggle-card-detail"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const card = btn.closest('.timeline-card');
+        if (!card) return;
+        const collapsed = card.classList.toggle('mobile-detail-collapsed');
+        btn.setAttribute('aria-expanded', String(!collapsed));
+        const labelEl = btn.querySelector('.mobile-expand-label');
+        if (labelEl) {
+          labelEl.textContent = collapsed ? '展開雙世代攻略 ▾' : '收合詳細攻略 ▴';
+        }
       });
     });
 
@@ -9845,8 +10905,6 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==========================================================================
      Google Maps 全方位自駕路網與雙模地圖 (Google Maps Embed & JS API System)
      ========================================================================== */
-  let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
-
   function getSpotGmapLinks(itemOrSpot) {
     if (!itemOrSpot) {
       return {
@@ -10743,6 +11801,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Generation highlights
           const genCardsHtml = renderGenerationCardHtml(stop.generation);
           const stopGLinks = getSpotGmapLinks(stop);
+          const stopImg = resolveSpotImage(stop);
 
           // Duration options
           const durations = [15, 30, 45, 60, 90, 120, 150, 180, 240];
@@ -10751,9 +11810,18 @@ document.addEventListener('DOMContentLoaded', () => {
           `).join('');
 
           streamHtml += `
-            <div class="planner-stop-item" data-index="${idx}" draggable="true">
+            <div class="planner-stop-item" data-index="${idx}" draggable="${window.innerWidth > 900 ? 'true' : 'false'}">
               ${transitConnectorHtml}
               <div class="planner-stop-card">
+                ${stopImg.src ? `
+                  <div class="planner-spot-photo-banner" data-action="view-stop-modal" data-id="${escapeHtml(stop.id)}" title="點擊檢視景點實景大圖與深度攻略">
+                    <img src="${escapeHtml(stopImg.src)}" data-fallback="${escapeHtml(stopImg.fallback)}" alt="${escapeHtml(stop.nameZh || stop.name)}" loading="lazy" onerror="window.appHandleImgError(this)">
+                    <div class="planner-spot-photo-overlay">
+                      <span class="planner-spot-photo-caption">📷 ${escapeHtml(stopImg.caption || stop.nameZh || stop.name)}</span>
+                      <span class="planner-spot-photo-Order">第 ${idx + 1} 站 · ${stop.arrivalTime}~${stop.departureTime}</span>
+                    </div>
+                  </div>
+                ` : ''}
                 <div class="planner-stop-header">
                   <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                     <span class="stop-drag-handle" title="按住拖曳可自由調換站點前後順序">⠿</span>
@@ -11081,12 +12149,6 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==========================================================================
      Spot Picker Modal
      ========================================================================== */
-  const pickerState = {
-    category: 'all',
-    gen: 'all',
-    query: ''
-  };
-
   function attachModalBottomSheetGestures(modalEl, closeFn) {
     if (!modalEl) return;
     const dialog = modalEl.querySelector('.modal-dialog');
@@ -11374,14 +12436,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const senior = spot.generation ? spot.generation.senior : null;
       const young = spot.generation ? spot.generation.young : null;
       const walkScore = senior && senior.walkingScore === 'green' ? '🟢 輕鬆低步數' : (senior && senior.walkingScore === 'amber' ? '🟡 中度平坦' : '🔴 坡度較多');
+      const spotImg = resolveSpotImage(spot);
 
       return `
         <div class="picker-spot-card">
           <div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.35rem;">
-              <span style="font-size:1.4rem;">${spot.icon}</span>
-              <span class="tag-badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${escapeHtml(spot.categoryLabel)}</span>
-            </div>
+            ${spotImg.src ? `
+              <div class="picker-spot-photo-wrap btn-picker-preview" data-id="${escapeHtml(spot.id)}" title="點擊查看大圖與完整攻略">
+                <img src="${escapeHtml(spotImg.src)}" data-fallback="${escapeHtml(spotImg.fallback)}" alt="${escapeHtml(spot.nameZh)}" loading="lazy" onerror="window.appHandleImgError(this)">
+                <span class="picker-spot-cat-badge">${spot.icon} ${escapeHtml(spot.categoryLabel)}</span>
+                <span class="picker-spot-dur-badge">⏱️ ${spot.defaultDurationMinutes || 60}分</span>
+              </div>
+            ` : `
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.35rem;">
+                <span style="font-size:1.4rem;">${spot.icon}</span>
+                <span class="tag-badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${escapeHtml(spot.categoryLabel)}</span>
+              </div>
+            `}
             <div class="picker-spot-title">${escapeHtml(spot.nameZh)}</div>
             <div class="picker-spot-cat">${escapeHtml(spot.name)} · 建議 ${spot.defaultDurationMinutes || 60} 分</div>
             
@@ -11439,8 +12510,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const harmonyAdvice = (gen.harmony && gen.harmony.advice) ? gen.harmony.advice : (gen.harmonyAdvice || '');
 
     const walkColor = senior.walkingScore === 'green' ? '#10b981' : (senior.walkingScore === 'amber' ? '#f59e0b' : '#ef4444');
+    const spotImg = resolveSpotImage(item);
 
     document.getElementById('modal-content').innerHTML = `
+      ${spotImg.src ? `
+        <div class="modal-spot-hero-photo" onclick="this.classList.toggle('expanded-photo')" title="點擊可切換放大檢視完整實景照">
+          <img src="${escapeHtml(spotImg.src)}" data-fallback="${escapeHtml(spotImg.fallback)}" alt="${escapeHtml(item.nameZh)}" onerror="window.appHandleImgError(this)">
+          <div class="modal-spot-hero-caption">
+            <span>📷 ${escapeHtml(spotImg.caption || item.nameZh)}</span>
+            <span class="modal-photo-zoom-hint">🔍 點擊放大/縮小</span>
+          </div>
+        </div>
+      ` : ''}
       <div style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
         <span class="card-duration-badge">⏱️ 建議停留：${item.defaultDurationMinutes || item.duration || '60'} 分鐘</span>
         <span class="tag-badge" style="background: var(--primary-light); color: var(--primary); font-size: 0.8rem;">${escapeHtml(item.categoryLabel || '沖繩精選')}</span>
@@ -11613,6 +12694,12 @@ document.addEventListener('DOMContentLoaded', () => {
   window.appFocusOnMap = function(itemId) {
     const item = findCatalogSpot(itemId);
     if (!item) return;
+
+    state.lastFocusedCardId = itemId;
+    const backBtn = document.getElementById('btn-back-to-timeline-card');
+    if (backBtn && window.innerWidth <= 900) {
+      backBtn.style.display = 'inline-flex';
+    }
 
     if (window.innerWidth <= 900) {
       switchMobileView('map');
@@ -12487,6 +13574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     calculateDayTimeline,
     createPlannerStop,
     findCatalogSpot,
+    resolveSpotImage,
     addSpotToPlannerDay,
     addSpotToCurrentPlannerDay,
     getSelectedFlight,
