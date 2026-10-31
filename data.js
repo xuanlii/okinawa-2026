@@ -1187,6 +1187,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-6",
+    alternativeGroupId: "d3-lunch-choice",
+    alternativeRole: "planA",
+    alternativeBadge: "方案 A · 經典庶民老店",
+    alternativeGroupTitle: "Day 3 午餐二選一 · 備選推薦方案",
     spotId: "spot-inaka-soba",
     image: "images/spots/spot-inaka-soba.jpg",
     imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Soki_soba_in_Naha.jpg/960px-Soki_soba_in_Naha.jpg",
@@ -1235,6 +1239,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-7",
+    alternativeGroupId: "d3-lunch-choice",
+    alternativeRole: "planB",
+    alternativeBadge: "方案 B · 新世代排隊文青 (備選推薦)",
+    alternativeGroupTitle: "Day 3 午餐二選一 · 備選推薦方案",
     spotId: "spot-eibun-soba",
     image: "images/spots/spot-eibun-soba.jpg",
     imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Okinawa_soba_in_Yamabare_2.jpg/960px-Okinawa_soba_in_Yamabare_2.jpg",
@@ -1765,6 +1773,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-7",
+    alternativeGroupId: "d4-dinner-choice",
+    alternativeRole: "planA",
+    alternativeBadge: "方案 A · 商場熟成炸豬排",
+    alternativeGroupTitle: "Day 4 晚餐二選一 · 備選推薦方案",
     spotId: "spot-katsunoya",
     image: "images/spots/spot-katsunoya.jpg",
     imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Tonkatsu_teishoku_of_Katsuraku.jpg/960px-Tonkatsu_teishoku_of_Katsuraku.jpg",
@@ -1813,6 +1825,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-8",
+    alternativeGroupId: "d4-dinner-choice",
+    alternativeRole: "planB",
+    alternativeBadge: "方案 B · 老饕私藏阿古豬居酒屋 (備選推薦)",
+    alternativeGroupTitle: "Day 4 晚餐二選一 · 備選推薦方案",
     spotId: "spot-tonkatsu-koyaji",
     image: "images/spots/spot-tonkatsu-koyaji.jpg",
     imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Tonkatsu_of_Kimukatsu.jpg/960px-Tonkatsu_of_Kimukatsu.jpg",
@@ -2014,7 +2030,7 @@ const SCHEDULE_ITEMS = [
     day: 5,
     date: "2026/12/16",
     time: "11:20",
-    name: "永忘 那霸店",
+    name: "永旺 那霸店",
     nameZh: "永旺 那霸店 (AEON 那霸小祿店)",
     nameJa: "イオン那覇店 (AEON Naha Store)",
     duration: "停留 03時00分",
@@ -2050,7 +2066,7 @@ const SCHEDULE_ITEMS = [
             "splitMeetingPoint": "AEON 那霸店 1F 沖繩特產免稅專區服務台"
       }
 },
-    desc: "行程文字註記之「永忘 那霸店」即為與單軌小祿站直通的超大型「AEON 永旺 那霸店」！離機場僅約8分鐘車程，擁有專屬免稅櫃台，可一口氣掃購雪鹽餅乾、辣蝦餅、黑糖、泡盛、藥妝與各款限定商品，作返台前最後的大衝刺！",
+    desc: "與單軌小祿站直通的超大型「AEON 永旺 那霸店」！離機場僅約8分鐘車程，擁有專屬免稅櫃台，可一口氣掃購雪鹽餅乾、辣蝦餅、黑糖、泡盛、藥妝與各款限定商品，作返台前最後的大衝刺！",
     tips: "地下1F設有大型超市與伴手禮專區；館內室內停車場車位充足不怕日曬。"
   },
   {

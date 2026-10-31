@@ -26,6 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function safeStorageRemove(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      delete memoryStore[key];
+    }
+  }
+
   /* ==========================================================================
      HTML Sanitizer (Prevents XSS in custom items & expenses)
      ========================================================================== */
@@ -544,6 +552,29 @@ document.addEventListener('DOMContentLoaded', () => {
     safeStorageSet('okinawa_custom_planner_data', JSON.stringify(state.plannerData));
   }
 
+  // Cache pristine baseline schedule items snapshot on load
+  const BASELINE_SCHEDULE_SNAPSHOT = (typeof SCHEDULE_ITEMS !== 'undefined' && Array.isArray(SCHEDULE_ITEMS))
+    ? JSON.parse(JSON.stringify(SCHEDULE_ITEMS))
+    : [];
+
+  function restoreOfficialBaseline() {
+    state.selectedFlightId = (typeof DEFAULT_OKINAWA_FLIGHT_ID !== 'undefined' ? DEFAULT_OKINAWA_FLIGHT_ID : 'ci-oka-morning-roundtrip');
+    safeStorageRemove('okinawa_selected_flight');
+    if (typeof SCHEDULE_ITEMS !== 'undefined' && Array.isArray(SCHEDULE_ITEMS)) {
+      SCHEDULE_ITEMS.forEach(it => {
+        const snap = BASELINE_SCHEDULE_SNAPSHOT.find(b => b.id === it.id);
+        if (snap) {
+          it.time = snap.time;
+          it.desc = snap.desc;
+          it.nameZh = snap.nameZh;
+        }
+      });
+    }
+    updateFlightUI(getSelectedFlight());
+    renderTimeline();
+    showToast('✈️ 已恢復為官方推薦基準行程 (Day 1 11:00 取車 · Day 5 08:00~16:50)');
+  }
+
   // Initialize Theme
   document.documentElement.setAttribute('data-theme', state.theme);
   updateThemeIcon();
@@ -577,7 +608,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initChicTripSharing();
   initModal();
   initFlightSelector();
-  syncFlightToItinerary(getSelectedFlight(), false);
+  const savedFlightId = safeStorageGet('okinawa_selected_flight');
+  if (savedFlightId) {
+    syncFlightToItinerary(getSelectedFlight(), false);
+  } else {
+    updateFlightUI(getSelectedFlight());
+  }
   initScrollspyAndBackToTop();
 
   /* ==========================================================================
@@ -990,7 +1026,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     input.addEventListener('input', (e) => {
       state.searchQuery = e.target.value.trim().toLowerCase();
-      clearBtn.style.display = state.searchQuery ? 'block' : 'none';
+      clearBtn.style.display = state.searchQuery ? 'inline-flex' : 'none';
       renderTimeline();
       updateMapMarkers();
     });
@@ -1194,6 +1230,234 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
+     Alternative Meal Group Rendering (2-Choose-1 & Backup Option)
+     ========================================================================== */
+  function renderAlternativeMealGroupHtml(itemA, itemB, afterGroupItem, index) {
+    const isLunch = itemA.alternativeGroupId === 'd3-lunch-choice';
+    const groupTitle = isLunch 
+      ? '那霸第一公設市場 vs 壺屋文青 雙風格沖繩麵抉擇'
+      : '新都心商場沙發續加 vs 牧志職人阿古豬慢炸 雙豬排之夜';
+    const groupBadgeText = isLunch
+      ? '🍽️ 午餐二選一 · 備選推薦方案'
+      : '🍽️ 晚餐二選一 · 備選推薦方案';
+    const timeText = isLunch ? '⏰ 14:10 · ⏱️ 約 60~120 分鐘' : '⏰ 18:52 · ⏱️ 約 60 分鐘';
+    const groupDesc = isLunch
+      ? '長輩熱愛入口即化的400円軟骨老味，年輕人嚮往法式跨界話題天王！兩店相距僅步行4分鐘，同一時段擇一品嚐，亦可分組各取所需後於路口集合。'
+      : '長輩享受商場直達地下停車場、沙發寬敞、白飯味噌湯免費續加；年輕老饕渴望朝聖沖繩頂級阿古豬低溫慢炸熟成、微醺居酒屋氛圍！同一時段擇一前往。';
+    const harmonyTip = isLunch
+      ? '若當日長輩飢餓且不想排隊，首推「方案 A 田舍」；若全家想品嚐新潮得獎名作且願意先抽號逛壺屋陶瓷老街，首選「方案 B EIBUN」。（兩店步行僅相距 310 公尺，約 4 分鐘）。'
+      : '若追求室內大型停車、吃飽逛超市買伴手禮，首選「方案 A かつ乃屋」；若全家皆為老饕想小酌品味沖繩頂級阿古豬，首選「方案 B 豚かつ 小やじ」。（兩店車程約 7 分鐘）。';
+
+    const shortNameA = itemA.nameZh.includes('田舍') ? '田舍 沖繩麵' : (itemA.nameZh.includes('かつ乃屋') ? 'かつ乃屋' : itemA.nameZh.split(' ')[0]);
+    const shortNameB = itemB.nameZh.includes('EIBUN') ? '沖繩麵 EIBUN' : (itemB.nameZh.includes('小やじ') ? '豚かつ 小やじ' : itemB.nameZh.split(' ')[0]);
+
+    const imgMetaA = resolveSpotImage(itemA);
+    const imgMetaB = resolveSpotImage(itemB);
+    const gmapA = getSpotGmapLinks(itemA);
+    const gmapB = getSpotGmapLinks(itemB);
+    const isFavA = state.favorites.includes(itemA.id);
+    const isFavB = state.favorites.includes(itemB.id);
+
+    // Outbound transit to subsequent stop (e.g. Sports Depo or Ocean Tree)
+    let outboundTransitHtml = '';
+    if (afterGroupItem && itemB.day === afterGroupItem.day) {
+      const transit = calculateTransit(itemB, afterGroupItem);
+      const destinationLabel = escapeHtml(afterGroupItem.nameZh);
+      outboundTransitHtml = `
+        <div class="transit-connector">
+          <span>${transit.isWalk ? '🚶' : '🚗'}</span>
+          <span>用餐後前往下一站：<strong>${destinationLabel}</strong> (${transit.text})</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="timeline-item timeline-item-alt-group" id="alt-group-${escapeHtml(itemA.alternativeGroupId)}">
+        <div class="timeline-node">🍽️</div>
+        <div class="card-alt-group" data-alt-group="${isLunch ? 'd3-lunch' : 'd4-dinner'}" data-active-option="both">
+          <!-- Header -->
+          <div class="alt-group-header">
+            <div class="alt-group-header-top">
+              <span class="alt-group-badge">${groupBadgeText}</span>
+              <span class="alt-time-pill">${timeText}</span>
+            </div>
+            <h3 class="alt-group-title">${groupTitle}</h3>
+            <p class="alt-group-desc">${groupDesc}</p>
+            
+            <!-- Segmented Switcher Pills -->
+            <div class="alt-toggle-pills" role="tablist" aria-label="備選用餐方案切換">
+              <button type="button" class="alt-toggle-pill" data-alt-target="a" role="tab" aria-selected="false">
+                <span class="pill-dot"></span>
+                <span class="pill-tag">方案 A</span>
+                <span class="pill-name">${escapeHtml(shortNameA)}</span>
+              </button>
+              <button type="button" class="alt-toggle-pill" data-alt-target="b" role="tab" aria-selected="false">
+                <span class="pill-dot"></span>
+                <span class="pill-tag">方案 B</span>
+                <span class="pill-name">${escapeHtml(shortNameB)}</span>
+              </button>
+              <button type="button" class="alt-toggle-pill active" data-alt-target="both" role="tab" aria-selected="true">
+                <span class="pill-tag">⚖️ 兩案並排</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Options Container -->
+          <div class="alt-options-container">
+            <!-- Option A Card -->
+            <div class="alt-option-card option-a" id="item-${escapeHtml(itemA.id)}" data-option="a">
+              <div class="alt-option-card-header">
+                <div class="alt-option-badge-wrap">
+                  <span class="alt-option-badge badge-a">${escapeHtml(itemA.alternativeBadge || '方案 A')}</span>
+                  <span class="alt-target-audience-pill senior">🧓 長輩力推</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  <span class="alt-option-price-hint">${isLunch ? '🪙 400~500円' : '💳 約 1,200~1,800円'}</span>
+                  <button type="button" class="btn-star-fav ${isFavA ? 'favorited' : ''}" data-id="${escapeHtml(itemA.id)}" title="${isFavA ? '取消收藏' : '加入收藏'}">
+                    ${isFavA ? '★' : '☆'}
+                  </button>
+                </div>
+              </div>
+
+              <div class="alt-option-media" data-action="modal" data-id="${escapeHtml(itemA.id)}" title="點擊檢視「${escapeHtml(itemA.nameZh)}」實景與雙世代攻略">
+                <img class="alt-option-img" src="${escapeHtml(imgMetaA.image)}" data-fallback="${escapeHtml(imgMetaA.imageFallback)}" alt="${escapeHtml(itemA.nameZh)}" onerror="window.appHandleImgError(this)" loading="lazy">
+                <div class="alt-media-overlay">
+                  <span class="alt-media-caption">📸 ${escapeHtml(imgMetaA.imageCaption)}</span>
+                </div>
+              </div>
+
+              <div class="alt-option-body">
+                <div class="alt-card-title-row">
+                  <h4 class="alt-card-title">${escapeHtml(itemA.nameZh)}</h4>
+                  <div class="alt-card-subtitle">${escapeHtml(itemA.name)} · ${escapeHtml(itemA.nameJa)}</div>
+                </div>
+                <p class="alt-card-brief">${escapeHtml(itemA.desc)}</p>
+
+                <div class="alt-gen-quick-tags">
+                  <div class="alt-gen-tag senior">
+                    <span class="alt-gen-icon">🧓</span>
+                    <span class="alt-gen-text"><strong>長輩優勢：</strong>${escapeHtml((itemA.generation && itemA.generation.senior && itemA.generation.senior.keyTip) || '平緩舒適免久候')}</span>
+                  </div>
+                  <div class="alt-gen-tag young">
+                    <span class="alt-gen-icon">📸</span>
+                    <span class="alt-gen-text"><strong>年輕族群：</strong>${escapeHtml((itemA.generation && itemA.generation.young && itemA.generation.young.keyTip) || '老饕在地私房點')}</span>
+                  </div>
+                </div>
+
+                <div class="alt-meta-chips">
+                  <span class="alt-meta-chip">📍 ${escapeHtml(itemA.address.split('(')[0].trim())}</span>
+                  <span class="alt-meta-chip">⏱️ ${escapeHtml(itemA.duration)}</span>
+                  ${itemA.tags.slice(0, 3).map(t => `<span class="alt-meta-chip">#${escapeHtml(t)}</span>`).join('')}
+                </div>
+              </div>
+
+              <div class="alt-card-actions">
+                <button type="button" class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(itemA.id)}" title="檢視詳細攻略">
+                  <span>🔍 實景攻略</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(itemA.mapCode)}" title="複製 MapCode">
+                  <span>📋 複製MC</span>
+                </button>
+                <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(itemA.id)}" title="在地圖定位">
+                  <span>📍 定位</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(itemA.id)}" title="加自訂行程">
+                  <span>➕ 加自訂</span>
+                </button>
+                <a href="${gmapA.navUrl}" target="_blank" rel="noopener" class="btn-card-action gmap" title="Google Maps 導航">
+                  <span>📍 導航</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- VS / OR Divider -->
+            <div class="alt-vs-divider">
+              <span class="alt-vs-line"></span>
+              <span class="alt-vs-badge">OR</span>
+              <span class="alt-vs-line"></span>
+            </div>
+
+            <!-- Option B Card -->
+            <div class="alt-option-card option-b" id="item-${escapeHtml(itemB.id)}" data-option="b">
+              <div class="alt-option-card-header">
+                <div class="alt-option-badge-wrap">
+                  <span class="alt-option-badge badge-b">${escapeHtml(itemB.alternativeBadge || '方案 B')}</span>
+                  <span class="alt-target-audience-pill young">📸 年輕人話題首選</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  <span class="alt-option-price-hint">${isLunch ? '💳 約 1,000~1,500円' : '💳 約 2,000~3,500円'}</span>
+                  <button type="button" class="btn-star-fav ${isFavB ? 'favorited' : ''}" data-id="${escapeHtml(itemB.id)}" title="${isFavB ? '取消收藏' : '加入收藏'}">
+                    ${isFavB ? '★' : '☆'}
+                  </button>
+                </div>
+              </div>
+
+              <div class="alt-option-media" data-action="modal" data-id="${escapeHtml(itemB.id)}" title="點擊檢視「${escapeHtml(itemB.nameZh)}」實景與雙世代攻略">
+                <img class="alt-option-img" src="${escapeHtml(imgMetaB.image)}" data-fallback="${escapeHtml(imgMetaB.imageFallback)}" alt="${escapeHtml(itemB.nameZh)}" onerror="window.appHandleImgError(this)" loading="lazy">
+                <div class="alt-media-overlay">
+                  <span class="alt-media-caption">📸 ${escapeHtml(imgMetaB.imageCaption)}</span>
+                </div>
+              </div>
+
+              <div class="alt-option-body">
+                <div class="alt-card-title-row">
+                  <h4 class="alt-card-title">${escapeHtml(itemB.nameZh)}</h4>
+                  <div class="alt-card-subtitle">${escapeHtml(itemB.name)} · ${escapeHtml(itemB.nameJa)}</div>
+                </div>
+                <p class="alt-card-brief">${escapeHtml(itemB.desc)}</p>
+
+                <div class="alt-gen-quick-tags">
+                  <div class="alt-gen-tag senior">
+                    <span class="alt-gen-icon">🧓</span>
+                    <span class="alt-gen-text"><strong>長輩優勢：</strong>${escapeHtml((itemB.generation && itemB.generation.senior && itemB.generation.senior.keyTip) || '清爽低負擔舒適坐席')}</span>
+                  </div>
+                  <div class="alt-gen-tag young">
+                    <span class="alt-gen-icon">📸</span>
+                    <span class="alt-gen-text"><strong>年輕族群：</strong>${escapeHtml((itemB.generation && itemB.generation.young && itemB.generation.young.keyTip) || '美拍天花板打卡炫耀')}</span>
+                  </div>
+                </div>
+
+                <div class="alt-meta-chips">
+                  <span class="alt-meta-chip">📍 ${escapeHtml(itemB.address.split('(')[0].trim())}</span>
+                  <span class="alt-meta-chip">⏱️ ${escapeHtml(itemB.duration)}</span>
+                  ${itemB.tags.slice(0, 3).map(t => `<span class="alt-meta-chip">#${escapeHtml(t)}</span>`).join('')}
+                </div>
+              </div>
+
+              <div class="alt-card-actions">
+                <button type="button" class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(itemB.id)}" title="檢視詳細攻略">
+                  <span>🔍 實景攻略</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(itemB.mapCode)}" title="複製 MapCode">
+                  <span>📋 複製MC</span>
+                </button>
+                <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(itemB.id)}" title="在地圖定位">
+                  <span>📍 定位</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(itemB.id)}" title="加自訂行程">
+                  <span>➕ 加自訂</span>
+                </button>
+                <a href="${gmapB.navUrl}" target="_blank" rel="noopener" class="btn-card-action gmap" title="Google Maps 導航">
+                  <span>📍 導航</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="alt-group-footer">
+            <div class="alt-harmony-tip">
+              <span class="alt-harmony-icon">💡</span>
+              <span class="alt-harmony-text"><strong>跨世代決策指引：</strong>${harmonyTip}</span>
+            </div>
+          </div>
+        </div>
+        ${outboundTransitHtml}
+      </div>
+    `;
+  }
+
+  /* ==========================================================================
      Official Schedule Timeline Rendering
      ========================================================================== */
   function renderTimeline() {
@@ -1294,10 +1558,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let html = '';
-    filtered.forEach((item, index) => {
+    for (let index = 0; index < filtered.length; index++) {
+      const item = filtered[index];
+      const nextItem = filtered[index + 1];
+
+      // Detect 2-choose-1 alternative meal group pair
+      const isAltPair = Boolean(item.alternativeGroupId && nextItem && item.alternativeGroupId === nextItem.alternativeGroupId);
+
+      if (isAltPair) {
+        const afterGroupItem = filtered[index + 2];
+        html += renderAlternativeMealGroupHtml(item, nextItem, afterGroupItem, index);
+        index++; // Skip second item of alternative pair
+        continue;
+      }
+
       const isFav = state.favorites.includes(item.id);
       const isLast = index === filtered.length - 1;
-      const nextItem = filtered[index + 1];
       const itemGmapLinks = getSpotGmapLinks(item);
       const imgMeta = resolveSpotImage(item);
 
@@ -1409,7 +1685,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ${transitHtml}
         </div>
       `;
-    });
+    }
 
     listContainer.innerHTML = html;
 
@@ -1468,6 +1744,45 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.borderColor = '';
             btn.style.color = '';
           }, 1600);
+        }
+      });
+    });
+
+    listContainer.querySelectorAll('.alt-toggle-pill').forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const groupCard = (typeof pill.closest === 'function') ? pill.closest('.card-alt-group') : null;
+        if (!groupCard) return;
+        const target = pill.dataset.altTarget; // 'a', 'b', or 'both'
+
+        groupCard.querySelectorAll('.alt-toggle-pill').forEach(p => {
+          if (p.classList && typeof p.classList.remove === 'function') {
+            p.classList.remove('active');
+          }
+          if (typeof p.setAttribute === 'function') {
+            p.setAttribute('aria-selected', 'false');
+          }
+        });
+        if (pill.classList && typeof pill.classList.add === 'function') {
+          pill.classList.add('active');
+        }
+        if (typeof pill.setAttribute === 'function') {
+          pill.setAttribute('aria-selected', 'true');
+        }
+
+        groupCard.dataset.activeOption = target;
+
+        const cardA = groupCard.querySelector('.alt-option-card.option-a');
+        const cardB = groupCard.querySelector('.alt-option-card.option-b');
+        if (target === 'a') {
+          if (cardA && cardA.classList && typeof cardA.classList.add === 'function') cardA.classList.add('active-focus');
+          if (cardB && cardB.classList && typeof cardB.classList.remove === 'function') cardB.classList.remove('active-focus');
+        } else if (target === 'b') {
+          if (cardB && cardB.classList && typeof cardB.classList.add === 'function') cardB.classList.add('active-focus');
+          if (cardA && cardA.classList && typeof cardA.classList.remove === 'function') cardA.classList.remove('active-focus');
+        } else {
+          if (cardA && cardA.classList && typeof cardA.classList.remove === 'function') cardA.classList.remove('active-focus');
+          if (cardB && cardB.classList && typeof cardB.classList.remove === 'function') cardB.classList.remove('active-focus');
         }
       });
     });
@@ -1822,12 +2137,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (openBtn) {
       openBtn.addEventListener('click', () => {
         if (keyInput) keyInput.value = state.gmapApiKey || '';
+        document.body.style.overflow = 'hidden';
         modal.style.display = 'flex';
         modal.classList.add('open');
       });
     }
 
     const closeModal = () => {
+      document.body.style.overflow = '';
       modal.classList.remove('open');
       modal.style.display = 'none';
     };
@@ -1884,6 +2201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const keyInput = document.getElementById('input-gmap-api-key');
     if (modal) {
       if (keyInput) keyInput.value = state.gmapApiKey || '';
+      document.body.style.overflow = 'hidden';
       modal.style.display = 'flex';
       modal.classList.add('open');
       if (msg) showToast(msg);
@@ -3079,7 +3397,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
 
           <div class="picker-spot-footer">
-            <button class="btn btn-secondary btn-sm btn-picker-preview" data-id="${escapeHtml(spot.id)}" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
+            <button class="btn btn-secondary btn-sm btn-picker-preview" data-id="${escapeHtml(spot.id)}">
               🔍 攻略
             </button>
             <button class="btn-picker-add" data-id="${escapeHtml(spot.id)}">
@@ -3382,11 +3700,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (cardEl) {
-      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      cardEl.classList.remove('highlight-pulse');
-      void cardEl.offsetWidth; // Trigger reflow
-      cardEl.classList.add('highlight-pulse');
-      setTimeout(() => cardEl.classList.remove('highlight-pulse'), 2400);
+      const altGroup = (typeof cardEl.closest === 'function') ? cardEl.closest('.card-alt-group') : null;
+      if (altGroup) {
+        const opt = cardEl.dataset.option;
+        if (opt) {
+          altGroup.dataset.activeOption = opt;
+          altGroup.querySelectorAll('.alt-toggle-pill').forEach(p => {
+            const matches = p.dataset.altTarget === opt;
+            if (matches) {
+              if (p.classList && typeof p.classList.add === 'function') p.classList.add('active');
+              if (typeof p.setAttribute === 'function') p.setAttribute('aria-selected', 'true');
+            } else {
+              if (p.classList && typeof p.classList.remove === 'function') p.classList.remove('active');
+              if (typeof p.setAttribute === 'function') p.setAttribute('aria-selected', 'false');
+            }
+          });
+        }
+      }
+      if (typeof cardEl.scrollIntoView === 'function') {
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (cardEl.classList && typeof cardEl.classList.remove === 'function') {
+        cardEl.classList.remove('highlight-pulse');
+        void cardEl.offsetWidth; // Trigger reflow
+        cardEl.classList.add('highlight-pulse');
+        setTimeout(() => {
+          if (cardEl && cardEl.classList && typeof cardEl.classList.remove === 'function') {
+            cardEl.classList.remove('highlight-pulse');
+          }
+        }, 2400);
+      }
     }
   };
 
@@ -3590,7 +3933,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-weight: 700; color: var(--primary);">¥ ${e.jpy.toLocaleString()}</div>
             <div style="font-size: 0.75rem; color: var(--text-muted);">NT$ ${Math.round(e.jpy * state.exchangeRate).toLocaleString()}</div>
           </div>
-          <button class="btn-delete-expense" data-id="${escapeHtml(e.id)}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:0.25rem;" title="刪除">✕</button>
+          <button class="btn-delete-expense" data-id="${escapeHtml(e.id)}" title="刪除" aria-label="刪除此筆支出">✕</button>
         </div>
       </div>
     `).join('');
@@ -3633,14 +3976,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function initScrollspyAndBackToTop() {
     const backToTopBtn = document.getElementById('back-to-top-btn');
     if (backToTopBtn) {
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 350) {
-          backToTopBtn.classList.add('visible');
-        } else {
-          backToTopBtn.classList.remove('visible');
-        }
-      });
-
       backToTopBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
@@ -3649,16 +3984,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-link');
 
-    function onScroll() {
-      const scrollY = window.pageYOffset;
-      sections.forEach(current => {
-        const sectionHeight = current.offsetHeight;
-        const sectionTop = current.offsetTop - 120;
-        const sectionId = current.getAttribute('id');
+    const raf = (typeof window !== 'undefined' && window.requestAnimationFrame)
+      ? window.requestAnimationFrame.bind(window)
+      : (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : function(cb) { return setTimeout(cb, 16); });
 
-        if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
-          setActiveNav(sectionId);
+    let scrollRafId = null;
+    function onScroll() {
+      if (scrollRafId) return;
+      scrollRafId = raf(() => {
+        scrollRafId = null;
+        const scrollY = window.pageYOffset || (document.documentElement && document.documentElement.scrollTop) || 0;
+
+        if (backToTopBtn) {
+          if (scrollY > 350) {
+            backToTopBtn.classList.add('visible');
+          } else {
+            backToTopBtn.classList.remove('visible');
+          }
         }
+
+        sections.forEach(current => {
+          const sectionHeight = current.offsetHeight || 0;
+          const sectionTop = (current.offsetTop || 0) - 120;
+          const sectionId = current.getAttribute('id');
+
+          if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+            setActiveNav(sectionId);
+          }
+        });
       });
     }
 
@@ -4026,6 +4379,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openFlightModal() {
     const modal = document.getElementById('flight-modal-overlay');
     if (!modal) return;
+    document.body.style.overflow = 'hidden';
     modal.style.display = 'flex';
     setTimeout(() => {
       modal.classList.add('open');
@@ -4037,6 +4391,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeFlightModal() {
     const modal = document.getElementById('flight-modal-overlay');
     if (!modal) return;
+    document.body.style.overflow = '';
     modal.classList.remove('open');
     modal.setAttribute('aria-hidden', 'true');
     setTimeout(() => {
@@ -4199,6 +4554,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGoogleMapsView,
     initGoogleMap,
     appFocusOnMap: window.appFocusOnMap,
+    restoreOfficialBaseline,
+    renderAlternativeMealGroupHtml,
     state
   };
   window.OKINAWA_GMAPS = window.__okinawaApp__;

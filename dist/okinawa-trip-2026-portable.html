@@ -160,6 +160,11 @@ button, input, select, textarea {
   scroll-margin-top: calc(115px + env(safe-area-inset-top, 0px));
 }
 
+/* Mobile Bottom Navigation (Hidden on desktop, enabled under <= 900px) */
+.mobile-bottom-nav {
+  display: none;
+}
+
 /* ==========================================================================
    Header & Navigation
    ========================================================================== */
@@ -249,8 +254,10 @@ button, input, select, textarea {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   color: var(--text-main);
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
@@ -504,6 +511,19 @@ button, input, select, textarea {
   text-align: center;
 }
 
+.btn-sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.875rem;
+  min-height: 44px;
+}
+
+.btn-xs {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  min-height: 44px;
+  min-width: 44px;
+}
+
 .btn-primary {
   background: var(--primary);
   color: #fff !important;
@@ -557,6 +577,8 @@ button, input, select, textarea {
   align-items: center;
   gap: 0.5rem;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   padding-bottom: 0.5rem;
   scrollbar-width: thin;
   min-width: 0;
@@ -672,8 +694,9 @@ button, input, select, textarea {
 
 .search-input {
   width: 100%;
-  padding: 0.45rem 2.2rem 0.45rem 2rem;
-  font-size: 0.875rem;
+  padding: 0.45rem 2.6rem 0.45rem 2rem;
+  font-size: 1rem; /* 16px to prevent iOS Safari auto-zoom */
+  min-height: 44px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border);
   background: var(--bg-surface);
@@ -698,15 +721,29 @@ button, input, select, textarea {
 
 .search-clear {
   position: absolute;
-  right: 0.75rem;
+  right: 0.25rem;
   top: 50%;
   transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: none;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--text-subtle);
   cursor: pointer;
-  font-size: 1rem;
-  display: none;
+  font-size: 1.1rem;
+  border-radius: var(--radius-full);
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--transition-fast);
+}
+
+.search-clear:hover {
+  color: var(--text-main);
 }
 
 /* ==========================================================================
@@ -857,10 +894,18 @@ button, input, select, textarea {
   border: none;
   color: var(--text-subtle);
   cursor: pointer;
-  font-size: 1.15rem;
-  padding: 0.2rem;
+  font-size: 1.3rem;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border-radius: var(--radius-full);
   transition: color var(--transition-fast), transform var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-star-fav:hover {
@@ -933,6 +978,7 @@ button, input, select, textarea {
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.35rem 0.75rem;
+  min-height: 44px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--bg-subtle);
@@ -1577,7 +1623,8 @@ button, input, select, textarea {
 .form-control {
   width: 100%;
   padding: 0.55rem 0.85rem;
-  font-size: 0.95rem;
+  font-size: 1rem; /* 16px to prevent iOS auto-zoom */
+  min-height: 44px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-subtle);
@@ -1602,6 +1649,30 @@ button, input, select, textarea {
   font-size: 1.85rem;
   font-weight: 800;
   color: var(--primary);
+}
+
+.btn-delete-expense {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.25rem;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-delete-expense:hover,
+.btn-delete-expense:active {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 /* ChicTrip Banner Showcase */
@@ -1704,14 +1775,16 @@ button, input, select, textarea {
 .modal-close-btn {
   background: var(--bg-subtle);
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   color: var(--text-muted);
   transition: all var(--transition-fast);
 }
@@ -1769,6 +1842,43 @@ button, input, select, textarea {
   opacity: 1;
 }
 
+/* Back to Top Floating Button */
+.back-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition-fast);
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.back-to-top:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
 /* ==========================================================================
    Footer
    ========================================================================== */
@@ -1809,16 +1919,20 @@ button, input, select, textarea {
 .btn-copy-mc-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   color: var(--text-muted);
   font-family: monospace;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.55rem;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+  min-height: 44px;
+  min-width: 44px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-copy-mc-badge:hover,
@@ -2050,8 +2164,13 @@ button, input, select, textarea {
 
   .day-tab-btn {
     padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     flex-shrink: 0;
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .filter-row {
@@ -2269,7 +2388,9 @@ button, input, select, textarea {
     font-size: 0.72rem;
     font-weight: 600;
     text-decoration: none;
-    padding: 0.3rem 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.35rem 0.5rem;
     border-radius: var(--radius-sm);
     border: none;
     background: transparent;
@@ -2296,8 +2417,48 @@ button, input, select, textarea {
   .back-to-top {
     bottom: calc(70px + env(safe-area-inset-bottom, 0px));
     right: 1rem;
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .btn-stop-ctrl {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.15rem;
+  }
+
+  .btn-stop-dur-step {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.25rem;
+  }
+
+  .stop-duration-select {
+    height: 44px;
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+
+  .planner-day-tab-btn {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cat-pill {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .toast-container {
@@ -2376,7 +2537,7 @@ button, input, select, textarea {
     justify-content: center;
     padding: 0.5rem 0.4rem;
     font-size: 0.785rem;
-    min-height: 38px;
+    min-height: 44px;
     text-align: center;
   }
 
@@ -2402,6 +2563,8 @@ button, input, select, textarea {
     box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 
   .modal-overlay.open .modal-dialog {
@@ -2481,8 +2644,10 @@ button, input, select, textarea {
   }
 
   .btn-delete-expense {
-    min-width: 38px;
-    min-height: 38px;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2911,6 +3076,8 @@ button, input, select, textarea {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   padding-bottom: 0.25rem;
 }
 
@@ -2979,8 +3146,41 @@ button, input, select, textarea {
   border-radius: var(--radius-sm);
   background: var(--bg-main);
   color: var(--text-main);
-  font-size: 0.9rem;
+  font-size: 1rem; /* 16px to prevent iOS auto-zoom */
   font-weight: 700;
+  min-height: 44px;
+}
+
+.planner-flight-badge {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.85rem;
+  min-height: 44px;
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.planner-flight-badge:hover {
+  background: rgba(2, 132, 199, 0.15);
+  border-color: var(--primary);
+}
+
+#btn-planner-change-flight {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.825rem;
+  margin-left: 0.25rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .form-control-select {
@@ -2989,9 +3189,10 @@ button, input, select, textarea {
   border-radius: var(--radius-sm);
   background: var(--bg-main);
   color: var(--text-main);
-  font-size: 0.85rem;
+  font-size: 1rem; /* 16px to prevent iOS auto-zoom */
   font-weight: 600;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .planner-btn-group {
@@ -3100,12 +3301,13 @@ button, input, select, textarea {
 }
 
 .stop-move-day-select {
-  padding: 0.2rem 0.5rem;
+  padding: 0.35rem 0.65rem;
+  min-height: 44px;
   border-radius: var(--radius-sm);
   border: 1px dashed var(--primary);
   background: var(--primary-light);
   color: var(--primary);
-  font-size: 0.775rem;
+  font-size: 1rem; /* 16px to prevent iOS auto-zoom */
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -3165,12 +3367,14 @@ button, input, select, textarea {
 }
 
 .stop-duration-select {
-  padding: 0.25rem 0.5rem;
+  padding: 0.35rem 0.65rem;
+  height: 44px;
+  min-height: 44px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg-main);
   color: var(--text-main);
-  font-size: 0.8rem;
+  font-size: 1rem; /* 16px to prevent iOS auto-zoom */
   font-weight: 600;
   cursor: pointer;
 }
@@ -3185,17 +3389,17 @@ button, input, select, textarea {
 }
 
 .btn-stop-dur-step {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: none;
   background: var(--bg-subtle);
   color: var(--text-main);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
   cursor: pointer;
   transition: background var(--transition-fast);
@@ -3211,6 +3415,8 @@ button, input, select, textarea {
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
   background: transparent;
+  height: 44px;
+  min-height: 44px;
 }
 
 .stop-reorder-btns {
@@ -3332,6 +3538,8 @@ button, input, select, textarea {
   padding: 1.25rem 1.5rem;
   max-height: 480px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1rem;
@@ -3377,8 +3585,13 @@ button, input, select, textarea {
 }
 
 .btn-picker-add {
-  padding: 0.35rem 0.85rem;
-  font-size: 0.8rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.45rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
   font-weight: 700;
   border-radius: var(--radius-full);
   background: #10b981;
@@ -3386,6 +3599,17 @@ button, input, select, textarea {
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-picker-preview {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.45rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
 }
 
 .btn-picker-add:hover {
@@ -3394,7 +3618,7 @@ button, input, select, textarea {
 }
 
 .picker-custom-add-toggle {
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.5rem calc(1rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   background: var(--bg-subtle);
 }
@@ -3665,9 +3889,16 @@ button, input, select, textarea {
   padding: 0.45rem 0.65rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-size: 1rem; /* 16px to prevent iOS auto-zoom */
+  min-height: 44px;
   background: var(--bg-surface);
   color: var(--text-main);
+}
+
+.flight-modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .form-group-wrap input:focus,
@@ -3685,6 +3916,7 @@ button, input, select, textarea {
     max-height: 88vh !important;
     margin-top: auto !important;
     margin-bottom: 0 !important;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
 
   .flight-legs-grid {
@@ -3865,6 +4097,7 @@ button, input, select, textarea {
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   padding-bottom: 0.2rem;
 }
@@ -4045,17 +4278,21 @@ button, input, select, textarea {
 .btn-copy-mc-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.25rem;
-  padding: 0.18rem 0.55rem;
+  padding: 0.35rem 0.85rem;
+  min-height: 44px;
+  min-width: 44px;
   border-radius: var(--radius-full);
   border: 1px dashed var(--primary);
   background: var(--bg-subtle);
   color: var(--primary);
   font-family: monospace;
-  font-size: 0.75rem;
+  font-size: 0.825rem;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-copy-mc-badge:hover,
@@ -4233,11 +4470,12 @@ button, input, select, textarea {
 
 .modal-select-planner-day {
   padding: 0.35rem 0.6rem;
+  min-height: 44px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg-main);
   color: var(--text-main);
-  font-size: 0.8rem;
+  font-size: 1rem; /* 16px to prevent iOS auto-zoom */
   font-weight: 700;
 }
 
@@ -4254,6 +4492,7 @@ button, input, select, textarea {
   width: 100%;
   margin: 0.35rem 0 0.5rem;
   padding: 0.52rem 0.85rem;
+  min-height: 44px;
   border-radius: var(--radius-sm);
   border: 1px dashed var(--primary);
   background: var(--primary-light);
@@ -4352,11 +4591,11 @@ button, input, select, textarea {
 
   .modal-select-planner-day {
     flex: 1;
-    min-height: 38px;
+    min-height: 44px;
   }
 
   #btn-modal-add-to-custom {
-    min-height: 38px;
+    min-height: 44px;
     padding: 0.4rem 0.85rem;
   }
 
@@ -4372,7 +4611,7 @@ button, input, select, textarea {
     justify-content: center;
     padding: 0.5rem 0.4rem;
     font-size: 0.78rem;
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .modal-spot-hero-photo {
@@ -4415,6 +4654,540 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
 }
 #btn-flight-selector { width: auto !important; min-width: max-content; flex-shrink: 0; }
 
+/* ==========================================================================
+   2-Choose-1 Alternative Meals Presentation Component (M1)
+   Classes: .card-alt-group, .alt-options-container, .alt-option-badge,
+            .alt-option-card, .alt-toggle-pills, .alt-vs-divider
+   ========================================================================== */
+
+/* Main Outer Alternative Group Container */
+.card-alt-group {
+  background: var(--bg-surface);
+  border: 2px solid rgba(245, 158, 11, 0.45);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem;
+  box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.12), var(--shadow-sm);
+  position: relative;
+  transition: all var(--transition-normal);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.card-alt-group::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #f59e0b, #ea580c, #ef4444);
+}
+
+.card-alt-group:hover {
+  box-shadow: 0 8px 28px -4px rgba(245, 158, 11, 0.2), var(--shadow-md);
+  border-color: rgba(245, 158, 11, 0.7);
+}
+
+[data-theme="dark"] .card-alt-group {
+  background: var(--bg-surface);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 4px 24px -2px rgba(245, 158, 11, 0.15), var(--shadow-md);
+}
+
+/* Header & Meta */
+.alt-group-header {
+  margin-bottom: 1.25rem;
+}
+
+.alt-group-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.alt-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+  color: #ffffff;
+  font-size: 0.825rem;
+  font-weight: 800;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+}
+
+.alt-time-pill {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+}
+
+.alt-group-title {
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.4;
+  margin-bottom: 0.4rem;
+}
+
+.alt-group-desc {
+  font-size: 0.885rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin-bottom: 0.95rem;
+}
+
+/* Interactive Segmented Switcher Pills */
+.alt-toggle-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-subtle);
+  padding: 0.3rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.alt-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  min-height: 44px; /* Meets Touch Target standard */
+}
+
+.alt-toggle-pill:hover {
+  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.alt-toggle-pill.active {
+  background: var(--bg-surface);
+  color: #ea580c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .alt-toggle-pill.active {
+  background: #1e293b;
+  color: #fbbf24;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.alt-toggle-pill .pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-subtle);
+  transition: background var(--transition-fast);
+}
+
+.alt-toggle-pill.active[data-alt-target="a"] .pill-dot {
+  background: #10b981;
+}
+
+.alt-toggle-pill.active[data-alt-target="b"] .pill-dot {
+  background: #ea580c;
+}
+
+.alt-toggle-pill .pill-tag {
+  font-weight: 800;
+}
+
+/* Options Container & Grid */
+.alt-options-container {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 1.15rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Central VS / OR Divider */
+.alt-vs-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  min-width: 44px;
+}
+
+.alt-vs-line {
+  flex: 1;
+  width: 2px;
+  background: repeating-linear-gradient(to bottom, var(--border), var(--border) 4px, transparent 4px, transparent 8px);
+}
+
+.alt-vs-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  color: #d97706;
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .alt-vs-badge {
+  background: #1f2937;
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* Option Cards (.alt-option-card) */
+.alt-option-card {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.alt-option-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.alt-option-card.option-a {
+  border-left: 4px solid #10b981;
+}
+
+.alt-option-card.option-b {
+  border-left: 4px solid #ea580c;
+}
+
+.alt-option-card.active-focus {
+  border-color: #f59e0b;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.18);
+}
+
+.alt-option-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.alt-option-badge-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.alt-option-badge {
+  font-size: 0.785rem;
+  font-weight: 800;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.alt-option-badge.badge-a {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.alt-option-badge.badge-b {
+  background: rgba(234, 88, 12, 0.12);
+  color: #ea580c;
+}
+
+[data-theme="dark"] .alt-option-badge.badge-a {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+[data-theme="dark"] .alt-option-badge.badge-b {
+  background: rgba(234, 88, 12, 0.2);
+  color: #fb923c;
+}
+
+.alt-target-audience-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.alt-target-audience-pill.senior {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.alt-target-audience-pill.young {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.alt-option-price-hint {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* Option Media Thumbnail */
+.alt-option-media {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  background: var(--bg-subtle);
+  cursor: pointer;
+}
+
+.alt-option-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.alt-option-card:hover .alt-option-img {
+  transform: scale(1.04);
+}
+
+.alt-media-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.35rem 0.65rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.alt-card-title-row {
+  margin-bottom: 0.45rem;
+}
+
+.alt-card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.35;
+}
+
+.alt-card-subtitle {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.alt-card-brief {
+  font-size: 0.835rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+/* Intergenerational Highlights inside Card */
+.alt-gen-quick-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.alt-gen-tag {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.785rem;
+  line-height: 1.4;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+}
+
+.alt-gen-tag.senior {
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--text-main);
+  border-left: 3px solid #10b981;
+}
+
+.alt-gen-tag.young {
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--text-main);
+  border-left: 3px solid #f59e0b;
+}
+
+.alt-gen-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.alt-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.alt-meta-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  padding: 0.18rem 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.alt-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+
+.alt-card-actions .btn-card-action {
+  flex: 1;
+  min-height: 44px; /* Meets Touch Target standard */
+  justify-content: center;
+  text-decoration: none;
+}
+
+/* Footer & Decision Tip */
+.alt-group-footer {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.alt-harmony-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  background: rgba(139, 92, 246, 0.08);
+  border-left: 4px solid #8b5cf6;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.825rem;
+  color: var(--text-main);
+  line-height: 1.45;
+}
+
+.alt-harmony-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* Mobile & Tablet Adaptations */
+@media (max-width: 900px) {
+  .alt-options-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .alt-vs-divider {
+    flex-direction: row;
+    width: 100%;
+    margin: 0.25rem 0;
+  }
+
+  .alt-vs-line {
+    height: 2px;
+    width: auto;
+    flex: 1;
+    background: repeating-linear-gradient(to right, var(--border), var(--border) 4px, transparent 4px, transparent 8px);
+  }
+
+  .alt-toggle-pills {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .alt-toggle-pill {
+    min-height: 44px; /* Meets R2 Touch Target standard */
+    font-size: 0.85rem;
+  }
+
+  /* Filter-by-toggle on mobile: when an option is selected, focus on it */
+  .card-alt-group[data-active-option="a"] .alt-option-card.option-b {
+    display: none;
+  }
+  .card-alt-group[data-active-option="b"] .alt-option-card.option-a {
+    display: none;
+  }
+  .card-alt-group[data-active-option="both"] .alt-option-card {
+    display: flex;
+  }
+  .card-alt-group[data-active-option="a"] .alt-vs-divider,
+  .card-alt-group[data-active-option="b"] .alt-vs-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .card-alt-group {
+    padding: 1.05rem 0.9rem;
+    border-radius: var(--radius-md);
+  }
+
+  .alt-group-title {
+    font-size: 1.08rem;
+  }
+
+  .alt-option-media {
+    height: 120px;
+  }
+
+  .alt-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  .alt-card-actions .btn-card-action {
+    min-height: 44px; /* Meets R2 Touch Target standard */
+  }
+}
+
 </style>
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌺</text></svg>">
@@ -4445,7 +5218,7 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
       </nav>
 
       <div class="header-actions">
-        <button id="btn-flight-selector" class="btn-icon" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）" style="font-size:0.875rem; padding:0.4rem 0.75rem; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-surface); cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; font-weight:600;">
+        <button id="btn-flight-selector" class="btn-icon" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）" style="font-size:0.875rem; padding:0.4rem 0.75rem; min-height:44px; min-width:44px; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-surface); cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; font-weight:600;">
           ✈️ 航班
         </button>
         <button id="theme-toggle-btn" class="theme-toggle" aria-label="切換深淺模式" title="切換深淺模式">
@@ -4695,9 +5468,9 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
                   <span>⏰ 當日啟程：</span>
                   <input type="time" id="planner-day-start-time" class="form-control-time" value="09:00" title="設定此日出發時間，系統將自動推算全日各景點抵達與出發時刻">
                 </div>
-                <div class="planner-flight-badge" id="planner-flight-badge" style="cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem; padding:0.35rem 0.75rem; background:rgba(2,132,199,0.08); border:1px solid rgba(2,132,199,0.25); border-radius:999px; font-size:0.825rem;" title="點擊切換航班與連動時間">
+                <div class="planner-flight-badge" id="planner-flight-badge" title="點擊切換航班與連動時間">
                   <span>✈️ 航班連動：</span><strong id="planner-flight-label">CI120/CI121</strong>
-                  <button type="button" class="btn btn-secondary btn-sm" id="btn-planner-change-flight" style="padding:2px 8px; font-size:0.75rem; margin-left:4px;">切換</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-planner-change-flight">切換</button>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                   <select id="planner-preset-select" class="form-control-select" aria-label="載入經典範本">
@@ -5240,9 +6013,9 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
       </div>
       <div class="modal-footer">
         <div class="modal-footer-planner-row">
-          <select id="modal-select-planner-day" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.6rem; width: auto; min-width: 110px; background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm);" title="選擇欲加入的行程天數">
+          <select id="modal-select-planner-day" class="form-control" style="font-size: 16px; min-height: 44px; padding: 0.4rem 0.6rem; width: auto; min-width: 110px; background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm);" title="選擇欲加入的行程天數">
           </select>
-          <button id="btn-modal-add-to-custom" class="btn btn-primary" style="font-size: 0.85rem;">➕ 加入自訂行程</button>
+          <button id="btn-modal-add-to-custom" class="btn btn-primary" style="font-size: 0.85rem; min-height: 44px;">➕ 加入自訂行程</button>
         </div>
         <div class="modal-footer-actions-grid">
           <button id="modal-copy-mapcode-btn" class="btn btn-secondary" style="font-size: 0.85rem;">📋 複製 MapCode</button>
@@ -5404,7 +6177,7 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
         </p>
         <div style="margin:1rem 0;">
           <label for="input-gmap-api-key" style="display:block; font-size:0.85rem; font-weight:700; margin-bottom:0.4rem; color:var(--text-main);">Google Maps API Key：</label>
-          <input type="text" id="input-gmap-api-key" class="form-control" placeholder="AIzaSy..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:monospace; font-size:0.9rem; background:var(--bg-surface); color:var(--text-main);">
+          <input type="text" id="input-gmap-api-key" class="form-control" placeholder="AIzaSy..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:monospace; font-size:16px; min-height:44px; background:var(--bg-surface); color:var(--text-main);">
           <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.3rem;">金鑰僅儲存在您的瀏覽器本機 (localStorage)，安全無虞。</span>
         </div>
         <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1.25rem;">
@@ -6630,6 +7403,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-6",
+    alternativeGroupId: "d3-lunch-choice",
+    alternativeRole: "planA",
+    alternativeBadge: "方案 A · 經典庶民老店",
+    alternativeGroupTitle: "Day 3 午餐二選一 · 備選推薦方案",
     spotId: "spot-inaka-soba",
     image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-inaka-soba.jpg",
     imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Soki_soba_in_Naha.jpg/960px-Soki_soba_in_Naha.jpg",
@@ -6678,6 +7455,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d3-7",
+    alternativeGroupId: "d3-lunch-choice",
+    alternativeRole: "planB",
+    alternativeBadge: "方案 B · 新世代排隊文青 (備選推薦)",
+    alternativeGroupTitle: "Day 3 午餐二選一 · 備選推薦方案",
     spotId: "spot-eibun-soba",
     image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-eibun-soba.jpg",
     imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Okinawa_soba_in_Yamabare_2.jpg/960px-Okinawa_soba_in_Yamabare_2.jpg",
@@ -7208,6 +7989,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-7",
+    alternativeGroupId: "d4-dinner-choice",
+    alternativeRole: "planA",
+    alternativeBadge: "方案 A · 商場熟成炸豬排",
+    alternativeGroupTitle: "Day 4 晚餐二選一 · 備選推薦方案",
     spotId: "spot-katsunoya",
     image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-katsunoya.jpg",
     imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Tonkatsu_teishoku_of_Katsuraku.jpg/960px-Tonkatsu_teishoku_of_Katsuraku.jpg",
@@ -7256,6 +8041,10 @@ const SCHEDULE_ITEMS = [
   },
   {
     id: "d4-8",
+    alternativeGroupId: "d4-dinner-choice",
+    alternativeRole: "planB",
+    alternativeBadge: "方案 B · 老饕私藏阿古豬居酒屋 (備選推薦)",
+    alternativeGroupTitle: "Day 4 晚餐二選一 · 備選推薦方案",
     spotId: "spot-tonkatsu-koyaji",
     image: "https://xuanlii.github.io/okinawa-2026/images/spots/spot-tonkatsu-koyaji.jpg",
     imageFallback: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Tonkatsu_of_Kimukatsu.jpg/960px-Tonkatsu_of_Kimukatsu.jpg",
@@ -7457,7 +8246,7 @@ const SCHEDULE_ITEMS = [
     day: 5,
     date: "2026/12/16",
     time: "11:20",
-    name: "永忘 那霸店",
+    name: "永旺 那霸店",
     nameZh: "永旺 那霸店 (AEON 那霸小祿店)",
     nameJa: "イオン那覇店 (AEON Naha Store)",
     duration: "停留 03時00分",
@@ -7493,7 +8282,7 @@ const SCHEDULE_ITEMS = [
             "splitMeetingPoint": "AEON 那霸店 1F 沖繩特產免稅專區服務台"
       }
 },
-    desc: "行程文字註記之「永忘 那霸店」即為與單軌小祿站直通的超大型「AEON 永旺 那霸店」！離機場僅約8分鐘車程，擁有專屬免稅櫃台，可一口氣掃購雪鹽餅乾、辣蝦餅、黑糖、泡盛、藥妝與各款限定商品，作返台前最後的大衝刺！",
+    desc: "與單軌小祿站直通的超大型「AEON 永旺 那霸店」！離機場僅約8分鐘車程，擁有專屬免稅櫃台，可一口氣掃購雪鹽餅乾、辣蝦餅、黑糖、泡盛、藥妝與各款限定商品，作返台前最後的大衝刺！",
     tips: "地下1F設有大型超市與伴手禮專區；館內室內停車場車位充足不怕日曬。"
   },
   {
@@ -9466,6 +10255,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function safeStorageRemove(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      delete memoryStore[key];
+    }
+  }
+
   /* ==========================================================================
      HTML Sanitizer (Prevents XSS in custom items & expenses)
      ========================================================================== */
@@ -9984,6 +10781,29 @@ document.addEventListener('DOMContentLoaded', () => {
     safeStorageSet('okinawa_custom_planner_data', JSON.stringify(state.plannerData));
   }
 
+  // Cache pristine baseline schedule items snapshot on load
+  const BASELINE_SCHEDULE_SNAPSHOT = (typeof SCHEDULE_ITEMS !== 'undefined' && Array.isArray(SCHEDULE_ITEMS))
+    ? JSON.parse(JSON.stringify(SCHEDULE_ITEMS))
+    : [];
+
+  function restoreOfficialBaseline() {
+    state.selectedFlightId = (typeof DEFAULT_OKINAWA_FLIGHT_ID !== 'undefined' ? DEFAULT_OKINAWA_FLIGHT_ID : 'ci-oka-morning-roundtrip');
+    safeStorageRemove('okinawa_selected_flight');
+    if (typeof SCHEDULE_ITEMS !== 'undefined' && Array.isArray(SCHEDULE_ITEMS)) {
+      SCHEDULE_ITEMS.forEach(it => {
+        const snap = BASELINE_SCHEDULE_SNAPSHOT.find(b => b.id === it.id);
+        if (snap) {
+          it.time = snap.time;
+          it.desc = snap.desc;
+          it.nameZh = snap.nameZh;
+        }
+      });
+    }
+    updateFlightUI(getSelectedFlight());
+    renderTimeline();
+    showToast('✈️ 已恢復為官方推薦基準行程 (Day 1 11:00 取車 · Day 5 08:00~16:50)');
+  }
+
   // Initialize Theme
   document.documentElement.setAttribute('data-theme', state.theme);
   updateThemeIcon();
@@ -10017,7 +10837,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initChicTripSharing();
   initModal();
   initFlightSelector();
-  syncFlightToItinerary(getSelectedFlight(), false);
+  const savedFlightId = safeStorageGet('okinawa_selected_flight');
+  if (savedFlightId) {
+    syncFlightToItinerary(getSelectedFlight(), false);
+  } else {
+    updateFlightUI(getSelectedFlight());
+  }
   initScrollspyAndBackToTop();
 
   /* ==========================================================================
@@ -10430,7 +11255,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     input.addEventListener('input', (e) => {
       state.searchQuery = e.target.value.trim().toLowerCase();
-      clearBtn.style.display = state.searchQuery ? 'block' : 'none';
+      clearBtn.style.display = state.searchQuery ? 'inline-flex' : 'none';
       renderTimeline();
       updateMapMarkers();
     });
@@ -10634,6 +11459,234 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
+     Alternative Meal Group Rendering (2-Choose-1 & Backup Option)
+     ========================================================================== */
+  function renderAlternativeMealGroupHtml(itemA, itemB, afterGroupItem, index) {
+    const isLunch = itemA.alternativeGroupId === 'd3-lunch-choice';
+    const groupTitle = isLunch 
+      ? '那霸第一公設市場 vs 壺屋文青 雙風格沖繩麵抉擇'
+      : '新都心商場沙發續加 vs 牧志職人阿古豬慢炸 雙豬排之夜';
+    const groupBadgeText = isLunch
+      ? '🍽️ 午餐二選一 · 備選推薦方案'
+      : '🍽️ 晚餐二選一 · 備選推薦方案';
+    const timeText = isLunch ? '⏰ 14:10 · ⏱️ 約 60~120 分鐘' : '⏰ 18:52 · ⏱️ 約 60 分鐘';
+    const groupDesc = isLunch
+      ? '長輩熱愛入口即化的400円軟骨老味，年輕人嚮往法式跨界話題天王！兩店相距僅步行4分鐘，同一時段擇一品嚐，亦可分組各取所需後於路口集合。'
+      : '長輩享受商場直達地下停車場、沙發寬敞、白飯味噌湯免費續加；年輕老饕渴望朝聖沖繩頂級阿古豬低溫慢炸熟成、微醺居酒屋氛圍！同一時段擇一前往。';
+    const harmonyTip = isLunch
+      ? '若當日長輩飢餓且不想排隊，首推「方案 A 田舍」；若全家想品嚐新潮得獎名作且願意先抽號逛壺屋陶瓷老街，首選「方案 B EIBUN」。（兩店步行僅相距 310 公尺，約 4 分鐘）。'
+      : '若追求室內大型停車、吃飽逛超市買伴手禮，首選「方案 A かつ乃屋」；若全家皆為老饕想小酌品味沖繩頂級阿古豬，首選「方案 B 豚かつ 小やじ」。（兩店車程約 7 分鐘）。';
+
+    const shortNameA = itemA.nameZh.includes('田舍') ? '田舍 沖繩麵' : (itemA.nameZh.includes('かつ乃屋') ? 'かつ乃屋' : itemA.nameZh.split(' ')[0]);
+    const shortNameB = itemB.nameZh.includes('EIBUN') ? '沖繩麵 EIBUN' : (itemB.nameZh.includes('小やじ') ? '豚かつ 小やじ' : itemB.nameZh.split(' ')[0]);
+
+    const imgMetaA = resolveSpotImage(itemA);
+    const imgMetaB = resolveSpotImage(itemB);
+    const gmapA = getSpotGmapLinks(itemA);
+    const gmapB = getSpotGmapLinks(itemB);
+    const isFavA = state.favorites.includes(itemA.id);
+    const isFavB = state.favorites.includes(itemB.id);
+
+    // Outbound transit to subsequent stop (e.g. Sports Depo or Ocean Tree)
+    let outboundTransitHtml = '';
+    if (afterGroupItem && itemB.day === afterGroupItem.day) {
+      const transit = calculateTransit(itemB, afterGroupItem);
+      const destinationLabel = escapeHtml(afterGroupItem.nameZh);
+      outboundTransitHtml = `
+        <div class="transit-connector">
+          <span>${transit.isWalk ? '🚶' : '🚗'}</span>
+          <span>用餐後前往下一站：<strong>${destinationLabel}</strong> (${transit.text})</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="timeline-item timeline-item-alt-group" id="alt-group-${escapeHtml(itemA.alternativeGroupId)}">
+        <div class="timeline-node">🍽️</div>
+        <div class="card-alt-group" data-alt-group="${isLunch ? 'd3-lunch' : 'd4-dinner'}" data-active-option="both">
+          <!-- Header -->
+          <div class="alt-group-header">
+            <div class="alt-group-header-top">
+              <span class="alt-group-badge">${groupBadgeText}</span>
+              <span class="alt-time-pill">${timeText}</span>
+            </div>
+            <h3 class="alt-group-title">${groupTitle}</h3>
+            <p class="alt-group-desc">${groupDesc}</p>
+            
+            <!-- Segmented Switcher Pills -->
+            <div class="alt-toggle-pills" role="tablist" aria-label="備選用餐方案切換">
+              <button type="button" class="alt-toggle-pill" data-alt-target="a" role="tab" aria-selected="false">
+                <span class="pill-dot"></span>
+                <span class="pill-tag">方案 A</span>
+                <span class="pill-name">${escapeHtml(shortNameA)}</span>
+              </button>
+              <button type="button" class="alt-toggle-pill" data-alt-target="b" role="tab" aria-selected="false">
+                <span class="pill-dot"></span>
+                <span class="pill-tag">方案 B</span>
+                <span class="pill-name">${escapeHtml(shortNameB)}</span>
+              </button>
+              <button type="button" class="alt-toggle-pill active" data-alt-target="both" role="tab" aria-selected="true">
+                <span class="pill-tag">⚖️ 兩案並排</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Options Container -->
+          <div class="alt-options-container">
+            <!-- Option A Card -->
+            <div class="alt-option-card option-a" id="item-${escapeHtml(itemA.id)}" data-option="a">
+              <div class="alt-option-card-header">
+                <div class="alt-option-badge-wrap">
+                  <span class="alt-option-badge badge-a">${escapeHtml(itemA.alternativeBadge || '方案 A')}</span>
+                  <span class="alt-target-audience-pill senior">🧓 長輩力推</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  <span class="alt-option-price-hint">${isLunch ? '🪙 400~500円' : '💳 約 1,200~1,800円'}</span>
+                  <button type="button" class="btn-star-fav ${isFavA ? 'favorited' : ''}" data-id="${escapeHtml(itemA.id)}" title="${isFavA ? '取消收藏' : '加入收藏'}">
+                    ${isFavA ? '★' : '☆'}
+                  </button>
+                </div>
+              </div>
+
+              <div class="alt-option-media" data-action="modal" data-id="${escapeHtml(itemA.id)}" title="點擊檢視「${escapeHtml(itemA.nameZh)}」實景與雙世代攻略">
+                <img class="alt-option-img" src="${escapeHtml(imgMetaA.image)}" data-fallback="${escapeHtml(imgMetaA.imageFallback)}" alt="${escapeHtml(itemA.nameZh)}" onerror="window.appHandleImgError(this)" loading="lazy">
+                <div class="alt-media-overlay">
+                  <span class="alt-media-caption">📸 ${escapeHtml(imgMetaA.imageCaption)}</span>
+                </div>
+              </div>
+
+              <div class="alt-option-body">
+                <div class="alt-card-title-row">
+                  <h4 class="alt-card-title">${escapeHtml(itemA.nameZh)}</h4>
+                  <div class="alt-card-subtitle">${escapeHtml(itemA.name)} · ${escapeHtml(itemA.nameJa)}</div>
+                </div>
+                <p class="alt-card-brief">${escapeHtml(itemA.desc)}</p>
+
+                <div class="alt-gen-quick-tags">
+                  <div class="alt-gen-tag senior">
+                    <span class="alt-gen-icon">🧓</span>
+                    <span class="alt-gen-text"><strong>長輩優勢：</strong>${escapeHtml((itemA.generation && itemA.generation.senior && itemA.generation.senior.keyTip) || '平緩舒適免久候')}</span>
+                  </div>
+                  <div class="alt-gen-tag young">
+                    <span class="alt-gen-icon">📸</span>
+                    <span class="alt-gen-text"><strong>年輕族群：</strong>${escapeHtml((itemA.generation && itemA.generation.young && itemA.generation.young.keyTip) || '老饕在地私房點')}</span>
+                  </div>
+                </div>
+
+                <div class="alt-meta-chips">
+                  <span class="alt-meta-chip">📍 ${escapeHtml(itemA.address.split('(')[0].trim())}</span>
+                  <span class="alt-meta-chip">⏱️ ${escapeHtml(itemA.duration)}</span>
+                  ${itemA.tags.slice(0, 3).map(t => `<span class="alt-meta-chip">#${escapeHtml(t)}</span>`).join('')}
+                </div>
+              </div>
+
+              <div class="alt-card-actions">
+                <button type="button" class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(itemA.id)}" title="檢視詳細攻略">
+                  <span>🔍 實景攻略</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(itemA.mapCode)}" title="複製 MapCode">
+                  <span>📋 複製MC</span>
+                </button>
+                <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(itemA.id)}" title="在地圖定位">
+                  <span>📍 定位</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(itemA.id)}" title="加自訂行程">
+                  <span>➕ 加自訂</span>
+                </button>
+                <a href="${gmapA.navUrl}" target="_blank" rel="noopener" class="btn-card-action gmap" title="Google Maps 導航">
+                  <span>📍 導航</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- VS / OR Divider -->
+            <div class="alt-vs-divider">
+              <span class="alt-vs-line"></span>
+              <span class="alt-vs-badge">OR</span>
+              <span class="alt-vs-line"></span>
+            </div>
+
+            <!-- Option B Card -->
+            <div class="alt-option-card option-b" id="item-${escapeHtml(itemB.id)}" data-option="b">
+              <div class="alt-option-card-header">
+                <div class="alt-option-badge-wrap">
+                  <span class="alt-option-badge badge-b">${escapeHtml(itemB.alternativeBadge || '方案 B')}</span>
+                  <span class="alt-target-audience-pill young">📸 年輕人話題首選</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  <span class="alt-option-price-hint">${isLunch ? '💳 約 1,000~1,500円' : '💳 約 2,000~3,500円'}</span>
+                  <button type="button" class="btn-star-fav ${isFavB ? 'favorited' : ''}" data-id="${escapeHtml(itemB.id)}" title="${isFavB ? '取消收藏' : '加入收藏'}">
+                    ${isFavB ? '★' : '☆'}
+                  </button>
+                </div>
+              </div>
+
+              <div class="alt-option-media" data-action="modal" data-id="${escapeHtml(itemB.id)}" title="點擊檢視「${escapeHtml(itemB.nameZh)}」實景與雙世代攻略">
+                <img class="alt-option-img" src="${escapeHtml(imgMetaB.image)}" data-fallback="${escapeHtml(imgMetaB.imageFallback)}" alt="${escapeHtml(itemB.nameZh)}" onerror="window.appHandleImgError(this)" loading="lazy">
+                <div class="alt-media-overlay">
+                  <span class="alt-media-caption">📸 ${escapeHtml(imgMetaB.imageCaption)}</span>
+                </div>
+              </div>
+
+              <div class="alt-option-body">
+                <div class="alt-card-title-row">
+                  <h4 class="alt-card-title">${escapeHtml(itemB.nameZh)}</h4>
+                  <div class="alt-card-subtitle">${escapeHtml(itemB.name)} · ${escapeHtml(itemB.nameJa)}</div>
+                </div>
+                <p class="alt-card-brief">${escapeHtml(itemB.desc)}</p>
+
+                <div class="alt-gen-quick-tags">
+                  <div class="alt-gen-tag senior">
+                    <span class="alt-gen-icon">🧓</span>
+                    <span class="alt-gen-text"><strong>長輩優勢：</strong>${escapeHtml((itemB.generation && itemB.generation.senior && itemB.generation.senior.keyTip) || '清爽低負擔舒適坐席')}</span>
+                  </div>
+                  <div class="alt-gen-tag young">
+                    <span class="alt-gen-icon">📸</span>
+                    <span class="alt-gen-text"><strong>年輕族群：</strong>${escapeHtml((itemB.generation && itemB.generation.young && itemB.generation.young.keyTip) || '美拍天花板打卡炫耀')}</span>
+                  </div>
+                </div>
+
+                <div class="alt-meta-chips">
+                  <span class="alt-meta-chip">📍 ${escapeHtml(itemB.address.split('(')[0].trim())}</span>
+                  <span class="alt-meta-chip">⏱️ ${escapeHtml(itemB.duration)}</span>
+                  ${itemB.tags.slice(0, 3).map(t => `<span class="alt-meta-chip">#${escapeHtml(t)}</span>`).join('')}
+                </div>
+              </div>
+
+              <div class="alt-card-actions">
+                <button type="button" class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(itemB.id)}" title="檢視詳細攻略">
+                  <span>🔍 實景攻略</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(itemB.mapCode)}" title="複製 MapCode">
+                  <span>📋 複製MC</span>
+                </button>
+                <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(itemB.id)}" title="在地圖定位">
+                  <span>📍 定位</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(itemB.id)}" title="加自訂行程">
+                  <span>➕ 加自訂</span>
+                </button>
+                <a href="${gmapB.navUrl}" target="_blank" rel="noopener" class="btn-card-action gmap" title="Google Maps 導航">
+                  <span>📍 導航</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="alt-group-footer">
+            <div class="alt-harmony-tip">
+              <span class="alt-harmony-icon">💡</span>
+              <span class="alt-harmony-text"><strong>跨世代決策指引：</strong>${harmonyTip}</span>
+            </div>
+          </div>
+        </div>
+        ${outboundTransitHtml}
+      </div>
+    `;
+  }
+
+  /* ==========================================================================
      Official Schedule Timeline Rendering
      ========================================================================== */
   function renderTimeline() {
@@ -10734,10 +11787,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let html = '';
-    filtered.forEach((item, index) => {
+    for (let index = 0; index < filtered.length; index++) {
+      const item = filtered[index];
+      const nextItem = filtered[index + 1];
+
+      // Detect 2-choose-1 alternative meal group pair
+      const isAltPair = Boolean(item.alternativeGroupId && nextItem && item.alternativeGroupId === nextItem.alternativeGroupId);
+
+      if (isAltPair) {
+        const afterGroupItem = filtered[index + 2];
+        html += renderAlternativeMealGroupHtml(item, nextItem, afterGroupItem, index);
+        index++; // Skip second item of alternative pair
+        continue;
+      }
+
       const isFav = state.favorites.includes(item.id);
       const isLast = index === filtered.length - 1;
-      const nextItem = filtered[index + 1];
       const itemGmapLinks = getSpotGmapLinks(item);
       const imgMeta = resolveSpotImage(item);
 
@@ -10849,7 +11914,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ${transitHtml}
         </div>
       `;
-    });
+    }
 
     listContainer.innerHTML = html;
 
@@ -10908,6 +11973,45 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.borderColor = '';
             btn.style.color = '';
           }, 1600);
+        }
+      });
+    });
+
+    listContainer.querySelectorAll('.alt-toggle-pill').forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const groupCard = (typeof pill.closest === 'function') ? pill.closest('.card-alt-group') : null;
+        if (!groupCard) return;
+        const target = pill.dataset.altTarget; // 'a', 'b', or 'both'
+
+        groupCard.querySelectorAll('.alt-toggle-pill').forEach(p => {
+          if (p.classList && typeof p.classList.remove === 'function') {
+            p.classList.remove('active');
+          }
+          if (typeof p.setAttribute === 'function') {
+            p.setAttribute('aria-selected', 'false');
+          }
+        });
+        if (pill.classList && typeof pill.classList.add === 'function') {
+          pill.classList.add('active');
+        }
+        if (typeof pill.setAttribute === 'function') {
+          pill.setAttribute('aria-selected', 'true');
+        }
+
+        groupCard.dataset.activeOption = target;
+
+        const cardA = groupCard.querySelector('.alt-option-card.option-a');
+        const cardB = groupCard.querySelector('.alt-option-card.option-b');
+        if (target === 'a') {
+          if (cardA && cardA.classList && typeof cardA.classList.add === 'function') cardA.classList.add('active-focus');
+          if (cardB && cardB.classList && typeof cardB.classList.remove === 'function') cardB.classList.remove('active-focus');
+        } else if (target === 'b') {
+          if (cardB && cardB.classList && typeof cardB.classList.add === 'function') cardB.classList.add('active-focus');
+          if (cardA && cardA.classList && typeof cardA.classList.remove === 'function') cardA.classList.remove('active-focus');
+        } else {
+          if (cardA && cardA.classList && typeof cardA.classList.remove === 'function') cardA.classList.remove('active-focus');
+          if (cardB && cardB.classList && typeof cardB.classList.remove === 'function') cardB.classList.remove('active-focus');
         }
       });
     });
@@ -11262,12 +12366,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (openBtn) {
       openBtn.addEventListener('click', () => {
         if (keyInput) keyInput.value = state.gmapApiKey || '';
+        document.body.style.overflow = 'hidden';
         modal.style.display = 'flex';
         modal.classList.add('open');
       });
     }
 
     const closeModal = () => {
+      document.body.style.overflow = '';
       modal.classList.remove('open');
       modal.style.display = 'none';
     };
@@ -11324,6 +12430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const keyInput = document.getElementById('input-gmap-api-key');
     if (modal) {
       if (keyInput) keyInput.value = state.gmapApiKey || '';
+      document.body.style.overflow = 'hidden';
       modal.style.display = 'flex';
       modal.classList.add('open');
       if (msg) showToast(msg);
@@ -12519,7 +13626,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
 
           <div class="picker-spot-footer">
-            <button class="btn btn-secondary btn-sm btn-picker-preview" data-id="${escapeHtml(spot.id)}" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
+            <button class="btn btn-secondary btn-sm btn-picker-preview" data-id="${escapeHtml(spot.id)}">
               🔍 攻略
             </button>
             <button class="btn-picker-add" data-id="${escapeHtml(spot.id)}">
@@ -12822,11 +13929,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (cardEl) {
-      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      cardEl.classList.remove('highlight-pulse');
-      void cardEl.offsetWidth; // Trigger reflow
-      cardEl.classList.add('highlight-pulse');
-      setTimeout(() => cardEl.classList.remove('highlight-pulse'), 2400);
+      const altGroup = (typeof cardEl.closest === 'function') ? cardEl.closest('.card-alt-group') : null;
+      if (altGroup) {
+        const opt = cardEl.dataset.option;
+        if (opt) {
+          altGroup.dataset.activeOption = opt;
+          altGroup.querySelectorAll('.alt-toggle-pill').forEach(p => {
+            const matches = p.dataset.altTarget === opt;
+            if (matches) {
+              if (p.classList && typeof p.classList.add === 'function') p.classList.add('active');
+              if (typeof p.setAttribute === 'function') p.setAttribute('aria-selected', 'true');
+            } else {
+              if (p.classList && typeof p.classList.remove === 'function') p.classList.remove('active');
+              if (typeof p.setAttribute === 'function') p.setAttribute('aria-selected', 'false');
+            }
+          });
+        }
+      }
+      if (typeof cardEl.scrollIntoView === 'function') {
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (cardEl.classList && typeof cardEl.classList.remove === 'function') {
+        cardEl.classList.remove('highlight-pulse');
+        void cardEl.offsetWidth; // Trigger reflow
+        cardEl.classList.add('highlight-pulse');
+        setTimeout(() => {
+          if (cardEl && cardEl.classList && typeof cardEl.classList.remove === 'function') {
+            cardEl.classList.remove('highlight-pulse');
+          }
+        }, 2400);
+      }
     }
   };
 
@@ -13030,7 +14162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-weight: 700; color: var(--primary);">¥ ${e.jpy.toLocaleString()}</div>
             <div style="font-size: 0.75rem; color: var(--text-muted);">NT$ ${Math.round(e.jpy * state.exchangeRate).toLocaleString()}</div>
           </div>
-          <button class="btn-delete-expense" data-id="${escapeHtml(e.id)}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:0.25rem;" title="刪除">✕</button>
+          <button class="btn-delete-expense" data-id="${escapeHtml(e.id)}" title="刪除" aria-label="刪除此筆支出">✕</button>
         </div>
       </div>
     `).join('');
@@ -13073,14 +14205,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function initScrollspyAndBackToTop() {
     const backToTopBtn = document.getElementById('back-to-top-btn');
     if (backToTopBtn) {
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 350) {
-          backToTopBtn.classList.add('visible');
-        } else {
-          backToTopBtn.classList.remove('visible');
-        }
-      });
-
       backToTopBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
@@ -13089,16 +14213,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-link');
 
-    function onScroll() {
-      const scrollY = window.pageYOffset;
-      sections.forEach(current => {
-        const sectionHeight = current.offsetHeight;
-        const sectionTop = current.offsetTop - 120;
-        const sectionId = current.getAttribute('id');
+    const raf = (typeof window !== 'undefined' && window.requestAnimationFrame)
+      ? window.requestAnimationFrame.bind(window)
+      : (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : function(cb) { return setTimeout(cb, 16); });
 
-        if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
-          setActiveNav(sectionId);
+    let scrollRafId = null;
+    function onScroll() {
+      if (scrollRafId) return;
+      scrollRafId = raf(() => {
+        scrollRafId = null;
+        const scrollY = window.pageYOffset || (document.documentElement && document.documentElement.scrollTop) || 0;
+
+        if (backToTopBtn) {
+          if (scrollY > 350) {
+            backToTopBtn.classList.add('visible');
+          } else {
+            backToTopBtn.classList.remove('visible');
+          }
         }
+
+        sections.forEach(current => {
+          const sectionHeight = current.offsetHeight || 0;
+          const sectionTop = (current.offsetTop || 0) - 120;
+          const sectionId = current.getAttribute('id');
+
+          if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+            setActiveNav(sectionId);
+          }
+        });
       });
     }
 
@@ -13466,6 +14608,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openFlightModal() {
     const modal = document.getElementById('flight-modal-overlay');
     if (!modal) return;
+    document.body.style.overflow = 'hidden';
     modal.style.display = 'flex';
     setTimeout(() => {
       modal.classList.add('open');
@@ -13477,6 +14620,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeFlightModal() {
     const modal = document.getElementById('flight-modal-overlay');
     if (!modal) return;
+    document.body.style.overflow = '';
     modal.classList.remove('open');
     modal.setAttribute('aria-hidden', 'true');
     setTimeout(() => {
@@ -13639,6 +14783,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGoogleMapsView,
     initGoogleMap,
     appFocusOnMap: window.appFocusOnMap,
+    restoreOfficialBaseline,
+    renderAlternativeMealGroupHtml,
     state
   };
   window.OKINAWA_GMAPS = window.__okinawaApp__;

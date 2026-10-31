@@ -48,7 +48,7 @@
       </nav>
 
       <div class="header-actions">
-        <button id="btn-flight-selector" class="btn-icon" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）" style="font-size:0.875rem; padding:0.4rem 0.75rem; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-surface); cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; font-weight:600;">
+        <button id="btn-flight-selector" class="btn-icon" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）" style="font-size:0.875rem; padding:0.4rem 0.75rem; min-height:44px; min-width:44px; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-surface); cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; font-weight:600;">
           ✈️ 航班
         </button>
         <button id="theme-toggle-btn" class="theme-toggle" aria-label="切換深淺模式" title="切換深淺模式">
@@ -298,9 +298,9 @@
                   <span>⏰ 當日啟程：</span>
                   <input type="time" id="planner-day-start-time" class="form-control-time" value="09:00" title="設定此日出發時間，系統將自動推算全日各景點抵達與出發時刻">
                 </div>
-                <div class="planner-flight-badge" id="planner-flight-badge" style="cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem; padding:0.35rem 0.75rem; background:rgba(2,132,199,0.08); border:1px solid rgba(2,132,199,0.25); border-radius:999px; font-size:0.825rem;" title="點擊切換航班與連動時間">
+                <div class="planner-flight-badge" id="planner-flight-badge" title="點擊切換航班與連動時間">
                   <span>✈️ 航班連動：</span><strong id="planner-flight-label">CI120/CI121</strong>
-                  <button type="button" class="btn btn-secondary btn-sm" id="btn-planner-change-flight" style="padding:2px 8px; font-size:0.75rem; margin-left:4px;">切換</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-planner-change-flight">切換</button>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                   <select id="planner-preset-select" class="form-control-select" aria-label="載入經典範本">
@@ -843,9 +843,9 @@
       </div>
       <div class="modal-footer">
         <div class="modal-footer-planner-row">
-          <select id="modal-select-planner-day" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.6rem; width: auto; min-width: 110px; background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm);" title="選擇欲加入的行程天數">
+          <select id="modal-select-planner-day" class="form-control" style="font-size: 16px; min-height: 44px; padding: 0.4rem 0.6rem; width: auto; min-width: 110px; background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm);" title="選擇欲加入的行程天數">
           </select>
-          <button id="btn-modal-add-to-custom" class="btn btn-primary" style="font-size: 0.85rem;">➕ 加入自訂行程</button>
+          <button id="btn-modal-add-to-custom" class="btn btn-primary" style="font-size: 0.85rem; min-height: 44px;">➕ 加入自訂行程</button>
         </div>
         <div class="modal-footer-actions-grid">
           <button id="modal-copy-mapcode-btn" class="btn btn-secondary" style="font-size: 0.85rem;">📋 複製 MapCode</button>
@@ -1007,7 +1007,7 @@
         </p>
         <div style="margin:1rem 0;">
           <label for="input-gmap-api-key" style="display:block; font-size:0.85rem; font-weight:700; margin-bottom:0.4rem; color:var(--text-main);">Google Maps API Key：</label>
-          <input type="text" id="input-gmap-api-key" class="form-control" placeholder="AIzaSy..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:monospace; font-size:0.9rem; background:var(--bg-surface); color:var(--text-main);">
+          <input type="text" id="input-gmap-api-key" class="form-control" placeholder="AIzaSy..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:monospace; font-size:16px; min-height:44px; background:var(--bg-surface); color:var(--text-main);">
           <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.3rem;">金鑰僅儲存在您的瀏覽器本機 (localStorage)，安全無虞。</span>
         </div>
         <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1.25rem;">
