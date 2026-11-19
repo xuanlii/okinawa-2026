@@ -1,7 +1,7 @@
 /**
  * 2026/12 沖繩 5天4夜自駕行程資料庫
  * 行程名稱：2026/12沖繩
- * 行程來源：去趣 ChicTrip (https://chictrip-share.app.link/SOyJSS7fi6b)
+ * 行程來源：去趣 ChicTrip（敏感連結已加密保護）
 /**
  * 2026/12 沖繩航線航班資訊庫 (CHINA AIRLINES 華航, STARLUX 星宇, EVA AIR 長榮)
  * 台北 ⇄ 沖繩那霸 (TPE ⇄ OKA)
@@ -186,6 +186,14 @@ const OKINAWA_FLIGHTS = [
 
 const DEFAULT_OKINAWA_FLIGHT_ID = "ci-oka-morning-roundtrip";
 
+const SENSITIVE_VAULT = {
+  version: 1,
+  salt: "ok26-ot-v1-9f3c7e2a4b81d056",
+  iterations: 2000,
+  ciphertext: "4749744b791bd41375592c22462b420f083fb927a631c1ede71a5bdd01b610cdde57c56f4c76448bcfbb9648c1fbf13c10fc02eabb15cb2dbb9699691198dd662d613715df56756ec5f494c5f604cb0c873444f0ba145fdd81f5b3561f5711c7108692de69ca1e7edf016281b40153a5f41eeaa0bae802288a0428c40da6f07fcc9b3f4e3798e8ab9e899f36b4bbf4fa7635b04e15c5c402ec2f597bb97de5a85d888bbd70f714455a6d4161f6c991bdb7ab5fe5d809252fb1f0eb75954527f584f50777ee162579c778ac7283a09f226c8538467ca98d14877e7cd0b257691cf6a8171ce3162a3fb7fbb93f69b9295d7f30d3411f3d0c8bcda91e6e40bbf62c70d50a39c695c690debe17c0ca5b6f9fbcd4be30baecc0a58ea3bf4d85441d2c5fd845cddbf53dbbe05e3bcbc43bc2e8b23882d54881c4148c0e7cbe8d5f0d5408866d579d734a6e137b45d10b9a6f69f93616111989e63ec88822df6f12fa6667899b72c9e4618325868ee9ae222bfa7ba7934d6a1b861e97adc308a42cb7eac262908c0e16ceb6aed5bcda86cdcfd991e3638568e13800aa6042760cebefa1d3c02b713b68d89dc87e268ca2afb74c24ea36d8574a4cae57b175315c065e23bff0dade08680345ffa88e39eda23edbd96688a0f5a7d804d4cab09689dc70f2dc7684bdfa7886e5db64a9af3fd84f42759d2ee86cd1e5b9d59569e0d53047206d8f591ee484b01d3fab7ef7ce09f0c2633e752a7996a1c7aecafe05598bd0b8a475658d73a03e40a5889386e3219b7f491ba74ce7a3",
+  tag: "a3ddc66410ed81162adbe47121a458f38857f9af2082fa023a2bef22f7d1ab74"
+};
+
 const TRIP_METADATA = {
   id: "okinawa-2026-12",
   title: "2026/12 沖繩冬日海風自由行",
@@ -195,10 +203,11 @@ const TRIP_METADATA = {
   daysCount: 5,
   nightsCount: 4,
   departureDate: "2026-12-12T11:00:00+09:00",
-  chictripUrl: "https://chictrip-share.app.link/SOyJSS7fi6b",
+  chictripUrl: "", // Encrypted inside SENSITIVE_VAULT
   baseLocation: {
     name: "Ocean Tree (海之樹)",
     description: "旅程核心下榻別墅/公寓，位於沖繩南部，臨海環境優美，做為每日出發與歸營的安心港灣。",
+    address: "沖縄県糸満市（敏感資訊已鎖定，請輸入密碼解鎖）",
     lat: 26.1360,
     lng: 127.6780
   },
@@ -384,9 +393,9 @@ const SCHEDULE_ITEMS = [
     icon: "🏡",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["行程基地", "海景旅宿", "寄存行李"],
         generation: {
       "senior": {
@@ -480,9 +489,9 @@ const SCHEDULE_ITEMS = [
     icon: "🏡",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["戰利品卸貨", "補水修整", "出發北谷"],
         generation: {
       "senior": {
@@ -576,9 +585,9 @@ const SCHEDULE_ITEMS = [
     icon: "🌙",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["首日圓滿", "好市多宵夜", "養精蓄銳"],
         generation: {
       "senior": {
@@ -626,9 +635,9 @@ const SCHEDULE_ITEMS = [
     icon: "🌅",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["早安南國", "空腹出發", "海味之旅"],
         generation: {
       "senior": {
@@ -722,9 +731,9 @@ const SCHEDULE_ITEMS = [
     icon: "🏡",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["小憩放鬆", "避開正午太陽", "換裝出發"],
         generation: {
       "senior": {
@@ -964,9 +973,9 @@ const SCHEDULE_ITEMS = [
     icon: "🌅",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["那霸精華日", "神社祈福", "市區免稅"],
         generation: {
       "senior": {
@@ -1452,9 +1461,9 @@ const SCHEDULE_ITEMS = [
     icon: "🌙",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["那霸戰利品", "微醺海風", "充飽電力"],
         generation: {
       "senior": {
@@ -1502,9 +1511,9 @@ const SCHEDULE_ITEMS = [
     icon: "🌅",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["祈福開運日", "頂級和牛燒肉", "巨型商城5小時"],
         generation: {
       "senior": {
@@ -1894,9 +1903,9 @@ const SCHEDULE_ITEMS = [
     icon: "🌙",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["打包行李", "行李秤重", "最後一晚"],
         generation: {
       "senior": {
@@ -1944,9 +1953,9 @@ const SCHEDULE_ITEMS = [
     icon: "🧳",
     lat: 26.1360,
     lng: 127.6780,
-    address: "沖縄県糸満/南部海岸エリア",
-    mapCode: "232 456 123*45",
-    googleQuery: "Ocean Tree Okinawa",
+    address: "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    mapCode: "🔒 密碼保護",
+    googleQuery: "沖縄県糸満市",
     tags: ["2小時打包退房", "海景道別", "全車上行李"],
         generation: {
       "senior": {
@@ -2382,8 +2391,8 @@ const SPOTS_CATALOG = [
     "icon": "🏡",
     "lat": 26.136,
     "lng": 127.678,
-    "address": "沖縄県糸満/南部海岸エリア",
-    "mapCode": "232 456 123*45",
+    "address": "沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）",
+    "mapCode": "🔒 密碼保護",
     "defaultDurationMinutes": 60,
     "tags": [
       "核心基地",

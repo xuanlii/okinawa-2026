@@ -166,16 +166,18 @@ button, input, select, textarea {
   align-items: center;
   justify-content: space-between;
   height: 68px;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .logo-area {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   font-weight: 700;
   font-size: 1.15rem;
   color: var(--text-main);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .logo-icon {
@@ -189,6 +191,7 @@ button, input, select, textarea {
   color: #fff;
   font-size: 1.25rem;
   box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+  flex-shrink: 0;
 }
 
 .logo-text span {
@@ -202,20 +205,22 @@ button, input, select, textarea {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 0.45rem;
   list-style: none;
 }
 
 .nav-link {
-  font-size: 0.925rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-muted);
-  padding: 0.4rem 0.6rem;
+  padding: 0.4rem 0.55rem;
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .nav-link:hover, .nav-link.active {
@@ -226,7 +231,8 @@ button, input, select, textarea {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .theme-toggle, .btn-icon {
@@ -2638,15 +2644,39 @@ button, input, select, textarea {
    ========================================================================== */
 @media (max-width: 480px) {
   .header-inner {
-    padding: 0 0.25rem;
+    padding: 0;
+    gap: 0.35rem;
+  }
+
+  .logo-area {
+    gap: 0.45rem;
+    min-width: 0;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.05rem;
   }
 
   .logo-text {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
+    line-height: 1.15;
   }
 
   .logo-text span {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .header-actions {
+    gap: 0.3rem;
+  }
+
+  #btn-flight-selector {
+    padding: 0.3rem 0.55rem !important;
+    font-size: 0.78rem !important;
   }
 
   .btn-cta-chictrip span {
@@ -2659,7 +2689,11 @@ button, input, select, textarea {
   }
 
   .btn-cta-chictrip {
-    padding: 0.35rem 0.65rem;
+    padding: 0.35rem 0.6rem;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .card-footer-buttons {
@@ -5165,4 +5199,316 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
   .alt-card-actions .btn-card-action {
     min-height: 44px; /* Meets R2 Touch Target standard */
   }
+}
+
+/* ==========================================================================
+   Privacy Password Lock & Sensitive Info Vault UI
+   ========================================================================== */
+.btn-privacy-lock {
+  width: auto !important;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.btn-privacy-lock:hover {
+  background: rgba(245, 158, 11, 0.22);
+  transform: translateY(-1px);
+}
+
+.btn-privacy-lock.unlocked {
+  border-color: rgba(16, 185, 129, 0.55);
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+[data-theme="dark"] .btn-privacy-lock {
+  color: #fcd34d;
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(245, 158, 11, 0.18);
+}
+
+[data-theme="dark"] .btn-privacy-lock.unlocked {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.5);
+  background: rgba(16, 185, 129, 0.2);
+}
+
+@media (max-width: 640px) {
+  .privacy-lock-label {
+    display: none;
+  }
+  .btn-privacy-lock {
+    width: 44px !important;
+    min-width: 44px;
+    padding: 0;
+  }
+}
+
+.hero-pill.privacy-pill {
+  cursor: pointer;
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  min-height: 44px;
+  font-family: inherit;
+  font-weight: 700;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.hero-pill.privacy-pill:hover {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.hero-pill.privacy-pill.unlocked {
+  border-color: rgba(16, 185, 129, 0.55);
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+[data-theme="dark"] .hero-pill.privacy-pill {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+[data-theme="dark"] .hero-pill.privacy-pill.unlocked {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(52, 211, 153, 0.45);
+}
+
+.btn-copy-mc-badge.btn-mc-locked {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+[data-theme="dark"] .btn-copy-mc-badge.btn-mc-locked {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.card-address-locked-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(245, 158, 11, 0.65);
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.card-address-locked-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+[data-theme="dark"] .card-address-locked-btn {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.btn-inline-copy-addr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.3rem 0.65rem;
+  margin-left: 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-gmap-action.btn-gmap-locked {
+  flex: 1;
+  min-height: 44px;
+  border: 1px dashed rgba(245, 158, 11, 0.65);
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-gmap-action.btn-gmap-locked:hover {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+[data-theme="dark"] .btn-gmap-action.btn-gmap-locked {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.18);
+}
+
+#privacy-unlock-modal {
+  z-index: 2100;
+}
+
+.privacy-modal-dialog {
+  max-width: 480px;
+}
+
+.vault-protected-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+}
+
+.vault-protected-item {
+  font-size: 0.875rem;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.privacy-pin-input {
+  width: 100%;
+  font-size: 22px;
+  min-height: 52px;
+  text-align: center;
+  letter-spacing: 0.45em;
+  font-weight: 800;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-main);
+}
+
+.privacy-pin-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+}
+
+.privacy-pin-input.pin-shake {
+  animation: pinShake 0.35s ease;
+  border-color: #ef4444;
+}
+
+@keyframes pinShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.privacy-pin-error {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .privacy-pin-error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.privacy-remember-label {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.65rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.vault-unlocked-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.12);
+  border-left: 4px solid #10b981;
+  color: #065f46;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .vault-unlocked-banner {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.vault-info-card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.vault-card-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 0.6rem;
+}
+
+.vault-field-row {
+  margin-bottom: 0.45rem;
+}
+
+.vault-field-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.vault-field-val {
+  color: var(--text-main);
+  font-size: 0.9rem;
+  margin-top: 0.1rem;
+  word-break: break-word;
+}
+
+.vault-actions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.vault-actions-grid .btn {
+  flex: 1 1 130px;
+  min-height: 44px;
+  justify-content: center;
+  font-size: 0.875rem;
 }

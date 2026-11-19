@@ -34,6 +34,214 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function safeSessionGet(key, fallback = null) {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const item = sessionStorage.getItem(key);
+        return item !== null ? item : fallback;
+      }
+    } catch (e) {
+      // Fallback below
+    }
+    return memoryStore['__ss_' + key] !== undefined ? memoryStore['__ss_' + key] : fallback;
+  }
+
+  function safeSessionSet(key, val) {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(key, val);
+        return;
+      }
+    } catch (e) {
+      // Fallback below
+    }
+    memoryStore['__ss_' + key] = String(val);
+  }
+
+  function safeSessionRemove(key) {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(key);
+      }
+    } catch (e) {
+      // Fallback below
+    }
+    delete memoryStore['__ss_' + key];
+  }
+
+  /* ==========================================================================
+     Pure-JS SHA-256 & Privacy Vault Decryptor (Zero external/WebCrypto deps)
+     ========================================================================== */
+  const SHA256_K = new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ]);
+
+  function utf8ToBytes(str) {
+    const encoded = encodeURIComponent(String(str));
+    const bytes = [];
+    for (let i = 0; i < encoded.length; i++) {
+      if (encoded[i] === '%') {
+        bytes.push(parseInt(encoded.slice(i + 1, i + 3), 16));
+        i += 2;
+      } else {
+        bytes.push(encoded.charCodeAt(i));
+      }
+    }
+    return new Uint8Array(bytes);
+  }
+
+  function bytesToUtf8(bytes) {
+    let hexStr = '';
+    for (let i = 0; i < bytes.length; i++) {
+      hexStr += '%' + (bytes[i] < 16 ? '0' : '') + bytes[i].toString(16);
+    }
+    return decodeURIComponent(hexStr);
+  }
+
+  function hexToBytes(hex) {
+    if (typeof hex !== 'string' || hex.length % 2 !== 0) return new Uint8Array(0);
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) {
+      out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    }
+    return out;
+  }
+
+  function bytesToHex(bytes) {
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+      hex += (bytes[i] < 16 ? '0' : '') + bytes[i].toString(16);
+    }
+    return hex;
+  }
+
+  function bytesEqual(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) {
+      diff |= a[i] ^ b[i];
+    }
+    return diff === 0;
+  }
+
+  function concatBytes(a, b) {
+    const out = new Uint8Array(a.length + b.length);
+    out.set(a, 0);
+    out.set(b, a.length);
+    return out;
+  }
+
+  function sha256Bytes(inputBytes) {
+    const bytes = inputBytes instanceof Uint8Array ? inputBytes : new Uint8Array(inputBytes);
+    const bitLen = bytes.length * 8;
+    const paddedLen = Math.ceil((bytes.length + 9) / 64) * 64;
+    const padded = new Uint8Array(paddedLen);
+    padded.set(bytes, 0);
+    padded[bytes.length] = 0x80;
+    const hi = Math.floor(bitLen / 0x100000000);
+    const lo = bitLen >>> 0;
+    padded[paddedLen - 8] = (hi >>> 24) & 0xff;
+    padded[paddedLen - 7] = (hi >>> 16) & 0xff;
+    padded[paddedLen - 6] = (hi >>> 8) & 0xff;
+    padded[paddedLen - 5] = hi & 0xff;
+    padded[paddedLen - 4] = (lo >>> 24) & 0xff;
+    padded[paddedLen - 3] = (lo >>> 16) & 0xff;
+    padded[paddedLen - 2] = (lo >>> 8) & 0xff;
+    padded[paddedLen - 1] = lo & 0xff;
+
+    let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+    let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+    const w = new Uint32Array(64);
+    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+
+    for (let offset = 0; offset < paddedLen; offset += 64) {
+      for (let i = 0; i < 16; i++) {
+        const j = offset + i * 4;
+        w[i] = ((padded[j] << 24) | (padded[j + 1] << 16) | (padded[j + 2] << 8) | padded[j + 3]) >>> 0;
+      }
+      for (let i = 16; i < 64; i++) {
+        const s0 = (rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3)) >>> 0;
+        const s1 = (rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10)) >>> 0;
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+      }
+
+      let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+      for (let i = 0; i < 64; i++) {
+        const S1 = (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) >>> 0;
+        const ch = ((e & f) ^ ((~e) & g)) >>> 0;
+        const temp1 = (h + S1 + ch + SHA256_K[i] + w[i]) >>> 0;
+        const S0 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) >>> 0;
+        const maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
+        const temp2 = (S0 + maj) >>> 0;
+
+        h = g; g = f; f = e;
+        e = (d + temp1) >>> 0;
+        d = c; c = b; b = a;
+        a = (temp1 + temp2) >>> 0;
+      }
+
+      h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
+      h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + h) >>> 0;
+    }
+
+    const digest = new Uint8Array(32);
+    const words = [h0, h1, h2, h3, h4, h5, h6, h7];
+    for (let i = 0; i < 8; i++) {
+      digest[i * 4] = (words[i] >>> 24) & 0xff;
+      digest[i * 4 + 1] = (words[i] >>> 16) & 0xff;
+      digest[i * 4 + 2] = (words[i] >>> 8) & 0xff;
+      digest[i * 4 + 3] = words[i] & 0xff;
+    }
+    return digest;
+  }
+
+  function deriveVaultKeys(password, salt, iterations) {
+    let k = sha256Bytes(utf8ToBytes(`${salt}:${password}`));
+    for (let i = 1; i < iterations; i++) {
+      k = sha256Bytes(k);
+    }
+    const encKey = sha256Bytes(concatBytes(utf8ToBytes('enc:'), k));
+    const macKey = sha256Bytes(concatBytes(utf8ToBytes('mac:'), k));
+    return { encKey, macKey };
+  }
+
+  function decryptVaultWithKeys(vault, encKey, macKey) {
+    if (!vault || !vault.ciphertext || !vault.tag) return null;
+    const cipherBytes = hexToBytes(vault.ciphertext);
+    const expectedTag = hexToBytes(vault.tag);
+    const actualTag = sha256Bytes(concatBytes(macKey, cipherBytes));
+    if (!bytesEqual(actualTag, expectedTag)) return null;
+
+    const plainBytes = new Uint8Array(cipherBytes.length);
+    let ks = null;
+    const blockBuf = new Uint8Array(encKey.length + 4);
+    blockBuf.set(encKey, 0);
+    for (let pos = 0; pos < cipherBytes.length; pos++) {
+      if (pos % 32 === 0) {
+        const blockIdx = Math.floor(pos / 32);
+        blockBuf[encKey.length] = (blockIdx >>> 24) & 0xff;
+        blockBuf[encKey.length + 1] = (blockIdx >>> 16) & 0xff;
+        blockBuf[encKey.length + 2] = (blockIdx >>> 8) & 0xff;
+        blockBuf[encKey.length + 3] = blockIdx & 0xff;
+        ks = sha256Bytes(blockBuf);
+      }
+      plainBytes[pos] = cipherBytes[pos] ^ ks[pos % 32];
+    }
+
+    try {
+      return JSON.parse(bytesToUtf8(plainBytes));
+    } catch (e) {
+      return null;
+    }
+  }
+
   /* ==========================================================================
      HTML Sanitizer (Prevents XSS in custom items & expenses)
      ========================================================================== */
@@ -538,7 +746,10 @@ document.addEventListener('DOMContentLoaded', () => {
     googleMarkerMap: new Map(),
     googlePolyline: null,
     googleTrafficLayer: null,
-    googleTrafficEnabled: false
+    googleTrafficEnabled: false,
+    privacyUnlocked: false,
+    unlockedSecrets: null,
+    currentModalSpotId: null
   };
 
   let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -548,8 +759,161 @@ document.addEventListener('DOMContentLoaded', () => {
     query: ''
   };
 
+  const PUBLIC_OCEAN_TREE_MASK = {
+    address: '沖縄県糸満市（詳細地址已加密，點擊輸入密碼解鎖）',
+    baseAddress: '沖縄県糸満市（敏感資訊已鎖定，請輸入密碼解鎖）',
+    mapCode: '🔒 密碼保護',
+    googleQuery: '沖縄県糸満市',
+    lat: 26.1360,
+    lng: 127.6780
+  };
+
+  function isSensitiveSpot(itemOrSpot) {
+    if (!itemOrSpot || typeof itemOrSpot !== 'object') return false;
+    return itemOrSpot.spotId === 'spot-ocean-tree' || itemOrSpot.id === 'spot-ocean-tree';
+  }
+
+  function sanitizePlannerDataForStorage(plannerData) {
+    if (!plannerData || !Array.isArray(plannerData.days)) return plannerData;
+    const cloned = JSON.parse(JSON.stringify(plannerData));
+    cloned.days.forEach(day => {
+      if (Array.isArray(day.stops)) {
+        day.stops.forEach(stop => {
+          if (isSensitiveSpot(stop)) {
+            stop.address = PUBLIC_OCEAN_TREE_MASK.address;
+            stop.mapCode = PUBLIC_OCEAN_TREE_MASK.mapCode;
+            stop.googleQuery = PUBLIC_OCEAN_TREE_MASK.googleQuery;
+            stop.lat = PUBLIC_OCEAN_TREE_MASK.lat;
+            stop.lng = PUBLIC_OCEAN_TREE_MASK.lng;
+          }
+        });
+      }
+    });
+    return cloned;
+  }
+
   function savePlannerData() {
-    safeStorageSet('okinawa_custom_planner_data', JSON.stringify(state.plannerData));
+    safeStorageSet('okinawa_custom_planner_data', JSON.stringify(sanitizePlannerDataForStorage(state.plannerData)));
+  }
+
+  function applyPrivacyStateToData() {
+    const unlocked = Boolean(state.privacyUnlocked && state.unlockedSecrets);
+    const acc = unlocked ? state.unlockedSecrets.accommodation : null;
+    const chicUrl = unlocked ? (state.unlockedSecrets.chictripUrl || '') : '';
+
+    if (typeof TRIP_METADATA !== 'undefined') {
+      TRIP_METADATA.chictripUrl = chicUrl;
+      if (TRIP_METADATA.baseLocation) {
+        TRIP_METADATA.baseLocation.address = unlocked ? acc.address : PUBLIC_OCEAN_TREE_MASK.baseAddress;
+        TRIP_METADATA.baseLocation.lat = unlocked ? acc.lat : PUBLIC_OCEAN_TREE_MASK.lat;
+        TRIP_METADATA.baseLocation.lng = unlocked ? acc.lng : PUBLIC_OCEAN_TREE_MASK.lng;
+      }
+    }
+
+    if (typeof SPOTS_CATALOG !== 'undefined' && Array.isArray(SPOTS_CATALOG)) {
+      SPOTS_CATALOG.forEach(spot => {
+        if (isSensitiveSpot(spot)) {
+          spot.address = unlocked ? acc.address : PUBLIC_OCEAN_TREE_MASK.address;
+          spot.mapCode = unlocked ? acc.mapCode : PUBLIC_OCEAN_TREE_MASK.mapCode;
+          spot.lat = unlocked ? acc.lat : PUBLIC_OCEAN_TREE_MASK.lat;
+          spot.lng = unlocked ? acc.lng : PUBLIC_OCEAN_TREE_MASK.lng;
+        }
+      });
+    }
+
+    if (typeof SCHEDULE_ITEMS !== 'undefined' && Array.isArray(SCHEDULE_ITEMS)) {
+      SCHEDULE_ITEMS.forEach(item => {
+        if (isSensitiveSpot(item)) {
+          item.address = unlocked ? acc.address : PUBLIC_OCEAN_TREE_MASK.address;
+          item.mapCode = unlocked ? acc.mapCode : PUBLIC_OCEAN_TREE_MASK.mapCode;
+          item.googleQuery = unlocked ? acc.googleQuery : PUBLIC_OCEAN_TREE_MASK.googleQuery;
+          item.lat = unlocked ? acc.lat : PUBLIC_OCEAN_TREE_MASK.lat;
+          item.lng = unlocked ? acc.lng : PUBLIC_OCEAN_TREE_MASK.lng;
+        }
+      });
+    }
+
+    if (state.plannerData && Array.isArray(state.plannerData.days)) {
+      state.plannerData.days.forEach(day => {
+        if (Array.isArray(day.stops)) {
+          day.stops.forEach(stop => {
+            if (isSensitiveSpot(stop)) {
+              stop.address = unlocked ? acc.address : PUBLIC_OCEAN_TREE_MASK.address;
+              stop.mapCode = unlocked ? acc.mapCode : PUBLIC_OCEAN_TREE_MASK.mapCode;
+              stop.googleQuery = unlocked ? acc.googleQuery : PUBLIC_OCEAN_TREE_MASK.googleQuery;
+              stop.lat = unlocked ? acc.lat : PUBLIC_OCEAN_TREE_MASK.lat;
+              stop.lng = unlocked ? acc.lng : PUBLIC_OCEAN_TREE_MASK.lng;
+            }
+          });
+        }
+      });
+    }
+  }
+
+  function unlockSensitiveVault(pin, rememberDevice = false) {
+    if (typeof SENSITIVE_VAULT === 'undefined') {
+      return { ok: false, error: '加密資料庫尚未載入' };
+    }
+    const cleanPin = String(pin || '').trim();
+    if (!cleanPin) {
+      return { ok: false, error: '請輸入 4 位數密碼' };
+    }
+    const keys = deriveVaultKeys(cleanPin, SENSITIVE_VAULT.salt, SENSITIVE_VAULT.iterations || 2000);
+    const decrypted = decryptVaultWithKeys(SENSITIVE_VAULT, keys.encKey, keys.macKey);
+    if (!decrypted || !decrypted.accommodation) {
+      return { ok: false, error: '密碼錯誤，請重新輸入 4 位數密碼' };
+    }
+
+    state.privacyUnlocked = true;
+    state.unlockedSecrets = decrypted;
+    const keyBundle = JSON.stringify({
+      e: bytesToHex(keys.encKey),
+      m: bytesToHex(keys.macKey)
+    });
+    safeSessionSet('okinawa_vault_session_keys', keyBundle);
+    if (rememberDevice) {
+      safeStorageSet('okinawa_vault_saved_keys', keyBundle);
+    }
+
+    applyPrivacyStateToData();
+    refreshAllPrivacyUI();
+    return { ok: true, data: decrypted };
+  }
+
+  function lockSensitiveVault() {
+    state.privacyUnlocked = false;
+    state.unlockedSecrets = null;
+    safeSessionRemove('okinawa_vault_session_keys');
+    safeStorageRemove('okinawa_vault_saved_keys');
+    applyPrivacyStateToData();
+    refreshAllPrivacyUI();
+  }
+
+  function tryRestorePrivacySession() {
+    if (typeof SENSITIVE_VAULT === 'undefined') return false;
+    const raw = safeSessionGet('okinawa_vault_session_keys') || safeStorageGet('okinawa_vault_saved_keys');
+    if (!raw) {
+      applyPrivacyStateToData();
+      return false;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.e && parsed.m) {
+        const decrypted = decryptVaultWithKeys(SENSITIVE_VAULT, hexToBytes(parsed.e), hexToBytes(parsed.m));
+        if (decrypted && decrypted.accommodation) {
+          state.privacyUnlocked = true;
+          state.unlockedSecrets = decrypted;
+          applyPrivacyStateToData();
+          return true;
+        }
+      }
+    } catch (err) {
+      // Ignore corrupt stored session
+    }
+    safeSessionRemove('okinawa_vault_session_keys');
+    safeStorageRemove('okinawa_vault_saved_keys');
+    applyPrivacyStateToData();
+    return false;
   }
 
   // Cache pristine baseline schedule items snapshot on load
@@ -570,6 +934,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+    applyPrivacyStateToData();
     updateFlightUI(getSelectedFlight());
     renderTimeline();
     showToast('✈️ 已恢復為官方推薦基準行程 (Day 1 11:00 取車 · Day 5 08:00~16:50)');
@@ -589,6 +954,9 @@ document.addEventListener('DOMContentLoaded', () => {
     saveChecklist();
   }
 
+  // Restore saved/session privacy unlock state BEFORE rendering timeline & map
+  tryRestorePrivacySession();
+
   // Initialize UI Components
   initThemeToggle();
   initCountdown();
@@ -607,6 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initBudgetTracker();
   initChicTripSharing();
   initModal();
+  initPrivacyVaultModal();
   initFlightSelector();
   const savedFlightId = safeStorageGet('okinawa_selected_flight');
   if (savedFlightId) {
@@ -1576,6 +1945,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const isLast = index === filtered.length - 1;
       const itemGmapLinks = getSpotGmapLinks(item);
       const imgMeta = resolveSpotImage(item);
+      const isSensitiveLocked = isSensitiveSpot(item) && !state.privacyUnlocked;
+      const isSensitiveUnlocked = isSensitiveSpot(item) && state.privacyUnlocked;
 
       // Accurate Haversine Transit calculation
       let transitHtml = '';
@@ -1594,6 +1965,32 @@ document.addEventListener('DOMContentLoaded', () => {
       const seniorObj = (item.generation && item.generation.senior) || {};
       const harmonyScore = (item.generation && item.generation.harmony && item.generation.harmony.score) || 9.5;
       const isCollapsedMobile = Boolean(state.mobileCompactCards);
+
+      const mcTopBadgeHtml = isSensitiveLocked
+        ? `<button type="button" class="btn-copy-mc-badge btn-mc-locked" data-action="unlock-privacy" title="點擊輸入密碼解鎖車機 MapCode">🔒 MC: 需密碼</button>`
+        : `<button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(item.mapCode)}" title="點擊直接複製日本車機 MapCode">📋 MC: ${escapeHtml(item.mapCode)}</button>`;
+
+      const addressBlockHtml = isSensitiveLocked
+        ? `<button type="button" class="card-address-locked-btn" data-action="unlock-privacy" title="點擊輸入密碼解鎖民宿詳細地址"><span>🔒 ${escapeHtml(item.address)}</span></button>`
+        : `<div class="card-address"><span>📍 ${escapeHtml(item.address)}</span>${isSensitiveUnlocked ? `<button type="button" class="btn-inline-copy-addr" data-action="copy-address" data-address="${escapeHtml(item.address)}" title="複製民宿詳細地址">📋 複製</button>` : ''}</div>`;
+
+      const copyMcBtnHtml = isSensitiveLocked
+        ? `<button type="button" class="btn-card-action" data-action="unlock-privacy" title="輸入密碼解鎖 MapCode"><span>🔒 解鎖MC</span></button>`
+        : `<button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode"><span>📋 複製MC</span></button>`;
+
+      const gmapBarHtml = isSensitiveLocked
+        ? `<button type="button" class="btn-gmap-action btn-gmap-locked" data-action="unlock-privacy" title="輸入 4 位數密碼以解鎖精準 Google Maps 導航與民宿地址">
+             <span class="btn-gmap-icon">🔒</span>
+             <span>輸入密碼解鎖民宿導航與地址</span>
+           </button>`
+        : `<a href="${itemGmapLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
+             <span class="btn-gmap-icon">📍</span>
+             <span>即時導航</span>
+           </a>
+           <a href="${itemGmapLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與老饕評價">
+             <span class="btn-gmap-icon">🔍</span>
+             <span>老饕評價</span>
+           </a>`;
 
       html += `
         <div class="timeline-item" id="item-${escapeHtml(item.id)}">
@@ -1617,7 +2014,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="card-time-badge">⏰ ${item.time}</span>
                 <span class="card-duration-badge">⏱️ ${item.duration}</span>
                 <span class="tag-badge" style="background: var(--primary-light); color: var(--primary);">${escapeHtml(item.categoryLabel)}</span>
-                <button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(item.mapCode)}" title="點擊直接複製日本車機 MapCode">📋 MC: ${escapeHtml(item.mapCode)}</button>
+                ${mcTopBadgeHtml}
               </div>
               <div class="card-actions-top">
                 <button class="btn-star-fav ${isFav ? 'favorited' : ''}" data-id="${escapeHtml(item.id)}" title="${isFav ? '取消收藏' : '加入收藏'}">
@@ -1651,16 +2048,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="card-footer">
-              <div class="card-address">
-                <span>📍 ${escapeHtml(item.address)}</span>
-              </div>
+              ${addressBlockHtml}
               <div class="card-footer-buttons">
                 <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
                   <span>🔍 實景與攻略</span>
                 </button>
-                <button class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode">
-                  <span>📋 複製MC</span>
-                </button>
+                ${copyMcBtnHtml}
                 <button class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
                   <span>📍 地圖定位</span>
                 </button>
@@ -1670,16 +2063,9 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
             </div>
 
-            <!-- Google Maps 三合一導航與資訊整合操作列 -->
+            <!-- Google Maps 導航與資訊整合操作列 -->
             <div class="spot-gmap-actions-bar">
-              <a href="${itemGmapLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
-                <span class="btn-gmap-icon">📍</span>
-                <span>即時導航</span>
-              </a>
-              <a href="${itemGmapLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與老饕評價">
-                <span class="btn-gmap-icon">🔍</span>
-                <span>老饕評價</span>
-              </a>
+              ${gmapBarHtml}
             </div>
           </div>
           ${transitHtml}
@@ -1728,7 +2114,24 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    listContainer.querySelectorAll('[data-action="copy-mc"], .btn-copy-mc-badge').forEach(btn => {
+    listContainer.querySelectorAll('[data-action="unlock-privacy"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPrivacyModal('請輸入 4 位數密碼以檢視民宿詳細地址與精準導航');
+      });
+    });
+
+    listContainer.querySelectorAll('[data-action="copy-address"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const addr = btn.dataset.address;
+        if (addr) {
+          copyTextToClipboard(addr, `📋 已複製民宿地址：${addr}`);
+        }
+      });
+    });
+
+    listContainer.querySelectorAll('[data-action="copy-mc"], .btn-copy-mc-badge:not(.btn-mc-locked)').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const mc = btn.dataset.mapcode;
@@ -1840,6 +2243,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }; }
 
   function getSpotPlaceQuery(spotId, nameJa) {
+    if (spotId === 'spot-ocean-tree') {
+      return (state.privacyUnlocked && state.unlockedSecrets && state.unlockedSecrets.accommodation)
+        ? state.unlockedSecrets.accommodation.googleQuery
+        : null;
+    }
     const queries = getSpotMapQueries();
     if (spotId && Object.prototype.hasOwnProperty.call(queries, spotId)) {
       return queries[spotId];
@@ -1853,6 +2261,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         navUrl: 'https://www.google.com/maps',
         infoUrl: 'https://www.google.com/maps',
+        isLocked: false,
         hasCoords: false,
         lat: null,
         lng: null,
@@ -1864,11 +2273,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const lng = typeof itemOrSpot.lng === 'number' ? itemOrSpot.lng : (typeof spotMeta.lng === 'number' ? spotMeta.lng : null);
     const nameZh = itemOrSpot.nameZh || spotMeta.nameZh || itemOrSpot.name || '沖繩景點';
     const nameJa = spotMeta.nameJa || itemOrSpot.nameJa || '';
-    const address = spotMeta.address || itemOrSpot.address || '';
 
     const hasCoords = (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng));
+    if (isSensitiveSpot(itemOrSpot) && !state.privacyUnlocked) {
+      return {
+        navUrl: '#unlock-privacy',
+        infoUrl: '#unlock-privacy',
+        isLocked: true,
+        hasCoords,
+        lat,
+        lng,
+        nameZh
+      };
+    }
+
     const coordStr = hasCoords ? `${lat},${lng}` : '';
-    const placeQuery = getSpotPlaceQuery(spotMeta.spotId || spotMeta.id || itemOrSpot.spotId || itemOrSpot.id, nameJa);
+    const spotKey = spotMeta.spotId || spotMeta.id || itemOrSpot.spotId || itemOrSpot.id;
+    const placeQuery = getSpotPlaceQuery(spotKey, nameJa);
     const destination = placeQuery || coordStr || nameZh;
 
     // 1. 📍 Google Maps 即時導航（以真實店名/POI 搜尋，避免概略座標造成定位偏差）
@@ -1877,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. 🔍 Google Maps 地點資訊與評價
     const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
 
-    return { navUrl, infoUrl, hasCoords, lat, lng, nameZh };
+    return { navUrl, infoUrl, isLocked: false, hasCoords, lat, lng, nameZh };
   }
 
   function buildGoogleMapsDayNavUrl(stops) {
@@ -2347,14 +2768,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
+      const isLockedStop = gLinks.isLocked || (isSensitiveSpot(stop) && !state.privacyUnlocked);
       const infoContent = `
         <div style="font-family:sans-serif; min-width:200px; padding:4px;">
           <div style="font-weight:800; font-size:14px; margin-bottom:4px; color:#0f172a;">${idx + 1}. ${escapeHtml(nameZh)}</div>
           <div style="font-size:12px; color:#64748b; margin-bottom:8px;">${stop.time ? `抵達：${stop.time} | ` : ''}MC: ${escapeHtml(stop.mapCode || '無')}</div>
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <a href="${gLinks.navUrl}" target="_blank" rel="noopener" style="color:#0284c7; font-size:12px; font-weight:700; text-decoration:none;">📍 即時導航 ↗</a>
-            <a href="${gLinks.infoUrl}" target="_blank" rel="noopener" style="color:#1d4ed8; font-size:12px; font-weight:700; text-decoration:none;">🔍 地點資訊與評價 ↗</a>
-          </div>
+          ${isLockedStop
+            ? `<div style="font-size:12px; font-weight:700; color:#b45309; background:#fef3c7; padding:6px 8px; border-radius:6px;">🔒 民宿導航已鎖定，請點擊右上角 🔒 輸入密碼解鎖</div>`
+            : `<div style="display:flex; flex-direction:column; gap:4px;">
+                 <a href="${gLinks.navUrl}" target="_blank" rel="noopener" style="color:#0284c7; font-size:12px; font-weight:700; text-decoration:none;">📍 即時導航 ↗</a>
+                 <a href="${gLinks.infoUrl}" target="_blank" rel="noopener" style="color:#1d4ed8; font-size:12px; font-weight:700; text-decoration:none;">🔍 地點資訊與評價 ↗</a>
+               </div>`
+          }
         </div>
       `;
 
@@ -2790,15 +3215,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; font-size:0.8rem; color:var(--text-muted);">
                   <span>${escapeHtml(stop.name)} · ${escapeHtml(stop.nameJa || '')}</span>
                   <span class="tag-badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${escapeHtml(stop.categoryLabel || '景點')}</span>
-                  <span style="font-family:monospace; font-weight:700; color:#0284c7;">MC: ${escapeHtml(stop.mapCode || '無')}</span>
+                  ${(isSensitiveSpot(stop) && !state.privacyUnlocked)
+                    ? `<button type="button" class="btn-copy-mc-badge btn-mc-locked" data-action="unlock-privacy" title="點擊輸入密碼解鎖 MapCode">🔒 MC: 需密碼</button>`
+                    : `<span style="font-family:monospace; font-weight:700; color:#0284c7;">MC: ${escapeHtml(stop.mapCode || '無')}</span>`
+                  }
                 </div>
 
                 ${genCardsHtml}
 
                 <div class="card-footer" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border);">
-                  <div class="card-address" style="font-size:0.8rem;">
-                    <span>📍 ${escapeHtml(stop.address || '沖繩縣')}</span>
-                  </div>
+                  ${(isSensitiveSpot(stop) && !state.privacyUnlocked)
+                    ? `<button type="button" class="card-address-locked-btn" data-action="unlock-privacy" title="點擊輸入密碼解鎖民宿詳細地址"><span>🔒 ${escapeHtml(stop.address || '沖縄県糸満市')}</span></button>`
+                    : `<div class="card-address" style="font-size:0.8rem;"><span>📍 ${escapeHtml(stop.address || '沖繩縣')}</span>${(isSensitiveSpot(stop) && state.privacyUnlocked) ? `<button type="button" class="btn-inline-copy-addr" data-action="copy-address" data-address="${escapeHtml(stop.address)}" title="複製民宿詳細地址">📋 複製</button>` : ''}</div>`
+                  }
                   <div class="card-footer-buttons">
                     <button class="btn-card-action primary" data-action="view-stop-modal" data-id="${escapeHtml(stop.id)}">
                       <span>🔍 景點攻略</span>
@@ -2809,16 +3238,22 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>
                 </div>
 
-                <!-- Google Maps 三合一導航與資訊整合操作列 -->
+                <!-- Google Maps 導航與資訊整合操作列 -->
                 <div class="spot-gmap-actions-bar">
-                  <a href="${stopGLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
-                    <span class="btn-gmap-icon">📍</span>
-                    <span>即時導航</span>
-                  </a>
-                  <a href="${stopGLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與評價">
-                    <span class="btn-gmap-icon">🔍</span>
-                    <span>老饕評價</span>
-                  </a>
+                  ${(isSensitiveSpot(stop) && !state.privacyUnlocked)
+                    ? `<button type="button" class="btn-gmap-action btn-gmap-locked" data-action="unlock-privacy" title="輸入 4 位數密碼以解鎖精準 Google Maps 導航與民宿地址">
+                         <span class="btn-gmap-icon">🔒</span>
+                         <span>輸入密碼解鎖民宿導航與地址</span>
+                       </button>`
+                    : `<a href="${stopGLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
+                         <span class="btn-gmap-icon">📍</span>
+                         <span>即時導航</span>
+                       </a>
+                       <a href="${stopGLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與評價">
+                         <span class="btn-gmap-icon">🔍</span>
+                         <span>老饕評價</span>
+                       </a>`
+                  }
                 </div>
               </div>
             </div>
@@ -2826,6 +3261,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         streamContainer.innerHTML = streamHtml;
+
+        streamContainer.querySelectorAll('[data-action="unlock-privacy"]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openPrivacyModal('請輸入 4 位數密碼以檢視民宿詳細地址與精準導航');
+          });
+        });
+
+        streamContainer.querySelectorAll('[data-action="copy-address"]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const addr = btn.dataset.address;
+            if (addr) copyTextToClipboard(addr, `📋 已複製民宿地址：${addr}`);
+          });
+        });
 
         // Attach HTML5 Drag & Drop reordering
         let draggedIndex = null;
@@ -3432,6 +3882,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalOverlay = document.getElementById('spot-detail-modal');
     if (!item || !modalOverlay) return;
 
+    state.currentModalSpotId = id;
     document.getElementById('modal-title').textContent = item.nameZh;
     document.getElementById('modal-subtitle').textContent = `${item.name} (${item.nameJa || ''})`;
 
@@ -3443,8 +3894,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const walkColor = senior.walkingScore === 'green' ? '#10b981' : (senior.walkingScore === 'amber' ? '#f59e0b' : '#ef4444');
     const spotImg = resolveSpotImage(item);
+    const isSensitiveLocked = isSensitiveSpot(item) && !state.privacyUnlocked;
+    const isSensitiveUnlocked = isSensitiveSpot(item) && state.privacyUnlocked && state.unlockedSecrets && state.unlockedSecrets.accommodation;
+    const acc = isSensitiveUnlocked ? state.unlockedSecrets.accommodation : null;
 
-    document.getElementById('modal-content').innerHTML = `
+    const modalContentEl = document.getElementById('modal-content');
+    modalContentEl.innerHTML = `
       ${spotImg.src ? `
         <div class="modal-spot-hero-photo" onclick="this.classList.toggle('expanded-photo')" title="點擊可切換放大檢視完整實景照">
           <img src="${escapeHtml(spotImg.src)}" data-fallback="${escapeHtml(spotImg.fallback)}" alt="${escapeHtml(item.nameZh)}" onerror="window.appHandleImgError(this)">
@@ -3532,30 +3987,96 @@ document.addEventListener('DOMContentLoaded', () => {
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.25rem;">
         <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
           <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">日本車機 MapCode</div>
-          <div style="font-family: monospace; font-size: 1rem; font-weight: 700; color: var(--primary); margin-top: 0.2rem;">${escapeHtml(item.mapCode || '無')}</div>
+          ${isSensitiveLocked
+            ? `<button type="button" class="card-address-locked-btn" data-action="modal-unlock-privacy" style="margin-top:0.25rem; width:100%;">🔒 密碼保護（點擊解鎖）</button>`
+            : `<div style="font-family: monospace; font-size: 1rem; font-weight: 700; color: var(--primary); margin-top: 0.2rem;">${escapeHtml(item.mapCode || '無')}</div>`
+          }
         </div>
         <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
           <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">地址 / 區域</div>
-          <div style="font-size: 0.85rem; font-weight: 600; margin-top: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(item.address)}">${escapeHtml(item.address)}</div>
+          ${isSensitiveLocked
+            ? `<button type="button" class="card-address-locked-btn" data-action="modal-unlock-privacy" style="margin-top:0.25rem; width:100%;">🔒 詳細地址已隱藏（點擊解鎖）</button>`
+            : (isSensitiveUnlocked && acc
+              ? `<div style="font-size: 0.85rem; font-weight: 700; margin-top: 0.2rem; line-height: 1.4; word-break: break-word;">
+                   <div>${escapeHtml(acc.address)}</div>
+                   <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">${escapeHtml(acc.addressFormatted)}</div>
+                   ${acc.notes ? `<div style="font-size: 0.75rem; color: var(--primary); margin-top: 0.25rem;">💡 ${escapeHtml(acc.notes)}</div>` : ''}
+                   <button type="button" class="btn-inline-copy-addr" data-action="modal-copy-address" data-address="${escapeHtml(acc.address)}" style="margin-top:0.4rem;">📋 複製地址</button>
+                 </div>`
+              : `<div style="font-size: 0.85rem; font-weight: 600; margin-top: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(item.address)}">${escapeHtml(item.address)}</div>`)
+          }
         </div>
       </div>
     `;
 
+    modalContentEl.querySelectorAll('[data-action="modal-unlock-privacy"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        openPrivacyModal('請輸入 4 位數密碼以檢視民宿詳細地址與精準導航');
+      });
+    });
+
+    modalContentEl.querySelectorAll('[data-action="modal-copy-address"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const addr = btn.dataset.address;
+        if (addr) copyTextToClipboard(addr, `📋 已複製民宿地址：${addr}`);
+      });
+    });
+
     const gLinks = getSpotGmapLinks(item);
     const navLink = document.getElementById('modal-nav-link');
     const reviewsLink = document.getElementById('modal-reviews-link');
-    if (navLink) navLink.href = gLinks.navUrl;
-    if (reviewsLink) reviewsLink.href = gLinks.infoUrl;
+    if (isSensitiveLocked) {
+      if (navLink) {
+        navLink.href = '#unlock-privacy';
+        if (typeof navLink.removeAttribute === 'function') navLink.removeAttribute('target');
+        navLink.textContent = '🔒 解鎖導航';
+        navLink.onclick = (e) => {
+          e.preventDefault();
+          openPrivacyModal('請輸入 4 位數密碼以解鎖 Google Maps 精準導航');
+        };
+      }
+      if (reviewsLink) {
+        reviewsLink.href = '#unlock-privacy';
+        if (typeof reviewsLink.removeAttribute === 'function') reviewsLink.removeAttribute('target');
+        reviewsLink.textContent = '🔒 解鎖位置';
+        reviewsLink.onclick = (e) => {
+          e.preventDefault();
+          openPrivacyModal('請輸入 4 位數密碼以檢視民宿位置');
+        };
+      }
+    } else {
+      if (navLink) {
+        navLink.href = gLinks.navUrl;
+        navLink.setAttribute('target', '_blank');
+        navLink.setAttribute('rel', 'noopener');
+        navLink.textContent = '📍 即時導航';
+        navLink.onclick = null;
+      }
+      if (reviewsLink) {
+        reviewsLink.href = gLinks.infoUrl;
+        reviewsLink.setAttribute('target', '_blank');
+        reviewsLink.setAttribute('rel', 'noopener');
+        reviewsLink.textContent = '🔍 老饕評價';
+        reviewsLink.onclick = null;
+      }
+    }
 
     const copyBtn = document.getElementById('modal-copy-mapcode-btn');
     if (copyBtn) {
-      copyBtn.textContent = '📋 複製 MapCode';
-      copyBtn.onclick = () => {
-        const cleanCode = (item.mapCode || '').trim();
-        copyTextToClipboard(cleanCode, `📋 已複製 MapCode：${cleanCode}`);
-        copyBtn.textContent = '✓ 已複製！';
-        setTimeout(() => { copyBtn.textContent = '📋 複製 MapCode'; }, 1600);
-      };
+      if (isSensitiveLocked) {
+        copyBtn.textContent = '🔒 解鎖 MapCode';
+        copyBtn.onclick = () => {
+          openPrivacyModal('請輸入 4 位數密碼以解鎖車機 MapCode');
+        };
+      } else {
+        copyBtn.textContent = '📋 複製 MapCode';
+        copyBtn.onclick = () => {
+          const cleanCode = (item.mapCode || '').trim();
+          copyTextToClipboard(cleanCode, `📋 已複製 MapCode：${cleanCode}`);
+          copyBtn.textContent = '✓ 已複製！';
+          setTimeout(() => { copyBtn.textContent = '📋 複製 MapCode'; }, 1600);
+        };
+      }
     }
 
     // Setup day selector in modal footer
@@ -3571,6 +4092,7 @@ document.addEventListener('DOMContentLoaded', () => {
       addPlannerBtn.onclick = () => {
         const selectedDayIdx = daySelect ? parseInt(daySelect.value, 10) : state.plannerData.activeDayIndex;
         addSpotToPlannerDay(item, selectedDayIdx);
+        state.currentModalSpotId = null;
         modalOverlay.classList.remove('open');
         document.body.style.overflow = '';
       };
@@ -3580,6 +4102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (quickAddBtn) {
       quickAddBtn.onclick = () => {
         addSpotToCurrentPlannerDay(item);
+        state.currentModalSpotId = null;
         modalOverlay.classList.remove('open');
         document.body.style.overflow = '';
       };
@@ -3592,13 +4115,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function initModal() {
     const modalOverlay = document.getElementById('spot-detail-modal');
     const modalCloseBtn = document.getElementById('modal-close-btn');
-    const dragHandle = modalOverlay ? modalOverlay.querySelector('.modal-drag-handle') : null;
-    const modalHeader = modalOverlay ? modalOverlay.querySelector('.modal-header') : null;
     if (!modalCloseBtn || !modalOverlay) return;
 
     function closeSpotModal() {
+      state.currentModalSpotId = null;
       modalOverlay.classList.remove('open');
-      document.body.style.overflow = '';
+      if (document.querySelectorAll('.modal-overlay.open').length === 0) {
+        document.body.style.overflow = '';
+      }
     }
 
     modalCloseBtn.addEventListener('click', closeSpotModal);
@@ -3612,7 +4136,11 @@ document.addEventListener('DOMContentLoaded', () => {
     attachModalBottomSheetGestures(modalOverlay, closeSpotModal);
 
     document.addEventListener('keydown', (e) => {
-      if (e && e.key === 'Escape' && modalOverlay.classList.contains('open')) {
+      if (e && e.key === 'Escape' && modalOverlay.classList && typeof modalOverlay.classList.contains === 'function' && modalOverlay.classList.contains('open')) {
+        const privModal = document.getElementById('privacy-unlock-modal');
+        if (privModal && privModal.classList && typeof privModal.classList.contains === 'function' && privModal.classList.contains('open')) {
+          return;
+        }
         closeSpotModal();
       }
     });
@@ -3626,6 +4154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!item) return;
 
     state.lastFocusedCardId = itemId;
+    const isSensitiveLocked = isSensitiveSpot(item) && !state.privacyUnlocked;
     const backBtn = document.getElementById('btn-back-to-timeline-card');
     if (backBtn && window.innerWidth <= 900) {
       backBtn.style.display = 'inline-flex';
@@ -3640,7 +4169,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state.gmapMode === 'js' && state.googleMap && typeof google !== 'undefined' && google.maps) {
       state.googleMap.setCenter({ lat: item.lat, lng: item.lng });
-      state.googleMap.setZoom(15);
+      state.googleMap.setZoom(isSensitiveLocked ? 12 : 15);
       let targetMarker = state.googleMarkerMap ? state.googleMarkerMap.get(itemId) : null;
       if (!targetMarker && state.googleMarkers) {
         targetMarker = state.googleMarkers.find(m => {
@@ -3654,8 +4183,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       const iframe = document.getElementById('okinawa-gmap-iframe');
       if (iframe && item.lat && item.lng) {
-        const q = getSpotPlaceQuery(item.spotId || item.id, item.nameJa) || `${item.lat},${item.lng}`;
-        iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=16&hl=zh-TW&output=embed`;
+        if (isSensitiveLocked) {
+          iframe.src = `https://maps.google.com/maps?q=${item.lat},${item.lng}&z=12&hl=zh-TW&output=embed`;
+        } else {
+          const q = getSpotPlaceQuery(item.spotId || item.id, item.nameJa) || `${item.lat},${item.lng}`;
+          iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=16&hl=zh-TW&output=embed`;
+        }
       }
     }
 
@@ -3665,7 +4198,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (targetEl && typeof targetEl.scrollIntoView === 'function') {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    showToast(`📍 已在地圖定位：${item.nameZh}`);
+    if (isSensitiveLocked) {
+      showToast('🔒 民宿精準地址已隱藏（目前顯示糸滿概略區域），點擊右上角 🔒 解鎖精準定位');
+    } else {
+      showToast(`📍 已在地圖定位：${item.nameZh}`);
+    }
   };
 
   window.appScrollToCard = function(itemId) {
@@ -3950,15 +4487,44 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
-     ChicTrip Official Integration & Share Copy
+     ChicTrip Official Integration & Share Copy (Privacy Protected)
      ========================================================================== */
   function initChicTripSharing() {
+    document.querySelectorAll('[data-sensitive-chictrip="link"]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        if (!state.privacyUnlocked || typeof TRIP_METADATA === 'undefined' || !TRIP_METADATA.chictripUrl) {
+          e.preventDefault();
+          openPrivacyModal('請輸入 4 位數密碼以解鎖去趣 App 專屬行程連結與民宿資訊');
+        }
+      });
+    });
+
+    const chicPill = document.getElementById('chictrip-url-pill');
+    if (chicPill) {
+      const handlePillTrigger = () => {
+        if (!state.privacyUnlocked || typeof TRIP_METADATA === 'undefined' || !TRIP_METADATA.chictripUrl) {
+          openPrivacyModal('請輸入 4 位數密碼以檢視去趣 App 專屬行程連結');
+        } else {
+          copyTextToClipboard(TRIP_METADATA.chictripUrl, '🔗 已複製去趣行程專屬分享連結！');
+        }
+      };
+      chicPill.addEventListener('click', handlePillTrigger);
+      chicPill.addEventListener('keydown', (e) => {
+        if (e && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handlePillTrigger();
+        }
+      });
+    }
+
     const copyBtns = document.querySelectorAll('.btn-copy-chictrip');
     copyBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        if (typeof TRIP_METADATA !== 'undefined') {
-          copyTextToClipboard(TRIP_METADATA.chictripUrl, '🔗 已複製去趣行程專屬分享連結！');
+        if (!state.privacyUnlocked || typeof TRIP_METADATA === 'undefined' || !TRIP_METADATA.chictripUrl) {
+          openPrivacyModal('請輸入 4 位數密碼以複製去趣行程專屬連結');
+          return;
         }
+        copyTextToClipboard(TRIP_METADATA.chictripUrl, '🔗 已複製去趣行程專屬分享連結！');
       });
     });
 
@@ -3968,6 +4534,267 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
       });
     });
+  }
+
+  /* ==========================================================================
+     Privacy Vault UI, Modal & Global Sync
+     ========================================================================== */
+  function syncPrivacyIndicatorsAndLinks() {
+    const unlocked = Boolean(state.privacyUnlocked && state.unlockedSecrets && state.unlockedSecrets.accommodation);
+    const acc = unlocked ? state.unlockedSecrets.accommodation : null;
+    const chicUrl = unlocked ? (state.unlockedSecrets.chictripUrl || '') : '';
+
+    const lockBtn = document.getElementById('btn-privacy-lock');
+    const headerIcon = document.getElementById('header-privacy-icon');
+    const headerLabel = document.getElementById('header-privacy-label');
+    if (lockBtn) {
+      if (lockBtn.classList) {
+        if (unlocked && typeof lockBtn.classList.add === 'function') lockBtn.classList.add('unlocked');
+        else if (!unlocked && typeof lockBtn.classList.remove === 'function') lockBtn.classList.remove('unlocked');
+      }
+      lockBtn.title = unlocked ? '敏感資訊已解鎖 · 點擊檢視或重新鎖定' : '輸入密碼解鎖民宿地址與敏感資訊';
+    }
+    if (headerIcon) headerIcon.textContent = unlocked ? '🔓' : '🔒';
+    if (headerLabel) headerLabel.textContent = unlocked ? '已解鎖' : '隱私解鎖';
+
+    const heroPill = document.getElementById('hero-privacy-pill');
+    if (heroPill) {
+      if (heroPill.classList) {
+        if (unlocked && typeof heroPill.classList.add === 'function') heroPill.classList.add('unlocked');
+        else if (!unlocked && typeof heroPill.classList.remove === 'function') heroPill.classList.remove('unlocked');
+      }
+      heroPill.textContent = unlocked && acc
+        ? `🔓 民宿已解鎖：${acc.address}`
+        : '🔒 民宿地址已加密 · 點擊輸入密碼解鎖';
+    }
+
+    document.querySelectorAll('[data-sensitive-chictrip="link"]').forEach(link => {
+      if (unlocked && chicUrl) {
+        link.setAttribute('href', chicUrl);
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener');
+      } else {
+        link.setAttribute('href', '#chictrip-section');
+        if (typeof link.removeAttribute === 'function') {
+          link.removeAttribute('target');
+          link.removeAttribute('rel');
+        }
+      }
+    });
+
+    const chicDisplay = document.getElementById('chictrip-url-display');
+    if (chicDisplay) {
+      chicDisplay.textContent = unlocked && chicUrl
+        ? chicUrl
+        : '🔒 專屬行程連結已加密（點擊輸入密碼解鎖）';
+    }
+
+    const lockedView = document.getElementById('privacy-locked-view');
+    const unlockedView = document.getElementById('privacy-unlocked-view');
+    if (lockedView) lockedView.style.display = unlocked ? 'none' : 'block';
+    if (unlockedView) unlockedView.style.display = unlocked ? 'block' : 'none';
+
+    if (unlocked && acc) {
+      const addrEl = document.getElementById('vault-address-text');
+      const fmtEl = document.getElementById('vault-address-formatted');
+      const mcEl = document.getElementById('vault-mapcode-text');
+      const notesEl = document.getElementById('vault-notes-text');
+      const gmapNavEl = document.getElementById('btn-vault-gmap-nav');
+      const vaultChicUrlEl = document.getElementById('vault-chictrip-url');
+      const vaultOpenChicEl = document.getElementById('btn-vault-open-chictrip');
+
+      if (addrEl) addrEl.textContent = acc.address || '--';
+      if (fmtEl) fmtEl.textContent = acc.addressFormatted || acc.googleQuery || '--';
+      if (mcEl) mcEl.textContent = acc.mapCode || '--';
+      if (notesEl) notesEl.textContent = acc.notes || '';
+      if (gmapNavEl) {
+        const dest = acc.googleQuery || acc.address || `${acc.lat},${acc.lng}`;
+        gmapNavEl.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+      }
+      if (vaultChicUrlEl) vaultChicUrlEl.textContent = chicUrl || '--';
+      if (vaultOpenChicEl && chicUrl) vaultOpenChicEl.href = chicUrl;
+    } else {
+      const addrEl = document.getElementById('vault-address-text');
+      const fmtEl = document.getElementById('vault-address-formatted');
+      const mcEl = document.getElementById('vault-mapcode-text');
+      const notesEl = document.getElementById('vault-notes-text');
+      const gmapNavEl = document.getElementById('btn-vault-gmap-nav');
+      const vaultChicUrlEl = document.getElementById('vault-chictrip-url');
+      const vaultOpenChicEl = document.getElementById('btn-vault-open-chictrip');
+
+      if (addrEl) addrEl.textContent = '--';
+      if (fmtEl) fmtEl.textContent = '--';
+      if (mcEl) mcEl.textContent = '--';
+      if (notesEl) notesEl.textContent = '';
+      if (gmapNavEl) gmapNavEl.href = '#unlock-privacy';
+      if (vaultChicUrlEl) vaultChicUrlEl.textContent = '--';
+      if (vaultOpenChicEl) vaultOpenChicEl.href = '#unlock-privacy';
+    }
+  }
+
+  function refreshAllPrivacyUI() {
+    syncPrivacyIndicatorsAndLinks();
+    if (typeof renderTimeline === 'function') renderTimeline();
+    if (state.itineraryMode === 'planner') {
+      if (typeof renderPlannerStudio === 'function') renderPlannerStudio();
+    } else {
+      if (typeof updateMapMarkers === 'function') updateMapMarkers();
+    }
+    if (state.currentModalSpotId) {
+      const spotModal = document.getElementById('spot-detail-modal');
+      if (spotModal && spotModal.classList && typeof spotModal.classList.contains === 'function' && spotModal.classList.contains('open')) {
+        window.appOpenModal(state.currentModalSpotId);
+      }
+    }
+  }
+
+  function openPrivacyModal(customSubtitle) {
+    const modal = document.getElementById('privacy-unlock-modal');
+    if (!modal) return;
+
+    const subtitleEl = document.getElementById('privacy-modal-subtitle');
+    if (subtitleEl) {
+      subtitleEl.textContent = customSubtitle || (
+        state.privacyUnlocked
+          ? '敏感資訊已解鎖，可檢視完整民宿地址與專屬連結，或重新鎖定'
+          : '請輸入 4 位數家庭專用密碼，解鎖民宿精準地址與專屬連結'
+      );
+    }
+
+    const pinInput = document.getElementById('privacy-pin-input');
+    const errorEl = document.getElementById('privacy-pin-error');
+    if (pinInput) pinInput.value = '';
+    if (errorEl) {
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
+
+    syncPrivacyIndicatorsAndLinks();
+    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+
+    if (!state.privacyUnlocked && pinInput && typeof pinInput.focus === 'function') {
+      setTimeout(() => {
+        try { pinInput.focus(); } catch (e) {}
+      }, 60);
+    }
+  }
+
+  function closePrivacyModal() {
+    const modal = document.getElementById('privacy-unlock-modal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.style.display = 'none';
+
+    const openModals = document.querySelectorAll('.modal-overlay.open');
+    if (!openModals || openModals.length === 0) {
+      document.body.style.overflow = '';
+    }
+  }
+
+  function initPrivacyVaultModal() {
+    syncPrivacyIndicatorsAndLinks();
+
+    const headerLockBtn = document.getElementById('btn-privacy-lock');
+    if (headerLockBtn) headerLockBtn.addEventListener('click', () => openPrivacyModal());
+
+    const heroPrivacyPill = document.getElementById('hero-privacy-pill');
+    if (heroPrivacyPill) heroPrivacyPill.addEventListener('click', () => openPrivacyModal());
+
+    const modal = document.getElementById('privacy-unlock-modal');
+    const closeBtn = document.getElementById('btn-close-privacy-modal');
+    if (closeBtn) closeBtn.addEventListener('click', closePrivacyModal);
+
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closePrivacyModal();
+      });
+      attachModalBottomSheetGestures(modal, closePrivacyModal);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e && e.key === 'Escape' && modal && modal.classList && typeof modal.classList.contains === 'function' && modal.classList.contains('open')) {
+        closePrivacyModal();
+      }
+    });
+
+    const unlockForm = document.getElementById('privacy-unlock-form');
+    const pinInput = document.getElementById('privacy-pin-input');
+    const errorEl = document.getElementById('privacy-pin-error');
+    const rememberCheckbox = document.getElementById('privacy-remember-device');
+
+    if (unlockForm) {
+      unlockForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pinVal = pinInput ? pinInput.value : '';
+        const remember = Boolean(rememberCheckbox && rememberCheckbox.checked);
+        const result = unlockSensitiveVault(pinVal, remember);
+        if (!result.ok) {
+          if (errorEl) {
+            errorEl.textContent = result.error || '密碼錯誤，請重新輸入';
+            errorEl.style.display = 'block';
+          }
+          if (pinInput && pinInput.classList) {
+            if (typeof pinInput.classList.remove === 'function') pinInput.classList.remove('pin-shake');
+            void pinInput.offsetWidth;
+            if (typeof pinInput.classList.add === 'function') pinInput.classList.add('pin-shake');
+            pinInput.value = '';
+            if (typeof pinInput.focus === 'function') pinInput.focus();
+          }
+          return;
+        }
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+        const subtitleEl = document.getElementById('privacy-modal-subtitle');
+        if (subtitleEl) {
+          subtitleEl.textContent = '敏感資訊已解鎖，可檢視完整民宿地址與專屬連結，或重新鎖定';
+        }
+        showToast('🔓 敏感資訊已解鎖！民宿地址與導航已更新');
+      });
+    }
+
+    const copyAddrBtn = document.getElementById('btn-vault-copy-address');
+    if (copyAddrBtn) {
+      copyAddrBtn.addEventListener('click', () => {
+        if (state.unlockedSecrets && state.unlockedSecrets.accommodation) {
+          const addr = state.unlockedSecrets.accommodation.address;
+          copyTextToClipboard(addr, `📋 已複製民宿地址：${addr}`);
+        }
+      });
+    }
+
+    const copyMcBtn = document.getElementById('btn-vault-copy-mapcode');
+    if (copyMcBtn) {
+      copyMcBtn.addEventListener('click', () => {
+        if (state.unlockedSecrets && state.unlockedSecrets.accommodation) {
+          const mc = state.unlockedSecrets.accommodation.mapCode;
+          copyTextToClipboard(mc, `📋 已複製 MapCode：${mc}`);
+        }
+      });
+    }
+
+    const copyChicBtn = document.getElementById('btn-vault-copy-chictrip');
+    if (copyChicBtn) {
+      copyChicBtn.addEventListener('click', () => {
+        if (state.unlockedSecrets && state.unlockedSecrets.chictripUrl) {
+          copyTextToClipboard(state.unlockedSecrets.chictripUrl, '🔗 已複製去趣行程專屬分享連結！');
+        }
+      });
+    }
+
+    const relockBtn = document.getElementById('btn-privacy-relock');
+    if (relockBtn) {
+      relockBtn.addEventListener('click', () => {
+        lockSensitiveVault();
+        closePrivacyModal();
+        showToast('🔒 已重新鎖定並隱藏敏感資訊');
+      });
+    }
   }
 
   /* ==========================================================================
@@ -4556,6 +5383,10 @@ document.addEventListener('DOMContentLoaded', () => {
     appFocusOnMap: window.appFocusOnMap,
     restoreOfficialBaseline,
     renderAlternativeMealGroupHtml,
+    unlockSensitiveVault,
+    lockSensitiveVault,
+    openPrivacyModal,
+    isSensitiveSpot,
     state
   };
   window.OKINAWA_GMAPS = window.__okinawaApp__;

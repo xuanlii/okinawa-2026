@@ -51,13 +51,17 @@
         <button id="btn-flight-selector" class="btn-icon" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）" style="font-size:0.875rem; padding:0.4rem 0.75rem; min-height:44px; min-width:44px; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-surface); cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; font-weight:600;">
           ✈️ 航班
         </button>
+        <button id="btn-privacy-lock" class="btn-icon btn-privacy-lock" aria-label="隱私密碼鎖" title="輸入密碼解鎖民宿地址與敏感資訊">
+          <span class="privacy-lock-icon" id="header-privacy-icon">🔒</span>
+          <span class="privacy-lock-label" id="header-privacy-label">隱私解鎖</span>
+        </button>
         <button id="theme-toggle-btn" class="theme-toggle" aria-label="切換深淺模式" title="切換深淺模式">
           🌙
         </button>
         <button class="btn-icon btn-print-itinerary header-print-btn" aria-label="列印或匯出PDF" title="列印或匯出PDF">
           🖨️
         </button>
-        <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn-cta-chictrip">
+        <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn-cta-chictrip">
           <span>📲 去趣 App</span>
         </a>
       </div>
@@ -71,6 +75,9 @@
     <div class="container">
       <div class="hero-badge-group">
         <span class="hero-pill flight-pill" id="hero-flight-pill" style="cursor:pointer; background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff;" title="點擊切換航班與連動時間">✈️ 航班：<strong id="hero-flight-name">中華航空 CI120/CI121</strong> ▾</span>
+        <button type="button" class="hero-pill privacy-pill" id="hero-privacy-pill" title="點擊輸入密碼解鎖或檢視民宿地址與敏感資訊">
+          🔒 民宿地址已加密 · 點擊輸入密碼解鎖
+        </button>
         <span class="hero-pill">📅 2026/12/12 (六) - 12/16 (三) · 5天4夜</span>
         <span class="hero-pill">🚗 沖繩南部與中部 自駕探險</span>
         <span class="hero-pill accent">✨ 去趣 ChicTrip 官方精選路線</span>
@@ -156,7 +163,7 @@
         <a href="#schedule-section" class="btn btn-secondary" id="hero-btn-official">
           <span>🗓️ 瀏覽官方精選 5天4夜時程</span>
         </a>
-        <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn btn-chictrip">
+        <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn btn-chictrip">
           <span>📲 去趣 App 路線</span>
         </a>
         <button class="btn btn-secondary btn-copy-chictrip">
@@ -458,7 +465,7 @@
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-reset-gmap-route" title="返回當日完整自駕路線視圖" style="display:none; color:var(--primary); font-weight:700;">🔄 返回當日路線</button>
                 <span>💡 提示：點擊圖標可查看亮點並啟動導航</span>
               </div>
-              <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" style="color:var(--primary); font-weight:600; font-size:0.8rem;">去趣 App 導航 →</a>
+              <a href="#chictrip-section" data-sensitive-chictrip="link" style="color:var(--primary); font-weight:600; font-size:0.8rem;">去趣 App 導航 →</a>
             </div>
           </div>
         </div>
@@ -727,13 +734,13 @@
             本網站所有 40 個停留節點、每日交通安排與時間規劃，皆完整收錄於「去趣」旅行 App 中。一鍵加入同行者、瀏覽離線地圖、導航路線即時串接！
           </p>
 
-          <div class="chictrip-url-pill">
+          <div class="chictrip-url-pill" id="chictrip-url-pill" role="button" tabindex="0" style="cursor:pointer;" title="點擊檢視或輸入密碼解鎖去趣專屬行程連結">
             <span>🔗</span>
-            <span>https://chictrip-share.app.link/SOyJSS7fi6b</span>
+            <span id="chictrip-url-display">🔒 專屬行程連結已加密（點擊輸入密碼解鎖）</span>
           </div>
 
           <div style="display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 0.5rem;">
-            <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="btn btn-chictrip">
+            <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn btn-chictrip">
               <span>立即在去趣 App 開啟行程</span>
             </a>
             <button class="btn btn-secondary btn-copy-chictrip">
@@ -958,6 +965,81 @@
     </div>
   </div>
 
+  <!-- 🔐 隱私密碼鎖與敏感資訊保險箱彈窗 (Privacy Vault Modal) -->
+  <div class="modal-overlay" id="privacy-unlock-modal" style="display:none;" aria-hidden="true">
+    <div class="modal-dialog privacy-modal-dialog" role="dialog" aria-labelledby="privacy-modal-title">
+      <div class="modal-drag-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <h3 id="privacy-modal-title" style="font-size:1.2rem; font-weight:800; margin:0 0 0.25rem;">🔐 行程敏感資訊密碼鎖</h3>
+          <p id="privacy-modal-subtitle" style="font-size:0.85rem; color:var(--text-muted); margin:0;">請輸入 4 位數家庭專用密碼，解鎖民宿精準地址與專屬連結</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-privacy-modal" aria-label="關閉隱私解鎖視窗">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem 1.5rem;">
+        <!-- Locked View -->
+        <div id="privacy-locked-view">
+          <div class="vault-protected-list">
+            <div class="vault-protected-item">🏡 <strong>Ocean Tree 民宿</strong>：詳細門牌地址、精準 Google Maps 導航與車機 MapCode</div>
+            <div class="vault-protected-item">📲 <strong>去趣 ChicTrip</strong>：專屬行程完整共享連結與即時匯入</div>
+          </div>
+
+          <form id="privacy-unlock-form" autocomplete="off" style="margin-top:1rem;">
+            <label for="privacy-pin-input" style="display:block; font-size:0.875rem; font-weight:700; margin-bottom:0.5rem; color:var(--text-main);">輸入 4 位數密碼：</label>
+            <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" id="privacy-pin-input" class="form-control privacy-pin-input" placeholder="••••" aria-label="輸入 4 位數密碼" required>
+            <div id="privacy-pin-error" class="privacy-pin-error" role="alert" style="display:none;"></div>
+            <label class="privacy-remember-label">
+              <input type="checkbox" id="privacy-remember-device" style="width:20px; height:20px; accent-color:var(--primary);">
+              <span>記住此裝置（下次開啟免重新輸入）</span>
+            </label>
+            <button type="submit" id="btn-privacy-unlock-submit" class="btn btn-primary" style="width:100%; min-height:48px; margin-top:0.5rem; font-size:1rem;">🔓 解鎖敏感資訊</button>
+          </form>
+        </div>
+
+        <!-- Unlocked View -->
+        <div id="privacy-unlocked-view" style="display:none;">
+          <div class="vault-unlocked-banner">
+            <span>🔓</span>
+            <span><strong>敏感資訊已解鎖</strong> · 民宿地址與去趣連結已即時同步至全站行程與地圖</span>
+          </div>
+
+          <div class="vault-info-card">
+            <div class="vault-card-title">🏡 Ocean Tree (海之樹 獨棟民宿)</div>
+            <div class="vault-field-row">
+              <span class="vault-field-label">正式日文地址：</span>
+              <div class="vault-field-val" id="vault-address-text" style="font-size:1.05rem; font-weight:800;">--</div>
+            </div>
+            <div class="vault-field-row">
+              <span class="vault-field-label">郵遞區號 / 導航搜尋：</span>
+              <div class="vault-field-val" id="vault-address-formatted">--</div>
+            </div>
+            <div class="vault-field-row">
+              <span class="vault-field-label">日本車機 MapCode：</span>
+              <div class="vault-field-val" id="vault-mapcode-text" style="font-family:monospace; font-size:1.05rem; font-weight:800; color:var(--primary);">--</div>
+            </div>
+            <p id="vault-notes-text" style="font-size:0.825rem; color:var(--text-muted); margin:0.65rem 0 0; line-height:1.5;"></p>
+            <div class="vault-actions-grid">
+              <button type="button" id="btn-vault-copy-address" class="btn btn-secondary">📋 複製地址</button>
+              <button type="button" id="btn-vault-copy-mapcode" class="btn btn-secondary">📋 複製 MapCode</button>
+              <a id="btn-vault-gmap-nav" href="#" target="_blank" rel="noopener" class="btn btn-primary">📍 Google Maps 導航</a>
+            </div>
+          </div>
+
+          <div class="vault-info-card">
+            <div class="vault-card-title">📲 去趣 ChicTrip 專屬行程連結</div>
+            <div class="vault-field-val" id="vault-chictrip-url" style="font-family:monospace; font-size:0.875rem; word-break:break-all;">--</div>
+            <div class="vault-actions-grid" style="margin-top:0.75rem;">
+              <a id="btn-vault-open-chictrip" href="#" target="_blank" rel="noopener" class="btn btn-chictrip">📲 開啟去趣 App</a>
+              <button type="button" id="btn-vault-copy-chictrip" class="btn btn-secondary">🔗 複製連結</button>
+            </div>
+          </div>
+
+          <button type="button" id="btn-privacy-relock" class="btn btn-secondary" style="width:100%; min-height:44px; margin-top:0.5rem;">🔒 立即重新鎖定並隱藏敏感資訊</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -984,7 +1066,7 @@
       <span class="mobile-nav-icon">🛡️</span>
       <span class="mobile-nav-label">手冊/評估</span>
     </a>
-    <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener" class="mobile-nav-btn chictrip-btn">
+    <a href="#chictrip-section" data-sensitive-chictrip="link" class="mobile-nav-btn chictrip-btn">
       <span class="mobile-nav-icon">📲</span>
       <span class="mobile-nav-label">去趣 App</span>
     </a>
@@ -1027,7 +1109,7 @@
         <a href="#schedule-section">行程規劃</a>
         <a href="#map-section">互動地圖</a>
         <a href="#toolkit-section">行前錦囊</a>
-        <a href="https://chictrip-share.app.link/SOyJSS7fi6b" target="_blank" rel="noopener">去趣 ChicTrip</a>
+        <a href="#chictrip-section" data-sensitive-chictrip="link">去趣 ChicTrip</a>
       </div>
       <p style="margin-bottom: 0.5rem;">
         🌺 <strong>2026/12 沖繩 5天4夜自駕行程</strong> · 由去趣行程精選製作

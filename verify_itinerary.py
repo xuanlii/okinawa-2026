@@ -842,6 +842,177 @@ def test_spot_images_and_mobile_ux():
     else:
         print("  [PASS] JSC verified all 30 SPOTS_CATALOG + 40 SCHEDULE_ITEMS image paths, fallbacks, captions & error handler")
 
+def test_privacy_vault():
+    print("\n--- Testing Privacy Password Vault & Plaintext Leak Protection ---")
+    import subprocess
+    import json
+
+    files_to_scan = [
+        'index.html',
+        'styles.css',
+        'data.js',
+        'app.js',
+        'verify_itinerary.py',
+        'dist/okinawa-trip-2026-portable.html'
+    ]
+    leak_patterns = [
+        ("short-link domain", re.compile("chictrip-share\\.app\\.link")),
+        ("exact banchi digits", re.compile(r"\b" + "19" + "43" + r"\b")),
+        ("fullwidth banchi digits", re.compile("\uff11\uff19\uff14\uff13")),
+        ("exact guesthouse coords", re.compile(r"26\.12" + "9732")),
+        ("exact guesthouse mapcode prefix", re.compile(r"232\s*" + "455" + r"\s*127"))
+    ]
+
+    for fname in files_to_scan:
+        fpath = os.path.join(BASE_DIR, fname)
+        assert os.path.exists(fpath), f"Missing file for leak scan: {fname}"
+        with open(fpath, 'r', encoding='utf-8') as f:
+            txt = f.read()
+        for label, pat in leak_patterns:
+            m = pat.search(txt)
+            assert m is None, f"SECURITY LEAK DETECTED in {fname} ({label})"
+    print("  [PASS] Zero plaintext sensitive data found across source, tests, and portable bundle")
+
+    with open(os.path.join(BASE_DIR, 'data.js'), 'r', encoding='utf-8') as f:
+        data_txt = f.read()
+    assert 'const SENSITIVE_VAULT =' in data_txt, "Missing SENSITIVE_VAULT in data.js"
+    for key in ['salt:', 'iterations:', 'ciphertext:', 'tag:']:
+        assert key in data_txt, f"Missing {key} in SENSITIVE_VAULT"
+    print("  [PASS] SENSITIVE_VAULT structure verified in data.js")
+
+    with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
+        html_txt = f.read()
+    for dom_id in [
+        'btn-privacy-lock', 'hero-privacy-pill', 'privacy-unlock-modal',
+        'privacy-unlock-form', 'privacy-pin-input', 'privacy-pin-error',
+        'privacy-remember-device', 'privacy-locked-view', 'privacy-unlocked-view',
+        'vault-address-text', 'vault-address-formatted', 'vault-mapcode-text',
+        'btn-vault-copy-address', 'btn-vault-copy-mapcode', 'btn-vault-gmap-nav',
+        'vault-chictrip-url', 'btn-vault-open-chictrip', 'btn-vault-copy-chictrip',
+        'btn-privacy-relock', 'chictrip-url-pill', 'chictrip-url-display'
+    ]:
+        assert f'id="{dom_id}"' in html_txt, f"Missing privacy DOM ID in index.html: {dom_id}"
+    print("  [PASS] All 21 privacy UI DOM elements verified in index.html")
+
+    jsc_bin = "/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc"
+    if not os.path.exists(jsc_bin):
+        print("  [SKIP] macOS JSC binary not found")
+        return
+
+    test_pin = os.environ.get("OKINAWA_VAULT_TEST_PIN", "")
+    test_pin_json = json.dumps(test_pin)
+
+    test_vault_js = f"""
+    var setTimeout = function(cb) {{ return 1; }};
+    var clearTimeout = function() {{}};
+    var setInterval = function(cb) {{ return 1; }};
+    var clearInterval = function() {{}};
+    var console = {{ log: print, warn: print, error: print }};
+
+    function makeElement() {{
+      return {{
+        addEventListener: function() {{}},
+        querySelector: function() {{ return makeElement(); }},
+        querySelectorAll: function() {{ return []; }},
+        style: {{}},
+        classList: {{ add: function() {{}}, remove: function() {{}}, toggle: function() {{}}, contains: function() {{ return false; }} }},
+        setAttribute: function() {{}},
+        removeAttribute: function() {{}},
+        appendChild: function() {{}},
+        removeChild: function() {{}}
+      }};
+    }}
+    var document = {{
+      documentElement: makeElement(),
+      addEventListener: function(event, cb) {{ this.cb = cb; }},
+      getElementById: function(id) {{ return makeElement(); }},
+      querySelectorAll: function() {{ return []; }},
+      querySelector: function() {{ return makeElement(); }},
+      createElement: function() {{ return makeElement(); }},
+      body: makeElement(),
+      head: makeElement()
+    }};
+    var window = {{ innerWidth: 390, addEventListener: function() {{}}, scrollTo: function() {{}}, isSecureContext: true }};
+    var localStorage = {{ getItem: function() {{ return null; }}, setItem: function() {{}}, removeItem: function() {{}} }};
+    var navigator = {{}};
+
+    load("data.js");
+    load("app.js");
+    document.cb();
+
+    var engine = window.__okinawaApp__;
+    if (!engine || typeof engine.unlockSensitiveVault !== "function" || typeof engine.lockSensitiveVault !== "function") {{
+      throw new Error("Privacy vault engine exports missing");
+    }}
+
+    if (engine.state.privacyUnlocked !== false) {{
+      throw new Error("Vault must default to locked state");
+    }}
+    if (TRIP_METADATA.chictripUrl !== "") {{
+      throw new Error("TRIP_METADATA.chictripUrl must be blank while locked");
+    }}
+    var otLocked = engine.findCatalogSpot("spot-ocean-tree");
+    if (!otLocked || otLocked.address.indexOf("\\uff11\\uff19\\uff14\\uff13") !== -1) {{
+      throw new Error("Ocean Tree address must be masked while locked");
+    }}
+    var lockedLinks = engine.getSpotGmapLinks(otLocked);
+    if (!lockedLinks.isLocked || lockedLinks.navUrl !== "#unlock-privacy") {{
+      throw new Error("Ocean Tree Gmap links must be locked before unlock");
+    }}
+
+    var badPins = ["0000", "1234", "9999", ""];
+    for (var i = 0; i < badPins.length; i++) {{
+      var resBad = engine.unlockSensitiveVault(badPins[i]);
+      if (resBad.ok || engine.state.privacyUnlocked !== false) {{
+        throw new Error("Wrong PIN unexpectedly succeeded: " + badPins[i]);
+      }}
+    }}
+
+    var providedPin = {test_pin_json};
+    if (providedPin) {{
+      var resOk = engine.unlockSensitiveVault(providedPin);
+      if (!resOk.ok || engine.state.privacyUnlocked !== true) {{
+        throw new Error("Valid PIN failed to unlock vault: " + JSON.stringify(resOk));
+      }}
+      var otUnlocked = engine.findCatalogSpot("spot-ocean-tree");
+      if (!otUnlocked || otUnlocked.address.indexOf("\\u7cf8\\u6e80") === -1 || otUnlocked.address.indexOf("\\u756a\\u5730") === -1) {{
+        throw new Error("Unlocked Ocean Tree address mismatch: " + (otUnlocked && otUnlocked.address));
+      }}
+      if (otUnlocked.lat === 26.136 || otUnlocked.lng === 127.678 ||
+          Math.abs(otUnlocked.lat - resOk.data.accommodation.lat) > 0.00001 ||
+          Math.abs(otUnlocked.lng - resOk.data.accommodation.lng) > 0.00001) {{
+        throw new Error("Unlocked Ocean Tree coords mismatch: " + otUnlocked.lat + "," + otUnlocked.lng);
+      }}
+      if (!TRIP_METADATA.chictripUrl || TRIP_METADATA.chictripUrl.indexOf("https://") !== 0) {{
+        throw new Error("Unlocked ChicTrip URL missing");
+      }}
+      var unlockedLinks = engine.getSpotGmapLinks(otUnlocked);
+      if (unlockedLinks.isLocked || unlockedLinks.navUrl.indexOf("google.com/maps/dir") === -1) {{
+        throw new Error("Unlocked Gmap links invalid: " + JSON.stringify(unlockedLinks));
+      }}
+
+      engine.lockSensitiveVault();
+      if (engine.state.privacyUnlocked !== false || TRIP_METADATA.chictripUrl !== "") {{
+        throw new Error("lockSensitiveVault failed to clear unlocked state");
+      }}
+      var otRelocked = engine.findCatalogSpot("spot-ocean-tree");
+      if (otRelocked.address.indexOf("\\u756a\\u5730") !== -1 || engine.getSpotGmapLinks(otRelocked).isLocked !== true) {{
+        throw new Error("lockSensitiveVault failed to mask spot data");
+      }}
+      print("PRIVACY VAULT LIVE UNLOCK & RELOCK PASSED!");
+    }} else {{
+      print("PRIVACY VAULT LOCKED & WRONG-PIN ASSERTIONS PASSED!");
+    }}
+    """
+
+    res = subprocess.run([jsc_bin, "-e", test_vault_js], cwd=BASE_DIR, capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"  [FAIL] JSC Privacy Vault Error:\n{res.stderr}\n{res.stdout}")
+        sys.exit(1)
+    else:
+        mode_note = "full unlock/relock cycle" if test_pin else "locked/wrong-PIN boundary"
+        print(f"  [PASS] JSC verified privacy vault ({mode_note}) cleanly")
+
 def main():
     print("==================================================")
     print(" Okinawa 2026 Trip Planner - Automated Verification")
@@ -861,9 +1032,10 @@ def main():
     test_flight_selector_and_sync()
     test_google_maps_integration()
     test_spot_images_and_mobile_ux()
+    test_privacy_vault()
 
     print("\n==================================================")
-    print(" ALL 9 TEST SUITES PASSED WITH 100% SUCCESS! ")
+    print(" ALL 10 TEST SUITES PASSED WITH 100% SUCCESS! ")
     print("==================================================")
 
 if __name__ == '__main__':
