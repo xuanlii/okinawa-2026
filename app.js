@@ -749,7 +749,8 @@ document.addEventListener('DOMContentLoaded', () => {
     googleTrafficEnabled: false,
     privacyUnlocked: false,
     unlockedSecrets: null,
-    currentModalSpotId: null
+    currentModalSpotId: null,
+    mobileCompactCards: true
   };
 
   let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -1206,7 +1207,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
                 <strong>⛩️ 文化伴手：</strong>${escapeHtml(senior.cultureShopping || '在地精緻特產與身心祈福')}
               </div>
-              <div style="background: rgba(16,185,129,0.12); padding: 0.45rem 0.65rem; border-radius: var(--radius-sm); font-size: 0.825rem; font-weight: 600; color: #065f46;">
+              <div class="gen-tip-highlight senior">
                 💡 舒活叮嚀：${escapeHtml(senior.keyTip || '出入口多設有平緩坡道與無障礙洗手間，可放慢腳步。')}
               </div>
             </div>
@@ -1222,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="width: 100%;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
                 <span class="gen-pill-label young-text" style="font-size: 0.9rem;">📸 25~35歲 年輕探索指南</span>
-                <span class="tag-badge" style="background: rgba(245,158,11,0.15); color: #b45309; font-size: 0.775rem;">✨ 潮流打卡必拍</span>
+                <span class="tag-badge gen-young-badge" style="font-size: 0.775rem;">✨ 潮流打卡必拍</span>
               </div>
               <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
                 <strong>📷 IG絕景機位：</strong>${escapeHtml(young.photoSpot || '必拍出片取景角度')}
@@ -1233,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
                 <strong>🛍️ 潮流亮點：</strong>${escapeHtml(young.shoppingNightlife || '特色潮流、露營選品或微醺夜生活')}
               </div>
-              <div style="background: rgba(245,158,11,0.12); padding: 0.45rem 0.65rem; border-radius: var(--radius-sm); font-size: 0.825rem; font-weight: 600; color: #92400e;">
+              <div class="gen-tip-highlight young">
                 ⚡ 探索攻略：${escapeHtml(young.keyTip || '建議提早拍照排隊，兼顧同伴作息。')}
               </div>
             </div>
@@ -1251,7 +1252,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="gen-pill-label senior-text">🧓 熟齡舒活</span>
               <span style="font-size:0.75rem; color: ${walkMeterColor}; font-weight:700;">${escapeHtml(senior.walkingLoad || '輕鬆')}</span>
             </div>
-            <div style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.45;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
               ${escapeHtml(senior.keyTip || senior.seatingRest || '低負擔平坦動線')}
             </div>
           </div>
@@ -1261,9 +1262,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <div>
             <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
               <span class="gen-pill-label young-text">📸 年輕探索</span>
-              <span style="font-size:0.75rem; color: #d97706; font-weight:700;">#打卡話題</span>
+              <span class="gen-young-tag" style="font-size:0.75rem; font-weight:700;">#打卡話題</span>
             </div>
-            <div style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.45;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
               ${escapeHtml(young.photoSpot || young.trendyFood || '必訪特色亮點')}
             </div>
           </div>
@@ -1272,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="gen-pill-box harmony">
           <div>
             <span class="gen-pill-label harmony-text">🤝 契合度 ${harmonyScore}/10</span>
-            <div style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.45;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.5;">
               ${escapeHtml(harmonyAdvice || '兼顧不同步調，各取所需全家開心。')}
             </div>
           </div>
@@ -1290,15 +1291,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let html = `
       <button class="day-tab-btn ${state.activeDay === 0 ? 'active' : ''}" data-day="0">
-        🌟 完整 5 天全覽
+        5天全覽
       </button>
     `;
 
     DAY_SUMMARIES.forEach(d => {
       const activeClass = state.activeDay === d.day ? 'active' : '';
+      const shortDay = String(d.dayOfWeek || '').replace('星期', '');
       html += `
         <button class="day-tab-btn ${activeClass}" data-day="${d.day}">
-          Day ${d.day} · ${escapeHtml(d.date.split('/')[1])}/${escapeHtml(d.date.split('/')[2])} (${d.dayOfWeek})
+          Day ${d.day} · ${escapeHtml(d.date.split('/')[1])}/${escapeHtml(d.date.split('/')[2])} (${escapeHtml(shortDay)})
         </button>
       `;
     });
@@ -1366,15 +1368,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const pillLabels = {
-      all: '✨ 全部節點',
-      food: '🍣 老饕美食',
-      shopping: '🛍️ 購物商場',
-      attraction: '⛩️ 景點文化',
-      'transport-hotel': '🚗 交通/住宿',
-      senior: '🧓 40-60長輩首選',
-      young: '📸 25-35年輕熱門',
-      harmony: '🤝 跨世代全家共融',
-      favorites: '⭐ 我的收藏'
+      all: '全部',
+      food: '美食',
+      shopping: '購物',
+      attraction: '景點',
+      'transport-hotel': '交通 / 住宿',
+      senior: '熟齡友善',
+      young: '人氣打卡',
+      harmony: '全家共融',
+      favorites: '收藏'
     };
 
     document.querySelectorAll('.cat-pill').forEach(pill => {
@@ -1888,9 +1890,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         photoStripContainer.innerHTML = `
           <div class="photo-strip-header">
-            <span class="photo-strip-label">📸 景點實景快覽 <small>(左右滑動點選直達卡片)</small></span>
+            <span class="photo-strip-label">景點快覽 <small>點選直達卡片</small></span>
             <button type="button" class="btn-mobile-compact-toggle ${state.mobileCompactCards ? 'is-compact' : ''}" data-action="toggle-all-mobile-cards">
-              ${state.mobileCompactCards ? '📖 展開全部攻略' : '📱 手機精簡預覽'}
+              ${state.mobileCompactCards ? '展開全部攻略' : '精簡卡片模式'}
             </button>
           </div>
           <div class="photo-strip-scroller">
@@ -1909,7 +1911,7 @@ document.addEventListener('DOMContentLoaded', () => {
           toggleCompactBtn.addEventListener('click', () => {
             state.mobileCompactCards = !state.mobileCompactCards;
             renderTimeline();
-            showToast(state.mobileCompactCards ? '📱 已切換為「手機精簡預覽」模式（點擊單張卡片可展開攻略）' : '📖 已展開所有景點的雙世代完整攻略');
+            showToast(state.mobileCompactCards ? '已切換為精簡卡片模式（點擊單張卡片可展開攻略）' : '已展開所有景點的雙世代詳細攻略');
           });
         }
       }
@@ -1955,7 +1957,7 @@ document.addEventListener('DOMContentLoaded', () => {
         transitHtml = `
           <div class="transit-connector">
             <span>${transitInfo.isWalk ? '🚶' : '🚗'}</span>
-            <span>前往下一站：<strong>${escapeHtml(nextItem.nameZh)}</strong> (${transitInfo.text})</span>
+            <span>${transitInfo.text} · 下一站：<strong>${escapeHtml(nextItem.nameZh)}</strong></span>
           </div>
         `;
       }
@@ -1968,29 +1970,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const mcTopBadgeHtml = isSensitiveLocked
         ? `<button type="button" class="btn-copy-mc-badge btn-mc-locked" data-action="unlock-privacy" title="點擊輸入密碼解鎖車機 MapCode">🔒 MC: 需密碼</button>`
-        : `<button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(item.mapCode)}" title="點擊直接複製日本車機 MapCode">📋 MC: ${escapeHtml(item.mapCode)}</button>`;
+        : `<button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(item.mapCode)}" title="點擊直接複製日本車機 MapCode">MC: ${escapeHtml(item.mapCode)}</button>`;
 
       const addressBlockHtml = isSensitiveLocked
         ? `<button type="button" class="card-address-locked-btn" data-action="unlock-privacy" title="點擊輸入密碼解鎖民宿詳細地址"><span>🔒 ${escapeHtml(item.address)}</span></button>`
         : `<div class="card-address"><span>📍 ${escapeHtml(item.address)}</span>${isSensitiveUnlocked ? `<button type="button" class="btn-inline-copy-addr" data-action="copy-address" data-address="${escapeHtml(item.address)}" title="複製民宿詳細地址">📋 複製</button>` : ''}</div>`;
 
-      const copyMcBtnHtml = isSensitiveLocked
-        ? `<button type="button" class="btn-card-action" data-action="unlock-privacy" title="輸入密碼解鎖 MapCode"><span>🔒 解鎖MC</span></button>`
-        : `<button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode"><span>📋 複製MC</span></button>`;
-
       const gmapBarHtml = isSensitiveLocked
         ? `<button type="button" class="btn-gmap-action btn-gmap-locked" data-action="unlock-privacy" title="輸入 4 位數密碼以解鎖精準 Google Maps 導航與民宿地址">
-             <span class="btn-gmap-icon">🔒</span>
-             <span>輸入密碼解鎖民宿導航與地址</span>
+             <span>🔒 解鎖民宿導航與地址</span>
+           </button>
+           <button type="button" class="btn-card-action" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
+             <span>📖 攻略</span>
+           </button>
+           <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖顯示概略區域">
+             <span>🗺️ 區域</span>
+           </button>
+           <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
+             <span>＋ 自訂</span>
            </button>`
         : `<a href="${itemGmapLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
-             <span class="btn-gmap-icon">📍</span>
-             <span>即時導航</span>
+             <span>📍 導航</span>
            </a>
            <a href="${itemGmapLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與老饕評價">
-             <span class="btn-gmap-icon">🔍</span>
-             <span>老饕評價</span>
-           </a>`;
+             <span>🔍 評價</span>
+           </a>
+           <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
+             <span>🗺️ 地圖</span>
+           </button>
+           <button type="button" class="btn-card-action" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
+             <span>📖 攻略</span>
+           </button>
+           <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
+             <span>＋ 自訂</span>
+           </button>`;
 
       html += `
         <div class="timeline-item" id="item-${escapeHtml(item.id)}">
@@ -2001,20 +2014,17 @@ document.addEventListener('DOMContentLoaded', () => {
               <img class="spot-photo-img" src="${escapeHtml(imgMeta.image)}" data-fallback="${escapeHtml(imgMeta.imageFallback)}" alt="${escapeHtml(item.nameZh)}" loading="lazy" decoding="async" onerror="window.appHandleImgError(this)">
               <div class="spot-photo-top-badges">
                 <span class="spot-photo-step-badge">${state.activeDay === 0 ? `Day ${item.day}` : `第 ${index + 1} 站`} · ${escapeHtml(item.time)}</span>
-                <span class="spot-photo-cat-badge">${item.icon} ${escapeHtml(item.categoryLabel)}</span>
               </div>
               <div class="spot-photo-caption-bar">
-                <span class="spot-photo-caption-text">📸 ${escapeHtml(imgMeta.imageCaption)}</span>
-                <span class="spot-photo-zoom-pill">🔍 大圖與攻略</span>
+                <span class="spot-photo-caption-text">${escapeHtml(imgMeta.imageCaption)}</span>
               </div>
             </div>
 
             <div class="card-top">
-              <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                <span class="card-time-badge">⏰ ${item.time}</span>
-                <span class="card-duration-badge">⏱️ ${item.duration}</span>
+              <div class="card-top-meta">
+                <span class="card-time-badge">${item.time}</span>
+                <span class="card-duration-badge">${item.duration}</span>
                 <span class="tag-badge" style="background: var(--primary-light); color: var(--primary);">${escapeHtml(item.categoryLabel)}</span>
-                ${mcTopBadgeHtml}
               </div>
               <div class="card-actions-top">
                 <button class="btn-star-fav ${isFav ? 'favorited' : ''}" data-id="${escapeHtml(item.id)}" title="${isFav ? '取消收藏' : '加入收藏'}">
@@ -2030,13 +2040,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <p class="card-desc">${escapeHtml(item.desc)}</p>
 
-            <!-- Mobile Quick Summary & Expand Button -->
+            <!-- Quick Summary & Expand Button (Desktop & Mobile) -->
             <button type="button" class="btn-mobile-card-expand" data-action="toggle-card-detail" aria-expanded="${!isCollapsedMobile}">
               <span class="mobile-expand-chips">
-                <span>🧓 ${escapeHtml(seniorObj.walkingLoad || '輕鬆')}</span>
-                <span>🤝 契合 ${harmonyScore}/10</span>
+                <span>熟齡：${escapeHtml(seniorObj.walkingLoad || '輕鬆')}</span>
+                <span>· 契合 ${harmonyScore}/10</span>
               </span>
-              <span class="mobile-expand-label">${isCollapsedMobile ? '展開雙世代攻略 ▾' : '收合詳細攻略 ▴'}</span>
+              <span class="mobile-expand-label">${isCollapsedMobile ? '展開攻略 ▾' : '收合攻略 ▴'}</span>
             </button>
 
             <div class="card-collapsible-detail">
@@ -2048,22 +2058,13 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="card-footer">
-              ${addressBlockHtml}
-              <div class="card-footer-buttons">
-                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
-                  <span>🔍 實景與攻略</span>
-                </button>
-                ${copyMcBtnHtml}
-                <button class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
-                  <span>📍 地圖定位</span>
-                </button>
-                <button class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
-                  <span>➕ 加自訂</span>
-                </button>
+              <div class="card-location-row">
+                ${addressBlockHtml}
+                ${mcTopBadgeHtml}
               </div>
             </div>
 
-            <!-- Google Maps 導航與資訊整合操作列 -->
+            <!-- Single Clean Action Bar -->
             <div class="spot-gmap-actions-bar">
               ${gmapBarHtml}
             </div>
@@ -2091,7 +2092,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.setAttribute('aria-expanded', String(!collapsed));
         const labelEl = btn.querySelector('.mobile-expand-label');
         if (labelEl) {
-          labelEl.textContent = collapsed ? '展開雙世代攻略 ▾' : '收合詳細攻略 ▴';
+          labelEl.textContent = collapsed ? '展開攻略 ▾' : '收合攻略 ▴';
         }
       });
     });
@@ -3942,7 +3943,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.35rem;">
             <strong>⛩️ 文化伴手：</strong>${escapeHtml(senior.cultureShopping || '在地身心祈福與精選特產')}
           </div>
-          <div style="background:rgba(16,185,129,0.12); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); font-size:0.8rem; color:#065f46; font-weight:600;">
+          <div class="gen-tip-highlight senior">
             💡 舒活實戰對策：${escapeHtml(senior.keyTip || '下車可先確認洗手間與電梯動線，放慢遊覽步調。')}
           </div>
         </div>
@@ -3951,7 +3952,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="background: rgba(245,158,11,0.06); border-left: 4px solid #f59e0b; border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">
             <h4 style="font-size: 0.925rem; font-weight: 800; color: #d97706; margin:0;">📸 25~35歲 年輕探索指南</h4>
-            <span class="tag-badge" style="background: rgba(245,158,11,0.15); color: #b45309; font-size: 0.75rem;">#打卡熱點</span>
+            <span class="tag-badge gen-young-badge" style="font-size: 0.75rem;">#打卡熱點</span>
           </div>
           <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
             <strong>📷 IG絕景拍照：</strong>${escapeHtml(young.photoSpot || '熱門出片打卡取景點')}
@@ -3962,7 +3963,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.35rem;">
             <strong>🛍️ 潮流亮點：</strong>${escapeHtml(young.shoppingNightlife || '特色服飾、露營戶外選品或夜間氛圍')}
           </div>
-          <div style="background:rgba(245,158,11,0.12); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); font-size:0.8rem; color:#92400e; font-weight:600;">
+          <div class="gen-tip-highlight young">
             ⚡ 探索實戰攻略：${escapeHtml(young.keyTip || '把握自然光最佳時間拍照，分流採購更加高效。')}
           </div>
         </div>
@@ -5348,7 +5349,14 @@ document.addEventListener('DOMContentLoaded', () => {
     toast.className = 'toast-message';
     toast.textContent = msg;
 
-    container.appendChild(toast);
+    if (container.children && typeof container.removeChild === 'function') {
+      while (container.children.length >= 2 && container.firstElementChild) {
+        container.removeChild(container.firstElementChild);
+      }
+    }
+    if (typeof container.appendChild === 'function') {
+      container.appendChild(toast);
+    }
 
     setTimeout(() => {
       toast.style.animation = 'toastOut 0.3s forwards ease-in';

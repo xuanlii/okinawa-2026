@@ -24,71 +24,71 @@
    ========================================================================== */
 
 :root {
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-light: #e0f2fe;
-  --primary-glow: rgba(2, 132, 199, 0.25);
+  --primary: #0369a1;
+  --primary-hover: #075985;
+  --primary-light: #f0f9ff;
+  --primary-glow: rgba(3, 105, 161, 0.14);
   
-  --secondary: #0891b2;
-  --accent: #f59e0b;
-  --accent-light: #fef3c7;
-  --coral: #f43f5e;
-  --emerald: #10b981;
-  --purple: #8b5cf6;
+  --secondary: #0e7490;
+  --accent: #d97706;
+  --accent-light: #fefce8;
+  --coral: #e11d48;
+  --emerald: #059669;
+  --purple: #6d28d9;
   
-  --bg-main: #f8fafc;
+  --bg-main: #f7f8fa;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #ffffff;
   --bg-subtle: #f1f5f9;
-  --bg-glass: rgba(255, 255, 255, 0.88);
+  --bg-glass: rgba(255, 255, 255, 0.92);
   --border: #e2e8f0;
-  --border-focus: #38bdf8;
+  --border-focus: #0284c7;
   
   --text-main: #0f172a;
   --text-muted: #475569;
   --text-subtle: #64748b;
   --text-inverse: #ffffff;
   
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 20px rgba(2, 132, 199, 0.2);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 8px 20px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 16px 32px rgba(15, 23, 42, 0.1);
+  --shadow-glow: 0 4px 12px rgba(3, 105, 161, 0.12);
   
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
   
-  --transition-fast: 0.18s ease;
-  --transition-normal: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+  --transition-fast: 0.16s ease;
+  --transition-normal: 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Noto Sans TC", "Segoe UI", Roboto, sans-serif;
 }
 
 [data-theme="dark"] {
   --primary: #38bdf8;
   --primary-hover: #7dd3fc;
-  --primary-light: rgba(56, 189, 248, 0.15);
-  --primary-glow: rgba(56, 189, 248, 0.3);
+  --primary-light: rgba(56, 189, 248, 0.14);
+  --primary-glow: rgba(56, 189, 248, 0.18);
   
-  --bg-main: #090d16;
-  --bg-surface: #111827;
-  --bg-surface-elevated: #1f2937;
-  --bg-subtle: #1e293b;
-  --bg-glass: rgba(17, 24, 39, 0.88);
-  --border: #2d3748;
+  --bg-main: #0c111b;
+  --bg-surface: #131b2b;
+  --bg-surface-elevated: #1b2538;
+  --bg-subtle: #182234;
+  --bg-glass: rgba(19, 27, 43, 0.92);
+  --border: #263348;
   --border-focus: #38bdf8;
   
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-subtle: #64748b;
+  --text-main: #f1f5f9;
+  --text-muted: #cbd5e1;
+  --text-subtle: #94a3b8;
   --text-inverse: #0f172a;
   
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
-  --shadow-glow: 0 0 25px rgba(56, 189, 248, 0.25);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.42);
+  --shadow-xl: 0 16px 36px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 4px 14px rgba(56, 189, 248, 0.16);
 }
 
 /* ==========================================================================
@@ -5534,6 +5534,712 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
   font-size: 0.875rem;
 }
 
+/* ==========================================================================
+   Minimalist Editorial Theme & High-Readability UX Polish
+   ========================================================================== */
+.header-inner {
+  height: 60px;
+}
+
+.btn-flight-pill {
+  width: auto !important;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-cta-chictrip {
+  background: #d97706;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-cta-chictrip:hover {
+  background: #b45309;
+  box-shadow: var(--shadow-md);
+}
+
+.hero-section {
+  padding: 2rem 0 1.75rem;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-main) 100%);
+}
+
+.hero-badge-group {
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.hero-pill {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.8rem;
+  min-height: 36px;
+}
+
+.hero-pill.flight-pill {
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--text-inverse);
+  border-color: transparent;
+}
+
+.hero-title {
+  font-size: 2.15rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.hero-title .gradient-text {
+  background: none;
+  -webkit-text-fill-color: var(--primary);
+  color: var(--primary);
+}
+
+.hero-subtitle {
+  font-size: 1rem;
+  line-height: 1.68;
+  max-width: 64ch;
+  margin-bottom: 1.25rem;
+  color: var(--text-muted);
+}
+
+.hero-meta-strip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: stretch;
+  margin-bottom: 1.25rem;
+}
+
+.countdown-box {
+  padding: 0.7rem 1rem;
+  margin-bottom: 0;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  gap: 1rem;
+}
+
+.countdown-box::before {
+  display: none;
+}
+
+.countdown-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.countdown-grid {
+  gap: 0.6rem;
+}
+
+.countdown-val {
+  font-size: 1.25rem;
+}
+
+.countdown-title {
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
+}
+
+.countdown-divider {
+  font-size: 1.1rem;
+  margin-top: -0.45rem;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0;
+}
+
+.stat-card {
+  padding: 0.65rem 0.8rem;
+  gap: 0.6rem;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.hero-cta-group {
+  gap: 0.55rem;
+}
+
+.hero-cta-group .btn {
+  min-height: 44px;
+  padding: 0.55rem 1.05rem;
+  font-size: 0.9rem;
+  box-shadow: none;
+}
+
+.btn-chictrip {
+  background: #d97706;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-chictrip:hover {
+  background: #b45309;
+  box-shadow: var(--shadow-md);
+}
+
+/* Streamlined Schedule Control Bar */
+.schedule-control-bar {
+  position: static;
+  padding: 1rem 0 0.9rem;
+  background: var(--bg-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.itinerary-mode-tabs-container {
+  max-width: 440px;
+  margin: 0 auto 0.75rem;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.mode-tab-btn {
+  min-height: 44px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.9rem;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.generation-perspective-bar {
+  padding: 0.45rem 0.75rem;
+  margin-bottom: 0.75rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  gap: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gen-bar-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.gen-bar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.gen-btn {
+  min-height: 44px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+
+.category-pills {
+  flex: 1;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.category-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-pill {
+  min-height: 44px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-row .search-box {
+  flex: 0 0 280px;
+  min-width: 260px;
+}
+
+.map-sticky-wrapper {
+  top: 76px;
+}
+
+/* Fix Map Legend Wrapping & Calm Map Header */
+.map-card-header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.85rem 1.1rem;
+}
+
+.map-legend {
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  font-size: 0.78rem;
+}
+
+.map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.btn-gmaps-primary-nav {
+  background: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-gmaps-primary-nav:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* Calm Timeline Cards & Global Compact-by-Default Toggle */
+.day-header-banner {
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+.day-photo-strip-bar {
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0 0.75rem;
+}
+
+.photo-strip-card {
+  width: 112px;
+}
+
+.btn-mobile-compact-toggle {
+  display: inline-flex !important;
+  min-height: 44px;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.825rem;
+}
+
+.btn-mobile-card-expand {
+  display: flex !important;
+  text-align: left;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+  border-radius: var(--radius-sm);
+  margin: 0.5rem 0;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.mobile-expand-chips {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  text-align: left;
+  row-gap: 0.15rem;
+  column-gap: 0.45rem;
+  min-width: 0;
+}
+
+.mobile-expand-chips span:last-child {
+  white-space: nowrap;
+}
+
+.btn-mobile-card-expand:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+[data-theme="dark"] .btn-mobile-card-expand {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.timeline-card.mobile-detail-collapsed .card-collapsible-detail,
+.card-collapsible-detail.mobile-detail-collapsed {
+  display: none;
+}
+
+.timeline-card {
+  padding: 1.35rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.spot-photo-banner {
+  height: 192px;
+  border-radius: var(--radius-sm);
+  margin: 0 0 1rem 0;
+}
+
+.card-top-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.card-time-badge {
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+}
+
+.card-duration-badge {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.card-subtitle {
+  font-size: 0.825rem;
+  color: var(--text-subtle);
+}
+
+.card-desc {
+  font-size: 0.94rem;
+  line-height: 1.72;
+  color: var(--text-muted);
+  margin: 0.55rem 0;
+}
+
+/* High-Contrast Generation Callouts (Light + Dark) */
+.gen-pill-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  padding: 0.75rem 0.95rem;
+  border-radius: var(--radius-sm);
+}
+
+.gen-pill-box.senior {
+  border-left-color: #059669;
+}
+
+.gen-pill-box.young {
+  border-left-color: #d97706;
+}
+
+.gen-pill-box.harmony {
+  border-left-color: #7c3aed;
+}
+
+.gen-tip-highlight {
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.gen-tip-highlight.senior {
+  background: rgba(5, 150, 105, 0.1);
+  color: #065f46;
+}
+
+.gen-tip-highlight.young {
+  background: rgba(217, 119, 6, 0.1);
+  color: #92400e;
+}
+
+.gen-young-badge {
+  background: rgba(217, 119, 6, 0.14);
+  color: #92400e;
+}
+
+.gen-young-tag {
+  color: #b45309;
+}
+
+[data-theme="dark"] .gen-tip-highlight.senior {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .gen-tip-highlight.young {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .gen-young-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .gen-young-tag {
+  color: #fbbf24;
+}
+
+.card-footer {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+
+.card-location-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* Single Unified Action Bar */
+.spot-gmap-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  padding-top: 0;
+  border-top: none;
+}
+
+.spot-gmap-actions-bar .btn-gmap-action,
+.spot-gmap-actions-bar .btn-card-action {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.spot-gmap-actions-bar .btn-gmap-nav {
+  background: var(--primary);
+  color: var(--text-inverse) !important;
+  border-color: var(--primary);
+}
+
+.spot-gmap-actions-bar .btn-gmap-nav:hover {
+  background: var(--primary-hover);
+}
+
+.transit-connector {
+  background: transparent;
+  border: none;
+  border-left: 2px dashed var(--border);
+  border-radius: 0;
+  padding: 0.4rem 0 0.4rem 0.9rem;
+  margin: 0.25rem 0 0.25rem 0.5rem;
+  color: var(--text-subtle);
+  font-size: 0.825rem;
+}
+
+/* Calm Toolkit & Alternative Meals */
+.driving-rule-card {
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.driving-rule-card p {
+  line-height: 1.7;
+}
+
+.card-alt-group {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Responsive Overhaul Adjustments */
+@media (max-width: 1024px) {
+  .hero-meta-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero-section {
+    padding: 1.25rem 0;
+  }
+
+  .hero-title {
+    font-size: 1.65rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.94rem;
+    margin-bottom: 1rem;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-row .search-box {
+    order: -1;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .countdown-box {
+    flex-direction: row;
+    padding: 0.65rem 0.85rem;
+  }
+
+  .timeline-card {
+    padding: 1.05rem;
+  }
+
+  .spot-photo-banner {
+    height: 156px;
+    margin: 0 0 0.85rem 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .stat-card {
+    padding: 0.5rem 0.35rem;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.15rem;
+  }
+
+  .stat-icon {
+    display: none;
+  }
+
+  .stat-value {
+    font-size: 0.92rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .spot-gmap-actions-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+  }
+
+  .spot-gmap-actions-bar .btn-gmap-nav,
+  .spot-gmap-actions-bar .btn-gmap-locked {
+    grid-column: span 2;
+  }
+}
+
+/* Polished Toast Notifications (.toast & .toast-message unified) */
+.toast,
+.toast-message {
+  background: rgba(15, 23, 42, 0.94);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 0.65rem 1.15rem;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: toastIn 0.22s ease-out;
+  max-width: min(380px, calc(100vw - 32px));
+}
+
+[data-theme="dark"] .toast,
+[data-theme="dark"] .toast-message {
+  background: rgba(30, 41, 59, 0.96);
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 </style>
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌺</text></svg>">
@@ -5555,16 +6261,16 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
 
       <nav>
         <ul class="nav-links">
-          <li><a href="#schedule-section" class="nav-link active" id="nav-schedule-link">🗓️ 官方行程</a></li>
-          <li><a href="#schedule-section" class="nav-link" id="nav-planner-link">🛠️ 自由客製規劃</a></li>
-          <li><a href="#map-section" class="nav-link">🗺️ 路線地圖</a></li>
-          <li><a href="#toolkit-section" class="nav-link">🧰 旅行錦囊</a></li>
-          <li><a href="#chictrip-section" class="nav-link">📲 去趣 App</a></li>
+          <li><a href="#schedule-section" class="nav-link active" id="nav-schedule-link">官方行程</a></li>
+          <li><a href="#schedule-section" class="nav-link" id="nav-planner-link">自由規劃</a></li>
+          <li><a href="#map-section" class="nav-link">路線地圖</a></li>
+          <li><a href="#toolkit-section" class="nav-link">行前錦囊</a></li>
+          <li><a href="#chictrip-section" class="nav-link">去趣 App</a></li>
         </ul>
       </nav>
 
       <div class="header-actions">
-        <button id="btn-flight-selector" class="btn-icon" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）" style="font-size:0.875rem; padding:0.4rem 0.75rem; min-height:44px; min-width:44px; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-surface); cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; font-weight:600;">
+        <button id="btn-flight-selector" class="btn-icon btn-flight-pill" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）">
           ✈️ 航班
         </button>
         <button id="btn-privacy-lock" class="btn-icon btn-privacy-lock" aria-label="隱私密碼鎖" title="輸入密碼解鎖民宿地址與敏感資訊">
@@ -5578,7 +6284,7 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
           🖨️
         </button>
         <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn-cta-chictrip">
-          <span>📲 去趣 App</span>
+          <span>去趣 App</span>
         </a>
       </div>
     </div>
@@ -5590,103 +6296,100 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
   <section class="hero-section">
     <div class="container">
       <div class="hero-badge-group">
-        <span class="hero-pill flight-pill" id="hero-flight-pill" style="cursor:pointer; background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff;" title="點擊切換航班與連動時間">✈️ 航班：<strong id="hero-flight-name">中華航空 CI120/CI121</strong> ▾</span>
+        <span class="hero-pill flight-pill" id="hero-flight-pill" title="點擊切換航班與連動時間">✈️ 航班：<strong id="hero-flight-name">中華航空 CI120/CI121</strong> ▾</span>
         <button type="button" class="hero-pill privacy-pill" id="hero-privacy-pill" title="點擊輸入密碼解鎖或檢視民宿地址與敏感資訊">
           🔒 民宿地址已加密 · 點擊輸入密碼解鎖
         </button>
-        <span class="hero-pill">📅 2026/12/12 (六) - 12/16 (三) · 5天4夜</span>
-        <span class="hero-pill">🚗 沖繩南部與中部 自駕探險</span>
-        <span class="hero-pill accent">✨ 去趣 ChicTrip 官方精選路線</span>
-        <span class="hero-pill accent" style="background:linear-gradient(135deg,#059669,#0284c7);color:#fff;">👥 40~60歲 × 25~35歲 跨世代專屬適配</span>
-        <span class="hero-pill" style="border-color:#10b981;color:#059669;">⏱️ 車程時間自動計算</span>
-        <span class="hero-pill" style="border-color:#f59e0b;color:#d97706;">🛠️ 自由組合行程 Studio</span>
+        <span class="hero-pill">2026/12/12 – 12/16 · 5天4夜自駕</span>
       </div>
 
       <h1 class="hero-title">
-        2026/12 沖繩 <span class="gradient-text">冬日海風自由行</span>
+        2026/12 沖繩 <span class="gradient-text">冬日自駕</span>
       </h1>
 
       <p class="hero-subtitle">
-        告別盛夏酷暑，迎接初冬舒適涼爽的琉球蔚藍！從南城好市多首店狂歡、北谷海濱週六限定煙火、糸滿現剖海鮮早餐、那霸懸崖波上宮祈福、話題文青麵 EIBUN，到西海岸海景巨城 PARCO CITY 痛快血拼 5 小時與極品阿古豬雙豬排饗宴。
+        5 天 4 夜南部與西海岸慢活路線 — 糸滿海鮮、那霸古社、PARCO CITY 購物與海濱日落。
       </p>
 
-      <!-- Countdown Banner -->
-      <div class="countdown-box" id="countdown-wrap">
-        <div class="countdown-label">
-          <span class="pulse-dot"></span>
-          <span>距 2026/12/12 啟程出發倒數：</span>
+      <div class="hero-meta-strip">
+        <!-- Countdown Banner -->
+        <div class="countdown-box" id="countdown-wrap">
+          <div class="countdown-label">
+            <span class="pulse-dot"></span>
+            <span>啟程倒數</span>
+          </div>
+          <div class="countdown-grid">
+            <div class="countdown-unit">
+              <div class="countdown-val" id="cd-days">--</div>
+              <div class="countdown-title">天</div>
+            </div>
+            <div class="countdown-divider">:</div>
+            <div class="countdown-unit">
+              <div class="countdown-val" id="cd-hours">--</div>
+              <div class="countdown-title">時</div>
+            </div>
+            <div class="countdown-divider">:</div>
+            <div class="countdown-unit">
+              <div class="countdown-val" id="cd-mins">--</div>
+              <div class="countdown-title">分</div>
+            </div>
+            <div class="countdown-divider">:</div>
+            <div class="countdown-unit">
+              <div class="countdown-val" id="cd-secs">--</div>
+              <div class="countdown-title">秒</div>
+            </div>
+          </div>
         </div>
-        <div class="countdown-grid">
-          <div class="countdown-unit">
-            <div class="countdown-val" id="cd-days">--</div>
-            <div class="countdown-title">天 DAYS</div>
-          </div>
-          <div class="countdown-divider">:</div>
-          <div class="countdown-unit">
-            <div class="countdown-val" id="cd-hours">--</div>
-            <div class="countdown-title">時 HRS</div>
-          </div>
-          <div class="countdown-divider">:</div>
-          <div class="countdown-unit">
-            <div class="countdown-val" id="cd-mins">--</div>
-            <div class="countdown-title">分 MINS</div>
-          </div>
-          <div class="countdown-divider">:</div>
-          <div class="countdown-unit">
-            <div class="countdown-val" id="cd-secs">--</div>
-            <div class="countdown-title">秒 SECS</div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Stats Grid -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">🗓️</div>
-          <div>
-            <div class="stat-value">5 天 4 夜</div>
-            <div class="stat-label">橫跨週末與平日</div>
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🗓️</div>
+            <div>
+              <div class="stat-value">5 天 4 夜</div>
+              <div class="stat-label">週末＋平日</div>
+            </div>
           </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📍</div>
-          <div>
-            <div class="stat-value">40 處</div>
-            <div class="stat-label">行程節點與打卡點</div>
+          <div class="stat-card">
+            <div class="stat-icon">📍</div>
+            <div>
+              <div class="stat-value">40 處</div>
+              <div class="stat-label">行程節點</div>
+            </div>
           </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🛍️</div>
-          <div>
-            <div class="stat-value">12 大</div>
-            <div class="stat-label">好市多/PARCO/DFS/永旺商場</div>
+          <div class="stat-card">
+            <div class="stat-icon">🛍️</div>
+            <div>
+              <div class="stat-value">12 大</div>
+              <div class="stat-label">商場採購</div>
+            </div>
           </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🍣</div>
-          <div>
-            <div class="stat-value">8 處</div>
-            <div class="stat-label">魚市場/沖繩麵/敘敘苑</div>
+          <div class="stat-card">
+            <div class="stat-icon">🍣</div>
+            <div>
+              <div class="stat-value">8 處</div>
+              <div class="stat-label">在地美食</div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Quick Action Buttons -->
       <div class="hero-cta-group">
-        <button class="btn btn-primary" id="hero-btn-planner" style="background:linear-gradient(135deg,#0284c7,#7c3aed);border:none;box-shadow:0 4px 15px rgba(124,58,237,0.35);">
-          <span>🛠️ 立即自組客製行程 (自由規劃 Studio)</span>
-        </button>
-        <a href="#schedule-section" class="btn btn-secondary" id="hero-btn-official">
-          <span>🗓️ 瀏覽官方精選 5天4夜時程</span>
+        <a href="#schedule-section" class="btn btn-primary" id="hero-btn-official">
+          <span>瀏覽 5 天行程</span>
         </a>
+        <button class="btn btn-secondary" id="hero-btn-planner">
+          <span>🛠️ 自由規劃 Studio</span>
+        </button>
         <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn btn-chictrip">
-          <span>📲 去趣 App 路線</span>
+          <span>去趣 App</span>
         </a>
         <button class="btn btn-secondary btn-copy-chictrip">
-          <span>🔗 複製分享連結</span>
+          <span>複製連結</span>
         </button>
         <button class="btn btn-secondary btn-print-itinerary hero-print-btn">
-          <span>🖨️ 列印行程手冊 (PDF)</span>
+          <span>列印 PDF</span>
         </button>
       </div>
     </div>
@@ -5702,30 +6405,28 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
       <div class="itinerary-mode-tabs-container">
         <button class="mode-tab-btn active" id="btn-mode-official" data-mode="official">
           <span class="mode-icon">🗓️</span>
-          <span class="mode-text">官方推薦 5天4夜行程</span>
+          <span class="mode-text">官方 5 天行程</span>
         </button>
         <button class="mode-tab-btn" id="btn-mode-planner" data-mode="planner">
           <span class="mode-icon">🛠️</span>
-          <span class="mode-text">自由客製行程規劃器 (自組行程 Studio)</span>
-          <span class="mode-badge">✨ 自由組合</span>
+          <span class="mode-text">自由規劃 Studio</span>
         </button>
       </div>
 
       <!-- Generation Perspective Switcher Bar (Dual-Generation Mode) -->
       <div class="generation-perspective-bar" id="generation-perspective-bar">
         <div class="gen-bar-left">
-          <span class="gen-bar-icon">👥</span>
-          <span class="gen-bar-title">世代需求導航：</span>
+          <span class="gen-bar-title">視角</span>
         </div>
         <div class="gen-bar-buttons">
-          <button class="gen-btn active" data-gen="both" title="全覽：同時展開40~60歲熟齡長輩與25~35歲年輕族群雙向需求與共處錦囊">
-            <span>👥 跨世代雙視角全覽</span>
+          <button class="gen-btn active" data-gen="both" title="同時顯示熟齡與年輕雙向指南">
+            <span>全部</span>
           </button>
-          <button class="gen-btn" data-gen="senior" title="熟齡舒活：聚焦低步數負擔、無障礙動線、座椅空調、清淡海味、身心祈福">
-            <span>🧓 40~60歲 熟齡舒活視角</span>
+          <button class="gen-btn" data-gen="senior" title="聚焦低步數負擔、座椅空調與清淡餐飲">
+            <span>熟齡 40–60</span>
           </button>
-          <button class="gen-btn" data-gen="young" title="年輕探索：聚焦IG美拍照、排隊話題美食、潮流服飾、戶外露營、深夜微醺">
-            <span>📸 25~35歲 年輕探索視角</span>
+          <button class="gen-btn" data-gen="young" title="聚焦IG拍照點、排隊話題美食與潮流選品">
+            <span>年輕 25–35</span>
           </button>
         </div>
       </div>
@@ -5740,22 +6441,22 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
         <!-- Secondary Filters & Search -->
         <div class="filter-row">
           <div class="category-pills">
-            <button class="cat-pill active" data-category="all">✨ 全部節點</button>
-            <button class="cat-pill" data-category="food">🍣 老饕美食</button>
-            <button class="cat-pill" data-category="shopping">🛍️ 購物商場</button>
-            <button class="cat-pill" data-category="attraction">⛩️ 景點文化</button>
-            <button class="cat-pill" data-category="transport-hotel">🚗 交通/住宿</button>
-            <button class="cat-pill" data-category="senior">🧓 40-60長輩首選</button>
-            <button class="cat-pill" data-category="young">📸 25-35年輕熱門</button>
-            <button class="cat-pill" data-category="harmony">🤝 跨世代全家共融</button>
-            <button class="cat-pill" data-category="favorites">⭐ 我的收藏</button>
+            <button class="cat-pill active" data-category="all">全部</button>
+            <button class="cat-pill" data-category="food">美食</button>
+            <button class="cat-pill" data-category="shopping">購物</button>
+            <button class="cat-pill" data-category="attraction">景點</button>
+            <button class="cat-pill" data-category="transport-hotel">交通 / 住宿</button>
+            <button class="cat-pill" data-category="senior">熟齡友善</button>
+            <button class="cat-pill" data-category="young">人氣打卡</button>
+            <button class="cat-pill" data-category="harmony">全家共融</button>
+            <button class="cat-pill" data-category="favorites">收藏</button>
           </div>
 
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="schedule-search-input" class="search-input" placeholder="搜尋景點、美食、MapCode...">
-          <button id="schedule-search-clear" class="search-clear">✕</button>
-        </div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="schedule-search-input" class="search-input" placeholder="搜尋景點 / MapCode...">
+            <button id="schedule-search-clear" class="search-clear">✕</button>
+          </div>
         </div>
       </div>
     </div>
@@ -6021,27 +6722,27 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
         </div>
 
         <div class="driving-rules-grid">
-          <div class="driving-rule-card" style="border-top: 4px solid #0284c7;">
+          <div class="driving-rule-card">
             <h4>⏰ 1. 作息折衷律</h4>
             <p>長輩習慣早起，年輕人夜間活躍。約定<strong>每日 08:45-09:00 統一出發</strong>；長輩清晨可在Villa露台泡茶看海，正午 12:30-14:30 安排在大型室內商場吹冷氣享用午餐與小憩，避開烈日與疲憊。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #059669;">
+          <div class="driving-rule-card">
             <h4>🚻 2. 90分鐘如廁停靠律</h4>
             <p>自駕每行駛 <strong>60 至 90 分鐘主動靠站</strong>（超商、道之驛、超市或景點洗手間）。不需詢問，直接停車宣布「下車活動筋骨5分鐘順便如廁」，長輩體面無心理負擔，更能預防腿部水腫。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #f59e0b;">
+          <div class="driving-rule-card">
             <h4>🍜 3. 餐飲雙軌制</h4>
             <p>嚴選<strong>兼具清淡熱湯與濃郁肉食</strong>的特色名店！如通堂拉麵（清雅女人麵 vs 濃郁男人麵）、糸滿魚市場（清甜鮮魚湯 vs 焗烤龍蝦生蠔）、敘敘苑（軟嫩無煙和牛）與EIBUN沖繩麵，滿足各年齡味蕾。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #8b5cf6;">
+          <div class="driving-rule-card">
             <h4>🛍️ 4. 分流放風不走散</h4>
             <p>在巨型商城（PARCO CITY、iias、AEON、DFS），抵達時立即約定<strong>「面海觀景沙發區或咖啡廳」為基地</strong>，約定90分鐘後碰面。長輩悠閒品茗看海，年輕人快步血拼，互不牽絆等待。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #ec4899;">
+          <div class="driving-rule-card">
             <h4>📸 5. 拍照互相尊重</h4>
             <p>主動引導長輩在柔和光線下拍攝精神端莊的紀念照與全家福；長輩也包容年輕人拍攝網美短影音。隨時透過手機<strong>AirDrop即時分享照片</strong>，讓長輩傳給親友群組分享喜悅！</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #10b981;">
+          <div class="driving-rule-card">
             <h4>🚗 6. 車座艙舒適律</h4>
             <p>長輩畏寒怕冷風直吹，將冷氣出風口朝上或隨車備薄毛毯；播放經典放鬆的中日輕音樂，車速平穩過彎減速，讓全車乘客安心小憩。</p>
           </div>
@@ -6207,27 +6908,27 @@ a, button, [role="button"] { -webkit-tap-highlight-color: rgba(2, 132, 199, 0.15
       <!-- Tab 5: Food Bucket List -->
       <div class="toolkit-panel" id="panel-food">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
-          <div class="driving-rule-card" style="border-top: 4px solid #ef4444;">
+          <div class="driving-rule-card">
             <h4>🍜 沖繩麵 (ソーキそば)</h4>
             <p><strong>行程推薦：</strong> 田舍公設市場南店 (400円極品軟骨)、沖繩麵 EIBUN (文青排隊第一天王)。<br>高湯甘醇無比，豬軟骨燉至晶透黏糯。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #06b6d4;">
+          <div class="driving-rule-card">
             <h4>🍣 現剖刺身與焗烤龍蝦</h4>
             <p><strong>行程推薦：</strong> 糸滿魚市場 (道之驛糸滿)。<br>銅板價格現挑甜蝦、大生蠔、海膽杯、焗烤龍蝦，產地直送最鮮甜！</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #f59e0b;">
+          <div class="driving-rule-card">
             <h4>🥩 敘敘苑海景頂級燒肉</h4>
             <p><strong>行程推薦：</strong> SAN-A 浦添西海岸 PARCO CITY 3F。<br>落地窗直面蔚藍太平洋，中午限定超值套餐，特選和牛五花與牛舌入口爆汁。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #10b981;">
+          <div class="driving-rule-card">
             <h4>🐟 鐵板奶油香煎鮮魚</h4>
             <p><strong>行程推薦：</strong> 糸滿漁民食堂。<br>招牌奶油香煎時令鮮魚配蒜香海苔，魚皮酥脆肉質極嫩，排隊神店！</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #8b5cf6;">
+          <div class="driving-rule-card">
             <h4>🥢 沖繩阿古豬炸豬排</h4>
             <p><strong>行程推薦：</strong> 豚かつ 小やじ 那霸店、かつ乃屋。<br>嚴選優質阿古豬低溫慢炸，肉質粉嫩多汁油脂甜美，雙重豬排極致享受！</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #ec4899;">
+          <div class="driving-rule-card">
             <h4>🍜 琉球新麵 通堂 男人麵女人麵</h4>
             <p><strong>行程推薦：</strong> 通堂拉麵 小祿本店 (AEON對面)。<br>經典濃郁豚骨男麵與清爽鹽味女麵，搭配無限供應的爽脆辣豆芽，完美收官！</p>
           </div>
@@ -11415,7 +12116,8 @@ document.addEventListener('DOMContentLoaded', () => {
     googleTrafficEnabled: false,
     privacyUnlocked: false,
     unlockedSecrets: null,
-    currentModalSpotId: null
+    currentModalSpotId: null,
+    mobileCompactCards: true
   };
 
   let mapGestureLocked = (typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -11872,7 +12574,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
                 <strong>⛩️ 文化伴手：</strong>${escapeHtml(senior.cultureShopping || '在地精緻特產與身心祈福')}
               </div>
-              <div style="background: rgba(16,185,129,0.12); padding: 0.45rem 0.65rem; border-radius: var(--radius-sm); font-size: 0.825rem; font-weight: 600; color: #065f46;">
+              <div class="gen-tip-highlight senior">
                 💡 舒活叮嚀：${escapeHtml(senior.keyTip || '出入口多設有平緩坡道與無障礙洗手間，可放慢腳步。')}
               </div>
             </div>
@@ -11888,7 +12590,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="width: 100%;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
                 <span class="gen-pill-label young-text" style="font-size: 0.9rem;">📸 25~35歲 年輕探索指南</span>
-                <span class="tag-badge" style="background: rgba(245,158,11,0.15); color: #b45309; font-size: 0.775rem;">✨ 潮流打卡必拍</span>
+                <span class="tag-badge gen-young-badge" style="font-size: 0.775rem;">✨ 潮流打卡必拍</span>
               </div>
               <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
                 <strong>📷 IG絕景機位：</strong>${escapeHtml(young.photoSpot || '必拍出片取景角度')}
@@ -11899,7 +12601,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.3rem;">
                 <strong>🛍️ 潮流亮點：</strong>${escapeHtml(young.shoppingNightlife || '特色潮流、露營選品或微醺夜生活')}
               </div>
-              <div style="background: rgba(245,158,11,0.12); padding: 0.45rem 0.65rem; border-radius: var(--radius-sm); font-size: 0.825rem; font-weight: 600; color: #92400e;">
+              <div class="gen-tip-highlight young">
                 ⚡ 探索攻略：${escapeHtml(young.keyTip || '建議提早拍照排隊，兼顧同伴作息。')}
               </div>
             </div>
@@ -11917,7 +12619,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="gen-pill-label senior-text">🧓 熟齡舒活</span>
               <span style="font-size:0.75rem; color: ${walkMeterColor}; font-weight:700;">${escapeHtml(senior.walkingLoad || '輕鬆')}</span>
             </div>
-            <div style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.45;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
               ${escapeHtml(senior.keyTip || senior.seatingRest || '低負擔平坦動線')}
             </div>
           </div>
@@ -11927,9 +12629,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <div>
             <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
               <span class="gen-pill-label young-text">📸 年輕探索</span>
-              <span style="font-size:0.75rem; color: #d97706; font-weight:700;">#打卡話題</span>
+              <span class="gen-young-tag" style="font-size:0.75rem; font-weight:700;">#打卡話題</span>
             </div>
-            <div style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.45;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
               ${escapeHtml(young.photoSpot || young.trendyFood || '必訪特色亮點')}
             </div>
           </div>
@@ -11938,7 +12640,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="gen-pill-box harmony">
           <div>
             <span class="gen-pill-label harmony-text">🤝 契合度 ${harmonyScore}/10</span>
-            <div style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.45;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.5;">
               ${escapeHtml(harmonyAdvice || '兼顧不同步調，各取所需全家開心。')}
             </div>
           </div>
@@ -11956,15 +12658,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let html = `
       <button class="day-tab-btn ${state.activeDay === 0 ? 'active' : ''}" data-day="0">
-        🌟 完整 5 天全覽
+        5天全覽
       </button>
     `;
 
     DAY_SUMMARIES.forEach(d => {
       const activeClass = state.activeDay === d.day ? 'active' : '';
+      const shortDay = String(d.dayOfWeek || '').replace('星期', '');
       html += `
         <button class="day-tab-btn ${activeClass}" data-day="${d.day}">
-          Day ${d.day} · ${escapeHtml(d.date.split('/')[1])}/${escapeHtml(d.date.split('/')[2])} (${d.dayOfWeek})
+          Day ${d.day} · ${escapeHtml(d.date.split('/')[1])}/${escapeHtml(d.date.split('/')[2])} (${escapeHtml(shortDay)})
         </button>
       `;
     });
@@ -12032,15 +12735,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const pillLabels = {
-      all: '✨ 全部節點',
-      food: '🍣 老饕美食',
-      shopping: '🛍️ 購物商場',
-      attraction: '⛩️ 景點文化',
-      'transport-hotel': '🚗 交通/住宿',
-      senior: '🧓 40-60長輩首選',
-      young: '📸 25-35年輕熱門',
-      harmony: '🤝 跨世代全家共融',
-      favorites: '⭐ 我的收藏'
+      all: '全部',
+      food: '美食',
+      shopping: '購物',
+      attraction: '景點',
+      'transport-hotel': '交通 / 住宿',
+      senior: '熟齡友善',
+      young: '人氣打卡',
+      harmony: '全家共融',
+      favorites: '收藏'
     };
 
     document.querySelectorAll('.cat-pill').forEach(pill => {
@@ -12554,9 +13257,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         photoStripContainer.innerHTML = `
           <div class="photo-strip-header">
-            <span class="photo-strip-label">📸 景點實景快覽 <small>(左右滑動點選直達卡片)</small></span>
+            <span class="photo-strip-label">景點快覽 <small>點選直達卡片</small></span>
             <button type="button" class="btn-mobile-compact-toggle ${state.mobileCompactCards ? 'is-compact' : ''}" data-action="toggle-all-mobile-cards">
-              ${state.mobileCompactCards ? '📖 展開全部攻略' : '📱 手機精簡預覽'}
+              ${state.mobileCompactCards ? '展開全部攻略' : '精簡卡片模式'}
             </button>
           </div>
           <div class="photo-strip-scroller">
@@ -12575,7 +13278,7 @@ document.addEventListener('DOMContentLoaded', () => {
           toggleCompactBtn.addEventListener('click', () => {
             state.mobileCompactCards = !state.mobileCompactCards;
             renderTimeline();
-            showToast(state.mobileCompactCards ? '📱 已切換為「手機精簡預覽」模式（點擊單張卡片可展開攻略）' : '📖 已展開所有景點的雙世代完整攻略');
+            showToast(state.mobileCompactCards ? '已切換為精簡卡片模式（點擊單張卡片可展開攻略）' : '已展開所有景點的雙世代詳細攻略');
           });
         }
       }
@@ -12621,7 +13324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         transitHtml = `
           <div class="transit-connector">
             <span>${transitInfo.isWalk ? '🚶' : '🚗'}</span>
-            <span>前往下一站：<strong>${escapeHtml(nextItem.nameZh)}</strong> (${transitInfo.text})</span>
+            <span>${transitInfo.text} · 下一站：<strong>${escapeHtml(nextItem.nameZh)}</strong></span>
           </div>
         `;
       }
@@ -12634,29 +13337,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const mcTopBadgeHtml = isSensitiveLocked
         ? `<button type="button" class="btn-copy-mc-badge btn-mc-locked" data-action="unlock-privacy" title="點擊輸入密碼解鎖車機 MapCode">🔒 MC: 需密碼</button>`
-        : `<button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(item.mapCode)}" title="點擊直接複製日本車機 MapCode">📋 MC: ${escapeHtml(item.mapCode)}</button>`;
+        : `<button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(item.mapCode)}" title="點擊直接複製日本車機 MapCode">MC: ${escapeHtml(item.mapCode)}</button>`;
 
       const addressBlockHtml = isSensitiveLocked
         ? `<button type="button" class="card-address-locked-btn" data-action="unlock-privacy" title="點擊輸入密碼解鎖民宿詳細地址"><span>🔒 ${escapeHtml(item.address)}</span></button>`
         : `<div class="card-address"><span>📍 ${escapeHtml(item.address)}</span>${isSensitiveUnlocked ? `<button type="button" class="btn-inline-copy-addr" data-action="copy-address" data-address="${escapeHtml(item.address)}" title="複製民宿詳細地址">📋 複製</button>` : ''}</div>`;
 
-      const copyMcBtnHtml = isSensitiveLocked
-        ? `<button type="button" class="btn-card-action" data-action="unlock-privacy" title="輸入密碼解鎖 MapCode"><span>🔒 解鎖MC</span></button>`
-        : `<button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(item.mapCode)}" title="複製日本車機 MapCode"><span>📋 複製MC</span></button>`;
-
       const gmapBarHtml = isSensitiveLocked
         ? `<button type="button" class="btn-gmap-action btn-gmap-locked" data-action="unlock-privacy" title="輸入 4 位數密碼以解鎖精準 Google Maps 導航與民宿地址">
-             <span class="btn-gmap-icon">🔒</span>
-             <span>輸入密碼解鎖民宿導航與地址</span>
+             <span>🔒 解鎖民宿導航與地址</span>
+           </button>
+           <button type="button" class="btn-card-action" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
+             <span>📖 攻略</span>
+           </button>
+           <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖顯示概略區域">
+             <span>🗺️ 區域</span>
+           </button>
+           <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
+             <span>＋ 自訂</span>
            </button>`
         : `<a href="${itemGmapLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
-             <span class="btn-gmap-icon">📍</span>
-             <span>即時導航</span>
+             <span>📍 導航</span>
            </a>
            <a href="${itemGmapLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與老饕評價">
-             <span class="btn-gmap-icon">🔍</span>
-             <span>老饕評價</span>
-           </a>`;
+             <span>🔍 評價</span>
+           </a>
+           <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
+             <span>🗺️ 地圖</span>
+           </button>
+           <button type="button" class="btn-card-action" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
+             <span>📖 攻略</span>
+           </button>
+           <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
+             <span>＋ 自訂</span>
+           </button>`;
 
       html += `
         <div class="timeline-item" id="item-${escapeHtml(item.id)}">
@@ -12667,20 +13381,17 @@ document.addEventListener('DOMContentLoaded', () => {
               <img class="spot-photo-img" src="${escapeHtml(imgMeta.image)}" data-fallback="${escapeHtml(imgMeta.imageFallback)}" alt="${escapeHtml(item.nameZh)}" loading="lazy" decoding="async" onerror="window.appHandleImgError(this)">
               <div class="spot-photo-top-badges">
                 <span class="spot-photo-step-badge">${state.activeDay === 0 ? `Day ${item.day}` : `第 ${index + 1} 站`} · ${escapeHtml(item.time)}</span>
-                <span class="spot-photo-cat-badge">${item.icon} ${escapeHtml(item.categoryLabel)}</span>
               </div>
               <div class="spot-photo-caption-bar">
-                <span class="spot-photo-caption-text">📸 ${escapeHtml(imgMeta.imageCaption)}</span>
-                <span class="spot-photo-zoom-pill">🔍 大圖與攻略</span>
+                <span class="spot-photo-caption-text">${escapeHtml(imgMeta.imageCaption)}</span>
               </div>
             </div>
 
             <div class="card-top">
-              <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                <span class="card-time-badge">⏰ ${item.time}</span>
-                <span class="card-duration-badge">⏱️ ${item.duration}</span>
+              <div class="card-top-meta">
+                <span class="card-time-badge">${item.time}</span>
+                <span class="card-duration-badge">${item.duration}</span>
                 <span class="tag-badge" style="background: var(--primary-light); color: var(--primary);">${escapeHtml(item.categoryLabel)}</span>
-                ${mcTopBadgeHtml}
               </div>
               <div class="card-actions-top">
                 <button class="btn-star-fav ${isFav ? 'favorited' : ''}" data-id="${escapeHtml(item.id)}" title="${isFav ? '取消收藏' : '加入收藏'}">
@@ -12696,13 +13407,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <p class="card-desc">${escapeHtml(item.desc)}</p>
 
-            <!-- Mobile Quick Summary & Expand Button -->
+            <!-- Quick Summary & Expand Button (Desktop & Mobile) -->
             <button type="button" class="btn-mobile-card-expand" data-action="toggle-card-detail" aria-expanded="${!isCollapsedMobile}">
               <span class="mobile-expand-chips">
-                <span>🧓 ${escapeHtml(seniorObj.walkingLoad || '輕鬆')}</span>
-                <span>🤝 契合 ${harmonyScore}/10</span>
+                <span>熟齡：${escapeHtml(seniorObj.walkingLoad || '輕鬆')}</span>
+                <span>· 契合 ${harmonyScore}/10</span>
               </span>
-              <span class="mobile-expand-label">${isCollapsedMobile ? '展開雙世代攻略 ▾' : '收合詳細攻略 ▴'}</span>
+              <span class="mobile-expand-label">${isCollapsedMobile ? '展開攻略 ▾' : '收合攻略 ▴'}</span>
             </button>
 
             <div class="card-collapsible-detail">
@@ -12714,22 +13425,13 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="card-footer">
-              ${addressBlockHtml}
-              <div class="card-footer-buttons">
-                <button class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
-                  <span>🔍 實景與攻略</span>
-                </button>
-                ${copyMcBtnHtml}
-                <button class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
-                  <span>📍 地圖定位</span>
-                </button>
-                <button class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
-                  <span>➕ 加自訂</span>
-                </button>
+              <div class="card-location-row">
+                ${addressBlockHtml}
+                ${mcTopBadgeHtml}
               </div>
             </div>
 
-            <!-- Google Maps 導航與資訊整合操作列 -->
+            <!-- Single Clean Action Bar -->
             <div class="spot-gmap-actions-bar">
               ${gmapBarHtml}
             </div>
@@ -12757,7 +13459,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.setAttribute('aria-expanded', String(!collapsed));
         const labelEl = btn.querySelector('.mobile-expand-label');
         if (labelEl) {
-          labelEl.textContent = collapsed ? '展開雙世代攻略 ▾' : '收合詳細攻略 ▴';
+          labelEl.textContent = collapsed ? '展開攻略 ▾' : '收合攻略 ▴';
         }
       });
     });
@@ -14608,7 +15310,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.35rem;">
             <strong>⛩️ 文化伴手：</strong>${escapeHtml(senior.cultureShopping || '在地身心祈福與精選特產')}
           </div>
-          <div style="background:rgba(16,185,129,0.12); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); font-size:0.8rem; color:#065f46; font-weight:600;">
+          <div class="gen-tip-highlight senior">
             💡 舒活實戰對策：${escapeHtml(senior.keyTip || '下車可先確認洗手間與電梯動線，放慢遊覽步調。')}
           </div>
         </div>
@@ -14617,7 +15319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="background: rgba(245,158,11,0.06); border-left: 4px solid #f59e0b; border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">
             <h4 style="font-size: 0.925rem; font-weight: 800; color: #d97706; margin:0;">📸 25~35歲 年輕探索指南</h4>
-            <span class="tag-badge" style="background: rgba(245,158,11,0.15); color: #b45309; font-size: 0.75rem;">#打卡熱點</span>
+            <span class="tag-badge gen-young-badge" style="font-size: 0.75rem;">#打卡熱點</span>
           </div>
           <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
             <strong>📷 IG絕景拍照：</strong>${escapeHtml(young.photoSpot || '熱門出片打卡取景點')}
@@ -14628,7 +15330,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.35rem;">
             <strong>🛍️ 潮流亮點：</strong>${escapeHtml(young.shoppingNightlife || '特色服飾、露營戶外選品或夜間氛圍')}
           </div>
-          <div style="background:rgba(245,158,11,0.12); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); font-size:0.8rem; color:#92400e; font-weight:600;">
+          <div class="gen-tip-highlight young">
             ⚡ 探索實戰攻略：${escapeHtml(young.keyTip || '把握自然光最佳時間拍照，分流採購更加高效。')}
           </div>
         </div>
@@ -16014,7 +16716,14 @@ document.addEventListener('DOMContentLoaded', () => {
     toast.className = 'toast-message';
     toast.textContent = msg;
 
-    container.appendChild(toast);
+    if (container.children && typeof container.removeChild === 'function') {
+      while (container.children.length >= 2 && container.firstElementChild) {
+        container.removeChild(container.firstElementChild);
+      }
+    }
+    if (typeof container.appendChild === 'function') {
+      container.appendChild(toast);
+    }
 
     setTimeout(() => {
       toast.style.animation = 'toastOut 0.3s forwards ease-in';

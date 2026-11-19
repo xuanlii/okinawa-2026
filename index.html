@@ -39,16 +39,16 @@
 
       <nav>
         <ul class="nav-links">
-          <li><a href="#schedule-section" class="nav-link active" id="nav-schedule-link">🗓️ 官方行程</a></li>
-          <li><a href="#schedule-section" class="nav-link" id="nav-planner-link">🛠️ 自由客製規劃</a></li>
-          <li><a href="#map-section" class="nav-link">🗺️ 路線地圖</a></li>
-          <li><a href="#toolkit-section" class="nav-link">🧰 旅行錦囊</a></li>
-          <li><a href="#chictrip-section" class="nav-link">📲 去趣 App</a></li>
+          <li><a href="#schedule-section" class="nav-link active" id="nav-schedule-link">官方行程</a></li>
+          <li><a href="#schedule-section" class="nav-link" id="nav-planner-link">自由規劃</a></li>
+          <li><a href="#map-section" class="nav-link">路線地圖</a></li>
+          <li><a href="#toolkit-section" class="nav-link">行前錦囊</a></li>
+          <li><a href="#chictrip-section" class="nav-link">去趣 App</a></li>
         </ul>
       </nav>
 
       <div class="header-actions">
-        <button id="btn-flight-selector" class="btn-icon" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）" style="font-size:0.875rem; padding:0.4rem 0.75rem; min-height:44px; min-width:44px; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-surface); cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; font-weight:600;">
+        <button id="btn-flight-selector" class="btn-icon btn-flight-pill" aria-label="選擇航班" title="選擇航班（華航/星宇/長榮）">
           ✈️ 航班
         </button>
         <button id="btn-privacy-lock" class="btn-icon btn-privacy-lock" aria-label="隱私密碼鎖" title="輸入密碼解鎖民宿地址與敏感資訊">
@@ -62,7 +62,7 @@
           🖨️
         </button>
         <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn-cta-chictrip">
-          <span>📲 去趣 App</span>
+          <span>去趣 App</span>
         </a>
       </div>
     </div>
@@ -74,103 +74,100 @@
   <section class="hero-section">
     <div class="container">
       <div class="hero-badge-group">
-        <span class="hero-pill flight-pill" id="hero-flight-pill" style="cursor:pointer; background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff;" title="點擊切換航班與連動時間">✈️ 航班：<strong id="hero-flight-name">中華航空 CI120/CI121</strong> ▾</span>
+        <span class="hero-pill flight-pill" id="hero-flight-pill" title="點擊切換航班與連動時間">✈️ 航班：<strong id="hero-flight-name">中華航空 CI120/CI121</strong> ▾</span>
         <button type="button" class="hero-pill privacy-pill" id="hero-privacy-pill" title="點擊輸入密碼解鎖或檢視民宿地址與敏感資訊">
           🔒 民宿地址已加密 · 點擊輸入密碼解鎖
         </button>
-        <span class="hero-pill">📅 2026/12/12 (六) - 12/16 (三) · 5天4夜</span>
-        <span class="hero-pill">🚗 沖繩南部與中部 自駕探險</span>
-        <span class="hero-pill accent">✨ 去趣 ChicTrip 官方精選路線</span>
-        <span class="hero-pill accent" style="background:linear-gradient(135deg,#059669,#0284c7);color:#fff;">👥 40~60歲 × 25~35歲 跨世代專屬適配</span>
-        <span class="hero-pill" style="border-color:#10b981;color:#059669;">⏱️ 車程時間自動計算</span>
-        <span class="hero-pill" style="border-color:#f59e0b;color:#d97706;">🛠️ 自由組合行程 Studio</span>
+        <span class="hero-pill">2026/12/12 – 12/16 · 5天4夜自駕</span>
       </div>
 
       <h1 class="hero-title">
-        2026/12 沖繩 <span class="gradient-text">冬日海風自由行</span>
+        2026/12 沖繩 <span class="gradient-text">冬日自駕</span>
       </h1>
 
       <p class="hero-subtitle">
-        告別盛夏酷暑，迎接初冬舒適涼爽的琉球蔚藍！從南城好市多首店狂歡、北谷海濱週六限定煙火、糸滿現剖海鮮早餐、那霸懸崖波上宮祈福、話題文青麵 EIBUN，到西海岸海景巨城 PARCO CITY 痛快血拼 5 小時與極品阿古豬雙豬排饗宴。
+        5 天 4 夜南部與西海岸慢活路線 — 糸滿海鮮、那霸古社、PARCO CITY 購物與海濱日落。
       </p>
 
-      <!-- Countdown Banner -->
-      <div class="countdown-box" id="countdown-wrap">
-        <div class="countdown-label">
-          <span class="pulse-dot"></span>
-          <span>距 2026/12/12 啟程出發倒數：</span>
+      <div class="hero-meta-strip">
+        <!-- Countdown Banner -->
+        <div class="countdown-box" id="countdown-wrap">
+          <div class="countdown-label">
+            <span class="pulse-dot"></span>
+            <span>啟程倒數</span>
+          </div>
+          <div class="countdown-grid">
+            <div class="countdown-unit">
+              <div class="countdown-val" id="cd-days">--</div>
+              <div class="countdown-title">天</div>
+            </div>
+            <div class="countdown-divider">:</div>
+            <div class="countdown-unit">
+              <div class="countdown-val" id="cd-hours">--</div>
+              <div class="countdown-title">時</div>
+            </div>
+            <div class="countdown-divider">:</div>
+            <div class="countdown-unit">
+              <div class="countdown-val" id="cd-mins">--</div>
+              <div class="countdown-title">分</div>
+            </div>
+            <div class="countdown-divider">:</div>
+            <div class="countdown-unit">
+              <div class="countdown-val" id="cd-secs">--</div>
+              <div class="countdown-title">秒</div>
+            </div>
+          </div>
         </div>
-        <div class="countdown-grid">
-          <div class="countdown-unit">
-            <div class="countdown-val" id="cd-days">--</div>
-            <div class="countdown-title">天 DAYS</div>
-          </div>
-          <div class="countdown-divider">:</div>
-          <div class="countdown-unit">
-            <div class="countdown-val" id="cd-hours">--</div>
-            <div class="countdown-title">時 HRS</div>
-          </div>
-          <div class="countdown-divider">:</div>
-          <div class="countdown-unit">
-            <div class="countdown-val" id="cd-mins">--</div>
-            <div class="countdown-title">分 MINS</div>
-          </div>
-          <div class="countdown-divider">:</div>
-          <div class="countdown-unit">
-            <div class="countdown-val" id="cd-secs">--</div>
-            <div class="countdown-title">秒 SECS</div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Stats Grid -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">🗓️</div>
-          <div>
-            <div class="stat-value">5 天 4 夜</div>
-            <div class="stat-label">橫跨週末與平日</div>
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🗓️</div>
+            <div>
+              <div class="stat-value">5 天 4 夜</div>
+              <div class="stat-label">週末＋平日</div>
+            </div>
           </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📍</div>
-          <div>
-            <div class="stat-value">40 處</div>
-            <div class="stat-label">行程節點與打卡點</div>
+          <div class="stat-card">
+            <div class="stat-icon">📍</div>
+            <div>
+              <div class="stat-value">40 處</div>
+              <div class="stat-label">行程節點</div>
+            </div>
           </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🛍️</div>
-          <div>
-            <div class="stat-value">12 大</div>
-            <div class="stat-label">好市多/PARCO/DFS/永旺商場</div>
+          <div class="stat-card">
+            <div class="stat-icon">🛍️</div>
+            <div>
+              <div class="stat-value">12 大</div>
+              <div class="stat-label">商場採購</div>
+            </div>
           </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🍣</div>
-          <div>
-            <div class="stat-value">8 處</div>
-            <div class="stat-label">魚市場/沖繩麵/敘敘苑</div>
+          <div class="stat-card">
+            <div class="stat-icon">🍣</div>
+            <div>
+              <div class="stat-value">8 處</div>
+              <div class="stat-label">在地美食</div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Quick Action Buttons -->
       <div class="hero-cta-group">
-        <button class="btn btn-primary" id="hero-btn-planner" style="background:linear-gradient(135deg,#0284c7,#7c3aed);border:none;box-shadow:0 4px 15px rgba(124,58,237,0.35);">
-          <span>🛠️ 立即自組客製行程 (自由規劃 Studio)</span>
-        </button>
-        <a href="#schedule-section" class="btn btn-secondary" id="hero-btn-official">
-          <span>🗓️ 瀏覽官方精選 5天4夜時程</span>
+        <a href="#schedule-section" class="btn btn-primary" id="hero-btn-official">
+          <span>瀏覽 5 天行程</span>
         </a>
+        <button class="btn btn-secondary" id="hero-btn-planner">
+          <span>🛠️ 自由規劃 Studio</span>
+        </button>
         <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn btn-chictrip">
-          <span>📲 去趣 App 路線</span>
+          <span>去趣 App</span>
         </a>
         <button class="btn btn-secondary btn-copy-chictrip">
-          <span>🔗 複製分享連結</span>
+          <span>複製連結</span>
         </button>
         <button class="btn btn-secondary btn-print-itinerary hero-print-btn">
-          <span>🖨️ 列印行程手冊 (PDF)</span>
+          <span>列印 PDF</span>
         </button>
       </div>
     </div>
@@ -186,30 +183,28 @@
       <div class="itinerary-mode-tabs-container">
         <button class="mode-tab-btn active" id="btn-mode-official" data-mode="official">
           <span class="mode-icon">🗓️</span>
-          <span class="mode-text">官方推薦 5天4夜行程</span>
+          <span class="mode-text">官方 5 天行程</span>
         </button>
         <button class="mode-tab-btn" id="btn-mode-planner" data-mode="planner">
           <span class="mode-icon">🛠️</span>
-          <span class="mode-text">自由客製行程規劃器 (自組行程 Studio)</span>
-          <span class="mode-badge">✨ 自由組合</span>
+          <span class="mode-text">自由規劃 Studio</span>
         </button>
       </div>
 
       <!-- Generation Perspective Switcher Bar (Dual-Generation Mode) -->
       <div class="generation-perspective-bar" id="generation-perspective-bar">
         <div class="gen-bar-left">
-          <span class="gen-bar-icon">👥</span>
-          <span class="gen-bar-title">世代需求導航：</span>
+          <span class="gen-bar-title">視角</span>
         </div>
         <div class="gen-bar-buttons">
-          <button class="gen-btn active" data-gen="both" title="全覽：同時展開40~60歲熟齡長輩與25~35歲年輕族群雙向需求與共處錦囊">
-            <span>👥 跨世代雙視角全覽</span>
+          <button class="gen-btn active" data-gen="both" title="同時顯示熟齡與年輕雙向指南">
+            <span>全部</span>
           </button>
-          <button class="gen-btn" data-gen="senior" title="熟齡舒活：聚焦低步數負擔、無障礙動線、座椅空調、清淡海味、身心祈福">
-            <span>🧓 40~60歲 熟齡舒活視角</span>
+          <button class="gen-btn" data-gen="senior" title="聚焦低步數負擔、座椅空調與清淡餐飲">
+            <span>熟齡 40–60</span>
           </button>
-          <button class="gen-btn" data-gen="young" title="年輕探索：聚焦IG美拍照、排隊話題美食、潮流服飾、戶外露營、深夜微醺">
-            <span>📸 25~35歲 年輕探索視角</span>
+          <button class="gen-btn" data-gen="young" title="聚焦IG拍照點、排隊話題美食與潮流選品">
+            <span>年輕 25–35</span>
           </button>
         </div>
       </div>
@@ -224,22 +219,22 @@
         <!-- Secondary Filters & Search -->
         <div class="filter-row">
           <div class="category-pills">
-            <button class="cat-pill active" data-category="all">✨ 全部節點</button>
-            <button class="cat-pill" data-category="food">🍣 老饕美食</button>
-            <button class="cat-pill" data-category="shopping">🛍️ 購物商場</button>
-            <button class="cat-pill" data-category="attraction">⛩️ 景點文化</button>
-            <button class="cat-pill" data-category="transport-hotel">🚗 交通/住宿</button>
-            <button class="cat-pill" data-category="senior">🧓 40-60長輩首選</button>
-            <button class="cat-pill" data-category="young">📸 25-35年輕熱門</button>
-            <button class="cat-pill" data-category="harmony">🤝 跨世代全家共融</button>
-            <button class="cat-pill" data-category="favorites">⭐ 我的收藏</button>
+            <button class="cat-pill active" data-category="all">全部</button>
+            <button class="cat-pill" data-category="food">美食</button>
+            <button class="cat-pill" data-category="shopping">購物</button>
+            <button class="cat-pill" data-category="attraction">景點</button>
+            <button class="cat-pill" data-category="transport-hotel">交通 / 住宿</button>
+            <button class="cat-pill" data-category="senior">熟齡友善</button>
+            <button class="cat-pill" data-category="young">人氣打卡</button>
+            <button class="cat-pill" data-category="harmony">全家共融</button>
+            <button class="cat-pill" data-category="favorites">收藏</button>
           </div>
 
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="schedule-search-input" class="search-input" placeholder="搜尋景點、美食、MapCode...">
-          <button id="schedule-search-clear" class="search-clear">✕</button>
-        </div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="schedule-search-input" class="search-input" placeholder="搜尋景點 / MapCode...">
+            <button id="schedule-search-clear" class="search-clear">✕</button>
+          </div>
         </div>
       </div>
     </div>
@@ -505,27 +500,27 @@
         </div>
 
         <div class="driving-rules-grid">
-          <div class="driving-rule-card" style="border-top: 4px solid #0284c7;">
+          <div class="driving-rule-card">
             <h4>⏰ 1. 作息折衷律</h4>
             <p>長輩習慣早起，年輕人夜間活躍。約定<strong>每日 08:45-09:00 統一出發</strong>；長輩清晨可在Villa露台泡茶看海，正午 12:30-14:30 安排在大型室內商場吹冷氣享用午餐與小憩，避開烈日與疲憊。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #059669;">
+          <div class="driving-rule-card">
             <h4>🚻 2. 90分鐘如廁停靠律</h4>
             <p>自駕每行駛 <strong>60 至 90 分鐘主動靠站</strong>（超商、道之驛、超市或景點洗手間）。不需詢問，直接停車宣布「下車活動筋骨5分鐘順便如廁」，長輩體面無心理負擔，更能預防腿部水腫。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #f59e0b;">
+          <div class="driving-rule-card">
             <h4>🍜 3. 餐飲雙軌制</h4>
             <p>嚴選<strong>兼具清淡熱湯與濃郁肉食</strong>的特色名店！如通堂拉麵（清雅女人麵 vs 濃郁男人麵）、糸滿魚市場（清甜鮮魚湯 vs 焗烤龍蝦生蠔）、敘敘苑（軟嫩無煙和牛）與EIBUN沖繩麵，滿足各年齡味蕾。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #8b5cf6;">
+          <div class="driving-rule-card">
             <h4>🛍️ 4. 分流放風不走散</h4>
             <p>在巨型商城（PARCO CITY、iias、AEON、DFS），抵達時立即約定<strong>「面海觀景沙發區或咖啡廳」為基地</strong>，約定90分鐘後碰面。長輩悠閒品茗看海，年輕人快步血拼，互不牽絆等待。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #ec4899;">
+          <div class="driving-rule-card">
             <h4>📸 5. 拍照互相尊重</h4>
             <p>主動引導長輩在柔和光線下拍攝精神端莊的紀念照與全家福；長輩也包容年輕人拍攝網美短影音。隨時透過手機<strong>AirDrop即時分享照片</strong>，讓長輩傳給親友群組分享喜悅！</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #10b981;">
+          <div class="driving-rule-card">
             <h4>🚗 6. 車座艙舒適律</h4>
             <p>長輩畏寒怕冷風直吹，將冷氣出風口朝上或隨車備薄毛毯；播放經典放鬆的中日輕音樂，車速平穩過彎減速，讓全車乘客安心小憩。</p>
           </div>
@@ -691,27 +686,27 @@
       <!-- Tab 5: Food Bucket List -->
       <div class="toolkit-panel" id="panel-food">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
-          <div class="driving-rule-card" style="border-top: 4px solid #ef4444;">
+          <div class="driving-rule-card">
             <h4>🍜 沖繩麵 (ソーキそば)</h4>
             <p><strong>行程推薦：</strong> 田舍公設市場南店 (400円極品軟骨)、沖繩麵 EIBUN (文青排隊第一天王)。<br>高湯甘醇無比，豬軟骨燉至晶透黏糯。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #06b6d4;">
+          <div class="driving-rule-card">
             <h4>🍣 現剖刺身與焗烤龍蝦</h4>
             <p><strong>行程推薦：</strong> 糸滿魚市場 (道之驛糸滿)。<br>銅板價格現挑甜蝦、大生蠔、海膽杯、焗烤龍蝦，產地直送最鮮甜！</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #f59e0b;">
+          <div class="driving-rule-card">
             <h4>🥩 敘敘苑海景頂級燒肉</h4>
             <p><strong>行程推薦：</strong> SAN-A 浦添西海岸 PARCO CITY 3F。<br>落地窗直面蔚藍太平洋，中午限定超值套餐，特選和牛五花與牛舌入口爆汁。</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #10b981;">
+          <div class="driving-rule-card">
             <h4>🐟 鐵板奶油香煎鮮魚</h4>
             <p><strong>行程推薦：</strong> 糸滿漁民食堂。<br>招牌奶油香煎時令鮮魚配蒜香海苔，魚皮酥脆肉質極嫩，排隊神店！</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #8b5cf6;">
+          <div class="driving-rule-card">
             <h4>🥢 沖繩阿古豬炸豬排</h4>
             <p><strong>行程推薦：</strong> 豚かつ 小やじ 那霸店、かつ乃屋。<br>嚴選優質阿古豬低溫慢炸，肉質粉嫩多汁油脂甜美，雙重豬排極致享受！</p>
           </div>
-          <div class="driving-rule-card" style="border-top: 4px solid #ec4899;">
+          <div class="driving-rule-card">
             <h4>🍜 琉球新麵 通堂 男人麵女人麵</h4>
             <p><strong>行程推薦：</strong> 通堂拉麵 小祿本店 (AEON對面)。<br>經典濃郁豚骨男麵與清爽鹽味女麵，搭配無限供應的爽脆辣豆芽，完美收官！</p>
           </div>
