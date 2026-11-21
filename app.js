@@ -717,12 +717,17 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==========================================================================
      Application State Management
      ========================================================================== */
+  const savedActiveDayRaw = parseInt(safeStorageGet('okinawa_active_day', '1'), 10);
+  const initialActiveDay = (!isNaN(savedActiveDayRaw) && savedActiveDayRaw >= 0 && savedActiveDayRaw <= 5) ? savedActiveDayRaw : 1;
+
   const state = {
     itineraryMode: 'official', // 'official' | 'planner'
     generationPerspective: 'both', // 'both' | 'senior' | 'young'
-    activeDay: 0, // 0 = all days, 1..5 for official
+    activeDay: initialActiveDay, // 0 = all days, 1..5 for official (defaults to Day 1)
     activeCategory: 'all',
     searchQuery: '',
+    checklistFilter: 'all', // 'all' | 'pending' | 'essential'
+    mobileFiltersOpen: false,
     favorites: JSON.parse(safeStorageGet('okinawa_favorites', '[]')),
     checklist: JSON.parse(safeStorageGet('okinawa_checklist', 'null')),
     expenses: JSON.parse(safeStorageGet('okinawa_expenses', '[]')),
@@ -1108,12 +1113,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const officialFilterControls = document.getElementById('official-filter-controls');
     const plannerContainer = document.getElementById('custom-planner-container');
     const scrollerWrap = document.getElementById('map-spots-scroller-wrap');
+    const dayTabsEl = document.getElementById('day-tabs-container');
+    const toggleFiltersBtn = document.getElementById('btn-toggle-filters');
 
     if (mode === 'official') {
       if (btnOfficial) btnOfficial.classList.add('active');
       if (btnPlanner) btnPlanner.classList.remove('active');
       if (officialContainer) officialContainer.style.display = 'block';
-      if (officialFilterControls) officialFilterControls.style.display = 'block';
+      if (officialFilterControls) officialFilterControls.style.display = '';
+      if (dayTabsEl) dayTabsEl.style.display = '';
+      if (toggleFiltersBtn) toggleFiltersBtn.style.display = '';
       if (plannerContainer) plannerContainer.style.display = 'none';
       if (scrollerWrap) scrollerWrap.style.display = 'block';
       renderTimeline();
@@ -1124,6 +1133,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnPlanner) btnPlanner.classList.add('active');
       if (officialContainer) officialContainer.style.display = 'none';
       if (officialFilterControls) officialFilterControls.style.display = 'none';
+      if (dayTabsEl) dayTabsEl.style.display = 'none';
+      if (toggleFiltersBtn) toggleFiltersBtn.style.display = 'none';
       if (plannerContainer) plannerContainer.style.display = 'flex';
       if (scrollerWrap) scrollerWrap.style.display = 'none';
       renderPlannerStudio();
@@ -1156,6 +1167,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (state.itineraryMode === 'official') {
           renderTimeline();
+          updateMapMarkers();
+          syncFilterSummaryUI();
         } else {
           renderPlannerStudio();
         }
@@ -1283,17 +1296,124 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
-     Official Schedule Day Tabs
+     Official Schedule Day Tabs & Filter State Management
      ========================================================================== */
+  function selectOfficialDay(dayNum, shouldScroll = false) {
+    state.activeDay = dayNum;
+    safeStorageSet('okinawa_active_day', String(dayNum));
+
+    const container = document.getElementById('day-tabs-container');
+    if (container) {
+      container.querySelectorAll('.day-tab-btn').forEach(b => {
+        const isActive = parseInt(b.dataset.day, 10) === dayNum;
+        if (b.classList && typeof b.classList.toggle === 'function') {
+          b.classList.toggle('active', isActive);
+        } else if (b.classList) {
+          if (isActive) b.classList.add('active');
+          else b.classList.remove('active');
+        }
+        if (isActive && typeof container.scrollLeft === 'number') {
+          container.scrollLeft = b.offsetLeft - (container.clientWidth / 2) + (b.clientWidth / 2);
+        }
+      });
+    }
+
+    renderTimeline();
+    updateMapMarkers();
+    updateCategoryPillCounts();
+    syncFilterSummaryUI();
+
+    if (shouldScroll) {
+      const target = document.getElementById('official-schedule-container') || document.getElementById('schedule-section');
+      if (target && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }
+
+  function resetAllOfficialFilters() {
+    state.activeCategory = 'all';
+    state.searchQuery = '';
+    state.generationPerspective = 'both';
+
+    const searchInput = document.getElementById('schedule-search-input');
+    const clearBtn = document.getElementById('schedule-search-clear');
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    document.querySelectorAll('.cat-pill').forEach(p => {
+      if (p.classList) {
+        if (p.dataset.category === 'all') p.classList.add('active');
+        else p.classList.remove('active');
+      }
+    });
+
+    const genBar = document.getElementById('generation-perspective-bar');
+    if (genBar) {
+      genBar.querySelectorAll('.gen-btn').forEach(b => {
+        if (b.classList) {
+          if (b.dataset.gen === 'both') b.classList.add('active');
+          else b.classList.remove('active');
+        }
+      });
+    }
+
+    renderTimeline();
+    updateMapMarkers();
+    syncFilterSummaryUI();
+    showToast('↺ 已重設所有篩選條件');
+  }
+
+  function syncFilterSummaryUI() {
+    const activeParts = [];
+    const catNames = {
+      food: '美食',
+      shopping: '購物',
+      attraction: '景點',
+      'transport-hotel': '交通/住宿',
+      senior: '熟齡友善',
+      young: '人氣打卡',
+      harmony: '全家共融',
+      favorites: '收藏'
+    };
+    if (state.activeCategory && state.activeCategory !== 'all') {
+      activeParts.push(`分類：${catNames[state.activeCategory] || state.activeCategory}`);
+    }
+    if (state.generationPerspective && state.generationPerspective !== 'both') {
+      activeParts.push(state.generationPerspective === 'senior' ? '視角：熟齡 40–60' : '視角：年輕 25–35');
+    }
+    if (state.searchQuery) {
+      activeParts.push(`搜尋：「${state.searchQuery}」`);
+    }
+
+    const countBadge = document.getElementById('active-filter-count-badge');
+    if (countBadge) {
+      if (activeParts.length > 0) {
+        countBadge.textContent = String(activeParts.length);
+        countBadge.style.display = 'inline-flex';
+      } else {
+        countBadge.style.display = 'none';
+      }
+    }
+
+    const summaryEl = document.getElementById('active-filters-summary');
+    const summaryTextEl = document.getElementById('active-filters-text');
+    if (summaryEl && summaryTextEl) {
+      if (activeParts.length > 0) {
+        summaryTextEl.textContent = `已套用條件：${activeParts.join(' · ')}`;
+        summaryEl.style.display = 'flex';
+      } else {
+        summaryEl.style.display = 'none';
+        summaryTextEl.textContent = '';
+      }
+    }
+  }
+
   function initDayTabs() {
     const container = document.getElementById('day-tabs-container');
     if (!container || typeof DAY_SUMMARIES === 'undefined') return;
 
-    let html = `
-      <button class="day-tab-btn ${state.activeDay === 0 ? 'active' : ''}" data-day="0">
-        5天全覽
-      </button>
-    `;
+    let html = '';
 
     DAY_SUMMARIES.forEach(d => {
       const activeClass = state.activeDay === d.day ? 'active' : '';
@@ -1305,30 +1425,50 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     });
 
+    html += `
+      <button class="day-tab-btn ${state.activeDay === 0 ? 'active' : ''}" data-day="0">
+        5天全覽
+      </button>
+    `;
+
     container.innerHTML = html;
 
     const activeTab = container.querySelector('.day-tab-btn.active');
-    if (activeTab && container) {
+    if (activeTab && container && typeof container.scrollLeft === 'number') {
       container.scrollLeft = activeTab.offsetLeft - (container.clientWidth / 2) + (activeTab.clientWidth / 2);
     }
 
     container.querySelectorAll('.day-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        container.querySelectorAll('.day-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        container.scrollLeft = btn.offsetLeft - (container.clientWidth / 2) + (btn.clientWidth / 2);
-        state.activeDay = parseInt(btn.dataset.day, 10);
-        renderTimeline();
-        updateMapMarkers();
-        updateCategoryPillCounts();
-        if (typeof window !== 'undefined' && window.innerWidth <= 900) {
-          const schedContainer = document.getElementById('official-schedule-container');
-          if (schedContainer && window.scrollY > 420 && typeof schedContainer.scrollIntoView === 'function') {
-            schedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }
+        const dayNum = parseInt(btn.dataset.day, 10);
+        const shouldScroll = typeof window !== 'undefined' && window.innerWidth <= 900 && window.scrollY > 420;
+        selectOfficialDay(dayNum, shouldScroll);
       });
     });
+
+    // Wire filter drawer button and 1-click reset button
+    const toggleFiltersBtn = document.getElementById('btn-toggle-filters');
+    const filterControls = document.getElementById('official-filter-controls');
+    if (toggleFiltersBtn && filterControls) {
+      toggleFiltersBtn.addEventListener('click', () => {
+        state.mobileFiltersOpen = !state.mobileFiltersOpen;
+        if (filterControls.classList && typeof filterControls.classList.toggle === 'function') {
+          filterControls.classList.toggle('filters-open', state.mobileFiltersOpen);
+        }
+        if (typeof toggleFiltersBtn.setAttribute === 'function') {
+          toggleFiltersBtn.setAttribute('aria-expanded', String(state.mobileFiltersOpen));
+        }
+        if (toggleFiltersBtn.classList && typeof toggleFiltersBtn.classList.toggle === 'function') {
+          toggleFiltersBtn.classList.toggle('active', state.mobileFiltersOpen);
+        }
+      });
+    }
+
+    const resetAllBtn = document.getElementById('btn-reset-all-filters');
+    if (resetAllBtn) {
+      resetAllBtn.addEventListener('click', resetAllOfficialFilters);
+    }
+    syncFilterSummaryUI();
   }
 
   /* ==========================================================================
@@ -1343,6 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.activeCategory = pill.dataset.category;
         renderTimeline();
         updateMapMarkers();
+        syncFilterSummaryUI();
       });
     });
     updateCategoryPillCounts();
@@ -1400,6 +1541,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clearBtn.style.display = state.searchQuery ? 'inline-flex' : 'none';
       renderTimeline();
       updateMapMarkers();
+      syncFilterSummaryUI();
     });
 
     clearBtn.addEventListener('click', () => {
@@ -1408,6 +1550,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clearBtn.style.display = 'none';
       renderTimeline();
       updateMapMarkers();
+      syncFilterSummaryUI();
       input.focus();
     });
   }
@@ -1462,7 +1605,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // Refresh Leaflet map tile layout when switching views
+      // Unlock map pan/zoom automatically when entering Mobile Map tab
+      if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+        mapGestureLocked = false;
+        syncMapGestureState();
+      }
+
+      // Refresh map layout when switching views
       setTimeout(() => {
         if (state.map) {
           state.map.invalidateSize();
@@ -1722,22 +1871,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
 
-              <div class="alt-card-actions">
-                <button type="button" class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(itemA.id)}" title="檢視詳細攻略">
-                  <span>🔍 實景攻略</span>
-                </button>
-                <button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(itemA.mapCode)}" title="複製 MapCode">
-                  <span>📋 複製MC</span>
-                </button>
-                <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(itemA.id)}" title="在地圖定位">
-                  <span>📍 定位</span>
-                </button>
-                <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(itemA.id)}" title="加自訂行程">
-                  <span>➕ 加自訂</span>
-                </button>
-                <a href="${gmapA.navUrl}" target="_blank" rel="noopener" class="btn-card-action gmap" title="Google Maps 導航">
+              <div class="alt-card-actions spot-gmap-actions-bar">
+                <a href="${gmapA.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="Google Maps 導航">
                   <span>📍 導航</span>
                 </a>
+                <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(itemA.id)}" title="在地圖定位">
+                  <span>🗺️ 定位</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="modal" data-id="${escapeHtml(itemA.id)}" title="檢視詳細攻略">
+                  <span>📖 詳情</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(itemA.mapCode)}" title="複製 MapCode">
+                  <span>📋 MC</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(itemA.id)}" title="加入自訂行程">
+                  <span>＋ 規劃</span>
+                </button>
               </div>
             </div>
 
@@ -1795,22 +1944,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
 
-              <div class="alt-card-actions">
-                <button type="button" class="btn-card-action primary" data-action="modal" data-id="${escapeHtml(itemB.id)}" title="檢視詳細攻略">
-                  <span>🔍 實景攻略</span>
-                </button>
-                <button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(itemB.mapCode)}" title="複製 MapCode">
-                  <span>📋 複製MC</span>
-                </button>
-                <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(itemB.id)}" title="在地圖定位">
-                  <span>📍 定位</span>
-                </button>
-                <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(itemB.id)}" title="加自訂行程">
-                  <span>➕ 加自訂</span>
-                </button>
-                <a href="${gmapB.navUrl}" target="_blank" rel="noopener" class="btn-card-action gmap" title="Google Maps 導航">
+              <div class="alt-card-actions spot-gmap-actions-bar">
+                <a href="${gmapB.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="Google Maps 導航">
                   <span>📍 導航</span>
                 </a>
+                <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(itemB.id)}" title="在地圖定位">
+                  <span>🗺️ 定位</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="modal" data-id="${escapeHtml(itemB.id)}" title="檢視詳細攻略">
+                  <span>📖 詳情</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="copy-mc" data-mapcode="${escapeHtml(itemB.mapCode)}" title="複製 MapCode">
+                  <span>📋 MC</span>
+                </button>
+                <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(itemB.id)}" title="加入自訂行程">
+                  <span>＋ 規劃</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1919,19 +2068,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (filtered.length === 0) {
       listContainer.innerHTML = `
-        <div style="text-align: center; padding: 4rem 1rem; background: var(--bg-surface); border: 1px dashed var(--border); border-radius: var(--radius-lg);">
-          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
+        <div class="empty-schedule-state" style="text-align: center; padding: 3.5rem 1.25rem; background: var(--bg-surface); border: 1px dashed var(--border); border-radius: var(--radius-lg);">
+          <div style="font-size: 2.25rem; margin-bottom: 0.5rem;">🔍</div>
           <h3 style="font-size: 1.15rem; margin-bottom: 0.35rem;">沒有符合條件的行程景點</h3>
-          <p style="color: var(--text-muted); font-size: 0.885rem;">試著清除關鍵字搜尋或切換分類篩選標籤。</p>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">試著清除搜尋關鍵字，或重設分類與雙世代視角條件。</p>
+          <button type="button" class="btn btn-primary btn-sm" data-action="reset-filters" style="margin-top: 1rem;">↺ 清除所有篩選條件</button>
         </div>
       `;
+      const resetEmptyBtn = listContainer.querySelector('[data-action="reset-filters"]');
+      if (resetEmptyBtn) resetEmptyBtn.addEventListener('click', resetAllOfficialFilters);
       return;
     }
 
     let html = '';
+    let lastRenderedDay = null;
     for (let index = 0; index < filtered.length; index++) {
       const item = filtered[index];
       const nextItem = filtered[index + 1];
+
+      if (state.activeDay === 0 && item.day !== lastRenderedDay && typeof DAY_SUMMARIES !== 'undefined') {
+        lastRenderedDay = item.day;
+        const dSum = DAY_SUMMARIES.find(d => d.day === item.day);
+        if (dSum) {
+          html += `
+            <div class="timeline-day-divider" id="day-divider-${dSum.day}">
+              <div class="timeline-day-divider-info">
+                <span class="day-divider-badge">Day ${dSum.day}</span>
+                <strong>${escapeHtml(dSum.title)}</strong>
+                <span class="day-divider-date">${escapeHtml(dSum.date)} (${escapeHtml(dSum.dayOfWeek)})</span>
+              </div>
+              <button type="button" class="btn-day-divider-focus" data-focus-day="${dSum.day}">只看 Day ${dSum.day} →</button>
+            </div>
+          `;
+        }
+      }
 
       // Detect 2-choose-1 alternative meal group pair
       const isAltPair = Boolean(item.alternativeGroupId && nextItem && item.alternativeGroupId === nextItem.alternativeGroupId);
@@ -1981,13 +2151,13 @@ document.addEventListener('DOMContentLoaded', () => {
              <span>🔒 解鎖民宿導航與地址</span>
            </button>
            <button type="button" class="btn-card-action" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
-             <span>📖 攻略</span>
+             <span>📖 詳情</span>
            </button>
            <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖顯示概略區域">
              <span>🗺️ 區域</span>
            </button>
            <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
-             <span>＋ 自訂</span>
+             <span>＋ 規劃</span>
            </button>`
         : `<a href="${itemGmapLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
              <span>📍 導航</span>
@@ -1996,13 +2166,13 @@ document.addEventListener('DOMContentLoaded', () => {
              <span>🔍 評價</span>
            </a>
            <button type="button" class="btn-card-action locate" data-action="locate" data-id="${escapeHtml(item.id)}" title="在地圖標記定位">
-             <span>🗺️ 地圖</span>
+             <span>🗺️ 定位</span>
            </button>
            <button type="button" class="btn-card-action" data-action="modal" data-id="${escapeHtml(item.id)}" title="查看景點實景大圖與雙世代指南">
-             <span>📖 攻略</span>
+             <span>📖 詳情</span>
            </button>
            <button type="button" class="btn-card-action" data-action="add-to-custom" data-id="${escapeHtml(item.id)}" title="將此景點加入自訂行程">
-             <span>＋ 自訂</span>
+             <span>＋ 規劃</span>
            </button>`;
 
       html += `
@@ -2010,10 +2180,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="timeline-node">${item.icon}</div>
           <div class="timeline-card ${isCollapsedMobile ? 'mobile-detail-collapsed' : ''}">
             <!-- Real Attraction Photo Banner -->
-            <div class="spot-photo-banner" data-action="modal" data-id="${escapeHtml(item.id)}" title="點擊檢視「${escapeHtml(item.nameZh)}」大圖與雙世代詳細攻略">
+            <div class="spot-photo-banner" data-action="modal" data-id="${escapeHtml(item.id)}" title="點擊檢視「${escapeHtml(item.nameZh)}」大圖與詳細資訊">
               <img class="spot-photo-img" src="${escapeHtml(imgMeta.image)}" data-fallback="${escapeHtml(imgMeta.imageFallback)}" alt="${escapeHtml(item.nameZh)}" loading="lazy" decoding="async" onerror="window.appHandleImgError(this)">
               <div class="spot-photo-top-badges">
-                <span class="spot-photo-step-badge">${state.activeDay === 0 ? `Day ${item.day}` : `第 ${index + 1} 站`} · ${escapeHtml(item.time)}</span>
+                <span class="spot-photo-step-badge">${state.activeDay === 0 ? `Day ${item.day}` : `第 ${index + 1} 站`}</span>
               </div>
               <div class="spot-photo-caption-bar">
                 <span class="spot-photo-caption-text">${escapeHtml(imgMeta.imageCaption)}</span>
@@ -2046,7 +2216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>熟齡：${escapeHtml(seniorObj.walkingLoad || '輕鬆')}</span>
                 <span>· 契合 ${harmonyScore}/10</span>
               </span>
-              <span class="mobile-expand-label">${isCollapsedMobile ? '展開攻略 ▾' : '收合攻略 ▴'}</span>
+              <span class="mobile-expand-label">${isCollapsedMobile ? '熟齡／年輕重點 ▾' : '收合重點 ▴'}</span>
             </button>
 
             <div class="card-collapsible-detail">
@@ -2074,7 +2244,39 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }
 
+    if (state.activeDay >= 1 && state.activeDay <= 5 && typeof DAY_SUMMARIES !== 'undefined') {
+      const prevSum = DAY_SUMMARIES.find(d => d.day === state.activeDay - 1);
+      const nextSum = DAY_SUMMARIES.find(d => d.day === state.activeDay + 1);
+      html += `
+        <div class="day-pagination-bar">
+          ${prevSum
+            ? `<button type="button" class="btn btn-secondary day-pagination-btn prev" data-jump-day="${prevSum.day}">← 上一天 Day ${prevSum.day}</button>`
+            : `<button type="button" class="btn btn-secondary day-pagination-btn" data-jump-day="0">📋 查看 5 天全覽</button>`
+          }
+          ${nextSum
+            ? `<button type="button" class="btn btn-primary day-pagination-btn next" data-jump-day="${nextSum.day}">下一天 Day ${nextSum.day} · ${escapeHtml(nextSum.title)} →</button>`
+            : `<button type="button" class="btn btn-primary day-pagination-btn" data-jump-day="0">🌟 回到 5 天全覽 →</button>`
+          }
+        </div>
+      `;
+    }
+
     listContainer.innerHTML = html;
+
+    // Attach Day Divider & Day Pagination listeners
+    listContainer.querySelectorAll('[data-focus-day]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetDay = parseInt(btn.dataset.focusDay, 10);
+        if (!isNaN(targetDay)) selectOfficialDay(targetDay, true);
+      });
+    });
+
+    listContainer.querySelectorAll('[data-jump-day]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetDay = parseInt(btn.dataset.jumpDay, 10);
+        if (!isNaN(targetDay)) selectOfficialDay(targetDay, true);
+      });
+    });
 
     // Attach Event Listeners
     listContainer.querySelectorAll('.btn-star-fav').forEach(btn => {
@@ -2092,7 +2294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.setAttribute('aria-expanded', String(!collapsed));
         const labelEl = btn.querySelector('.mobile-expand-label');
         if (labelEl) {
-          labelEl.textContent = collapsed ? '展開攻略 ▾' : '收合攻略 ▴';
+          labelEl.textContent = collapsed ? '熟齡／年輕重點 ▾' : '收合重點 ▴';
         }
       });
     });
@@ -2393,6 +2595,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const subText = document.getElementById('gmaps-day-nav-stops-sub');
     if (!navBtn) return;
 
+    const titleEl = (typeof navBtn.querySelector === 'function') ? navBtn.querySelector('.gmaps-nav-title') : null;
+    if (titleEl) {
+      if (state.itineraryMode === 'planner') {
+        const dNum = (state.plannerData && state.plannerData.days && state.plannerData.days[state.plannerData.activeDayIndex])
+          ? state.plannerData.days[state.plannerData.activeDayIndex].day
+          : 1;
+        titleEl.textContent = `在 Google Maps 開啟自訂 Day ${dNum} 自駕導航`;
+      } else if (state.activeDay === 0) {
+        titleEl.textContent = '在 Google Maps 開啟 5 天全部篩選路線導航';
+      } else {
+        titleEl.textContent = `在 Google Maps 開啟 Day ${state.activeDay} 自駕導航`;
+      }
+    }
+
     if (!validStops || validStops.length === 0) {
       navBtn.href = 'https://www.google.com/maps';
       if (subText) subText.textContent = '本日尚無排定景點';
@@ -2403,14 +2619,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (subText) {
       if (validStops.length === 1) {
-        subText.textContent = `單站直達：${escapeHtml(validStops[0].nameZh || validStops[0].name || '景點')}`;
+        subText.textContent = `單站直達：${validStops[0].nameZh || validStops[0].name || '景點'}`;
       } else {
         const first = validStops[0].nameZh || validStops[0].name || '出發點';
         const last = validStops[validStops.length - 1].nameZh || validStops[validStops.length - 1].name || '終點';
         const intermediateCount = Math.max(0, validStops.length - 2);
         subText.textContent = intermediateCount > 0 
-          ? `共 ${validStops.length} 站：${escapeHtml(first)} ➔ 途經 ${intermediateCount} 處中繼站 ➔ ${escapeHtml(last)}`
-          : `起迄 2 站：${escapeHtml(first)} ➔ ${escapeHtml(last)}`;
+          ? `共 ${validStops.length} 站：${first} ➔ 途經 ${intermediateCount} 處中繼站 ➔ ${last}`
+          : `起迄 2 站：${first} ➔ ${last}`;
       }
     }
   }
@@ -2486,7 +2702,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         safeStorageSet('okinawa_gmap_mode', state.gmapMode);
         if (state.itineraryMode === 'planner') {
-          const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+          const timeline = calculateDayTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
           updatePlannerMapMarkers(timeline.computedStops);
         } else {
           updateMapMarkers();
@@ -2525,7 +2741,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resetRouteBtn) {
       resetRouteBtn.addEventListener('click', () => {
         if (state.itineraryMode === 'planner') {
-          const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+          const timeline = calculateDayTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
           updatePlannerMapMarkers(timeline.computedStops);
         } else {
           updateMapMarkers();
@@ -2575,6 +2791,11 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) closeModal();
     });
+    document.addEventListener('keydown', (e) => {
+      if (e && e.key === 'Escape' && modal.classList && typeof modal.classList.contains === 'function' && modal.classList.contains('open')) {
+        closeModal();
+      }
+    });
 
     if (saveBtn) {
       saveBtn.addEventListener('click', () => {
@@ -2590,7 +2811,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadGoogleMapsJsApi(key);
         closeModal();
         if (state.itineraryMode === 'planner') {
-          const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+          const timeline = calculateDayTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
           updatePlannerMapMarkers(timeline.computedStops);
         } else {
           updateMapMarkers();
@@ -2608,7 +2829,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (keyInput) keyInput.value = '';
         closeModal();
         if (state.itineraryMode === 'planner') {
-          const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+          const timeline = calculateDayTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
           updatePlannerMapMarkers(timeline.computedStops);
         } else {
           updateMapMarkers();
@@ -2646,7 +2867,7 @@ document.addEventListener('DOMContentLoaded', () => {
     script.onload = () => {
       ensureGoogleMapCanvasReady();
       if (state.itineraryMode === 'planner') {
-        const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+        const timeline = calculateDayTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
         updatePlannerMapMarkers(timeline.computedStops);
       } else {
         updateMapMarkers();
@@ -2656,7 +2877,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('Google Maps JS API 載入失敗，降級至嵌入模式');
       state.gmapMode = 'embed';
       if (state.itineraryMode === 'planner') {
-        const timeline = buildCustomTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
+        const timeline = calculateDayTimeline(state.plannerData.days[state.plannerData.activeDayIndex]);
         updatePlannerMapMarkers(timeline.computedStops);
       } else {
         updateMapMarkers();
@@ -3112,18 +3333,17 @@ document.addEventListener('DOMContentLoaded', () => {
         alerts.push(`📍 <strong>目前此日尚未安排景點：</strong> 請點擊上方「➕ 新增景點」瀏覽30處精選景點或新增自訂停靠站！`);
       }
 
+      if (alertBox.classList && typeof alertBox.classList.remove === 'function') {
+        alertBox.classList.remove('is-warning', 'is-ok');
+      }
       if (alerts.length > 0) {
         alertBox.innerHTML = alerts.join('<br style="margin-bottom:0.4rem;">');
         alertBox.style.display = 'block';
-        alertBox.style.borderColor = '#ef4444';
-        alertBox.style.background = 'rgba(239,68,68,0.08)';
-        alertBox.style.color = '#b91c1c';
+        if (alertBox.classList) alertBox.classList.add('is-warning');
       } else {
         alertBox.innerHTML = `✨ <strong>行程節奏極佳：</strong> 步調兼顧40~60歲長輩舒活休憩與25~35歲年輕探索打卡！`;
         alertBox.style.display = 'block';
-        alertBox.style.borderColor = '#10b981';
-        alertBox.style.background = 'rgba(16,185,129,0.08)';
-        alertBox.style.color = '#065f46';
+        if (alertBox.classList) alertBox.classList.add('is-ok');
       }
     }
 
@@ -3162,8 +3382,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Generation highlights
           const genCardsHtml = renderGenerationCardHtml(stop.generation);
+          const seniorObj = (stop.generation && stop.generation.senior) || {};
+          const harmonyScore = (stop.generation && stop.generation.harmony && stop.generation.harmony.score) || 9.5;
           const stopGLinks = getSpotGmapLinks(stop);
           const stopImg = resolveSpotImage(stop);
+          const isPlannerCollapsed = Boolean(state.mobileCompactCards);
+          const isStopSensLocked = isSensitiveSpot(stop) && !state.privacyUnlocked;
+          const isStopSensUnlocked = isSensitiveSpot(stop) && state.privacyUnlocked;
 
           // Duration options
           const durations = [15, 30, 45, 60, 90, 120, 150, 180, 240];
@@ -3174,7 +3399,7 @@ document.addEventListener('DOMContentLoaded', () => {
           streamHtml += `
             <div class="planner-stop-item" data-index="${idx}" draggable="${window.innerWidth > 900 ? 'true' : 'false'}">
               ${transitConnectorHtml}
-              <div class="planner-stop-card">
+              <div class="planner-stop-card ${isPlannerCollapsed ? 'planner-detail-collapsed' : ''}">
                 ${stopImg.src ? `
                   <div class="planner-spot-photo-banner" data-action="view-stop-modal" data-id="${escapeHtml(stop.id)}" title="點擊檢視景點實景大圖與深度攻略">
                     <img src="${escapeHtml(stopImg.src)}" data-fallback="${escapeHtml(stopImg.fallback)}" alt="${escapeHtml(stop.nameZh || stop.name)}" loading="lazy" onerror="window.appHandleImgError(this)">
@@ -3213,47 +3438,58 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>
                 </div>
 
-                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; font-size:0.8rem; color:var(--text-muted);">
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; font-size:0.825rem; color:var(--text-muted); margin-top:0.35rem;">
                   <span>${escapeHtml(stop.name)} · ${escapeHtml(stop.nameJa || '')}</span>
                   <span class="tag-badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem;">${escapeHtml(stop.categoryLabel || '景點')}</span>
-                  ${(isSensitiveSpot(stop) && !state.privacyUnlocked)
-                    ? `<button type="button" class="btn-copy-mc-badge btn-mc-locked" data-action="unlock-privacy" title="點擊輸入密碼解鎖 MapCode">🔒 MC: 需密碼</button>`
-                    : `<span style="font-family:monospace; font-weight:700; color:#0284c7;">MC: ${escapeHtml(stop.mapCode || '無')}</span>`
-                  }
                 </div>
 
-                ${genCardsHtml}
+                ${genCardsHtml ? `
+                  <button type="button" class="btn-mobile-card-expand" data-action="toggle-planner-detail" aria-expanded="${!isPlannerCollapsed}">
+                    <span class="mobile-expand-chips">
+                      <span>熟齡：${escapeHtml(seniorObj.walkingLoad || '輕鬆')}</span>
+                      <span>· 契合 ${harmonyScore}/10</span>
+                    </span>
+                    <span class="mobile-expand-label">${isPlannerCollapsed ? '熟齡／年輕重點 ▾' : '收合重點 ▴'}</span>
+                  </button>
+                  <div class="planner-collapsible-detail">
+                    ${genCardsHtml}
+                  </div>
+                ` : ''}
 
-                <div class="card-footer" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border);">
-                  ${(isSensitiveSpot(stop) && !state.privacyUnlocked)
-                    ? `<button type="button" class="card-address-locked-btn" data-action="unlock-privacy" title="點擊輸入密碼解鎖民宿詳細地址"><span>🔒 ${escapeHtml(stop.address || '沖縄県糸満市')}</span></button>`
-                    : `<div class="card-address" style="font-size:0.8rem;"><span>📍 ${escapeHtml(stop.address || '沖繩縣')}</span>${(isSensitiveSpot(stop) && state.privacyUnlocked) ? `<button type="button" class="btn-inline-copy-addr" data-action="copy-address" data-address="${escapeHtml(stop.address)}" title="複製民宿詳細地址">📋 複製</button>` : ''}</div>`
-                  }
-                  <div class="card-footer-buttons">
-                    <button class="btn-card-action primary" data-action="view-stop-modal" data-id="${escapeHtml(stop.id)}">
-                      <span>🔍 景點攻略</span>
-                    </button>
-                    <button class="btn-card-action" data-action="locate-planner-stop" data-index="${idx}">
-                      <span>📍 地圖定位</span>
-                    </button>
+                <div class="card-footer">
+                  <div class="card-location-row">
+                    ${isStopSensLocked
+                      ? `<button type="button" class="card-address-locked-btn" data-action="unlock-privacy" title="點擊輸入密碼解鎖民宿詳細地址"><span>🔒 ${escapeHtml(stop.address || '沖縄県糸満市')}</span></button>`
+                      : `<div class="card-address" style="font-size:0.82rem;"><span>📍 ${escapeHtml(stop.address || '沖繩縣')}</span>${isStopSensUnlocked ? `<button type="button" class="btn-inline-copy-addr" data-action="copy-address" data-address="${escapeHtml(stop.address)}" title="複製民宿詳細地址">📋 複製</button>` : ''}</div>`
+                    }
+                    ${isStopSensLocked
+                      ? `<button type="button" class="btn-copy-mc-badge btn-mc-locked" data-action="unlock-privacy" title="點擊輸入密碼解鎖 MapCode">🔒 MC: 需密碼</button>`
+                      : `<button type="button" class="btn-copy-mc-badge" data-mapcode="${escapeHtml(stop.mapCode || '')}" title="點擊複製日本車機 MapCode">MC: ${escapeHtml(stop.mapCode || '無')}</button>`
+                    }
                   </div>
                 </div>
 
-                <!-- Google Maps 導航與資訊整合操作列 -->
+                <!-- Unified Action Bar -->
                 <div class="spot-gmap-actions-bar">
-                  ${(isSensitiveSpot(stop) && !state.privacyUnlocked)
+                  ${isStopSensLocked
                     ? `<button type="button" class="btn-gmap-action btn-gmap-locked" data-action="unlock-privacy" title="輸入 4 位數密碼以解鎖精準 Google Maps 導航與民宿地址">
-                         <span class="btn-gmap-icon">🔒</span>
-                         <span>輸入密碼解鎖民宿導航與地址</span>
+                         <span>🔒 解鎖民宿導航與地址</span>
+                       </button>
+                       <button type="button" class="btn-card-action" data-action="view-stop-modal" data-id="${escapeHtml(stop.id)}" title="檢視詳情">
+                         <span>📖 詳情</span>
                        </button>`
                     : `<a href="${stopGLinks.navUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-nav" title="開啟 Google Maps 即時自駕導航">
-                         <span class="btn-gmap-icon">📍</span>
-                         <span>即時導航</span>
+                         <span>📍 導航</span>
                        </a>
                        <a href="${stopGLinks.infoUrl}" target="_blank" rel="noopener" class="btn-gmap-action btn-gmap-info" title="查看 Google Maps 地點詳細資訊與評價">
-                         <span class="btn-gmap-icon">🔍</span>
-                         <span>老饕評價</span>
-                       </a>`
+                         <span>🔍 評價</span>
+                       </a>
+                       <button type="button" class="btn-card-action locate" data-action="locate-planner-stop" data-index="${idx}" title="在地圖標記定位">
+                         <span>🗺️ 定位</span>
+                       </button>
+                       <button type="button" class="btn-card-action" data-action="view-stop-modal" data-id="${escapeHtml(stop.id)}" title="檢視詳細攻略">
+                         <span>📖 詳情</span>
+                       </button>`
                   }
                 </div>
               </div>
@@ -3262,6 +3498,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         streamContainer.innerHTML = streamHtml;
+
+        streamContainer.querySelectorAll('[data-action="toggle-planner-detail"]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = (typeof btn.closest === 'function') ? btn.closest('.planner-stop-card') : null;
+            if (!card) return;
+            const collapsed = card.classList.toggle('planner-detail-collapsed');
+            btn.setAttribute('aria-expanded', String(!collapsed));
+            const labelEl = btn.querySelector('.mobile-expand-label');
+            if (labelEl) {
+              labelEl.textContent = collapsed ? '熟齡／年輕重點 ▾' : '收合重點 ▴';
+            }
+          });
+        });
+
+        streamContainer.querySelectorAll('.btn-copy-mc-badge:not(.btn-mc-locked)').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const mc = (btn.dataset.mapcode || '').trim();
+            if (mc && mc !== '無') {
+              copyTextToClipboard(mc, `📋 已複製 MapCode：${mc}`);
+            }
+          });
+        });
 
         streamContainer.querySelectorAll('[data-action="unlock-privacy"]').forEach(btn => {
           btn.addEventListener('click', (e) => {
@@ -3435,15 +3695,21 @@ document.addEventListener('DOMContentLoaded', () => {
           btn.addEventListener('click', () => {
             const idx = parseInt(btn.dataset.index, 10);
             const stop = timeline.computedStops[idx];
-            if (stop && state.map) {
-              state.map.setView([stop.lat, stop.lng], 15, { animate: true });
-              if (state.plannerMarkers[idx]) {
-                state.plannerMarkers[idx].openPopup();
+            if (!stop) return;
+            const targetId = stop.spotId || stop.id;
+            if (targetId && findCatalogSpot(targetId)) {
+              window.appFocusOnMap(targetId);
+            } else if (stop.lat && stop.lng) {
+              const iframe = document.getElementById('okinawa-gmap-iframe');
+              if (iframe) {
+                iframe.src = `https://maps.google.com/maps?q=${stop.lat},${stop.lng}&z=15&hl=zh-TW&output=embed`;
               }
-              const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
-              if (targetEl && window.innerWidth <= 900) {
+              if (typeof window !== 'undefined' && window.innerWidth <= 900) {
                 switchMobileView('map');
-                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
+                if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+                  targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
               }
               showToast(`📍 地圖已定位至第 ${idx + 1} 站：${stop.nameZh || stop.name}`);
             }
@@ -3593,6 +3859,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function initSpotPickerModal() {
     const modal = document.getElementById('spot-picker-modal');
     const closeBtn = document.getElementById('picker-modal-close-btn');
+    const doneBtn = document.getElementById('btn-picker-done');
+    const targetDaySelect = document.getElementById('picker-target-day-select');
     const searchInput = document.getElementById('picker-search-input');
     const toggleCustomBtn = document.getElementById('btn-toggle-custom-stop-form');
     const customForm = document.getElementById('custom-stop-form');
@@ -3601,18 +3869,42 @@ document.addEventListener('DOMContentLoaded', () => {
     function closePicker() {
       if (modal) {
         modal.classList.remove('open');
-        document.body.style.overflow = '';
+        if (document.querySelectorAll('.modal-overlay.open').length === 0) {
+          document.body.style.overflow = '';
+        }
       }
     }
 
     if (closeBtn && modal) {
       closeBtn.addEventListener('click', closePicker);
+      if (doneBtn) doneBtn.addEventListener('click', closePicker);
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           closePicker();
         }
       });
       attachModalBottomSheetGestures(modal, closePicker);
+      document.addEventListener('keydown', (e) => {
+        if (e && e.key === 'Escape' && modal.classList && typeof modal.classList.contains === 'function' && modal.classList.contains('open')) {
+          const detailModal = document.getElementById('spot-detail-modal');
+          if (detailModal && detailModal.classList && typeof detailModal.classList.contains === 'function' && detailModal.classList.contains('open')) {
+            return;
+          }
+          closePicker();
+        }
+      });
+    }
+
+    if (targetDaySelect) {
+      targetDaySelect.addEventListener('change', (e) => {
+        const nextIdx = parseInt(e.target.value, 10);
+        if (!isNaN(nextIdx) && state.plannerData && state.plannerData.days[nextIdx]) {
+          state.plannerData.activeDayIndex = nextIdx;
+          savePlannerData();
+          if (state.itineraryMode === 'planner') renderPlannerStudio();
+          renderPickerCatalog();
+        }
+      });
     }
 
     if (searchInput) {
@@ -3761,9 +4053,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return labels[cat] || '景點文化';
   }
 
+  function syncPickerTargetDaySelect() {
+    const sel = document.getElementById('picker-target-day-select');
+    if (!sel || !state.plannerData || !Array.isArray(state.plannerData.days)) return;
+    sel.innerHTML = state.plannerData.days.map((d, dIdx) => `
+      <option value="${dIdx}" ${dIdx === state.plannerData.activeDayIndex ? 'selected' : ''}>加入 Day ${d.day} (${(d.stops || []).length} 站)</option>
+    `).join('');
+  }
+
   function openSpotPickerModal() {
     const modal = document.getElementById('spot-picker-modal');
     if (!modal) return;
+    syncPickerTargetDaySelect();
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
     renderPickerCatalog();
@@ -3772,6 +4073,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderPickerCatalog() {
     const grid = document.getElementById('picker-spots-grid');
     if (!grid || typeof SPOTS_CATALOG === 'undefined') return;
+
+    syncPickerTargetDaySelect();
+    const activeDayObj = (state.plannerData && state.plannerData.days && state.plannerData.days[state.plannerData.activeDayIndex]) || null;
+    const activeDayNum = activeDayObj ? activeDayObj.day : 1;
+    const existingSpotIds = new Set((activeDayObj && activeDayObj.stops ? activeDayObj.stops : []).map(s => s.spotId || s.id));
 
     const filtered = SPOTS_CATALOG.filter(spot => {
       // Category filter
@@ -3820,15 +4126,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const young = spot.generation ? spot.generation.young : null;
       const walkScore = senior && senior.walkingScore === 'green' ? '🟢 輕鬆低步數' : (senior && senior.walkingScore === 'amber' ? '🟡 中度平坦' : '🔴 坡度較多');
       const spotImg = resolveSpotImage(spot);
+      const isAlreadyAdded = existingSpotIds.has(spot.id);
 
       return `
-        <div class="picker-spot-card">
+        <div class="picker-spot-card ${isAlreadyAdded ? 'is-in-day' : ''}">
           <div>
             ${spotImg.src ? `
               <div class="picker-spot-photo-wrap btn-picker-preview" data-id="${escapeHtml(spot.id)}" title="點擊查看大圖與完整攻略">
                 <img src="${escapeHtml(spotImg.src)}" data-fallback="${escapeHtml(spotImg.fallback)}" alt="${escapeHtml(spot.nameZh)}" loading="lazy" onerror="window.appHandleImgError(this)">
                 <span class="picker-spot-cat-badge">${spot.icon} ${escapeHtml(spot.categoryLabel)}</span>
-                <span class="picker-spot-dur-badge">⏱️ ${spot.defaultDurationMinutes || 60}分</span>
+                <span class="picker-spot-dur-badge">${isAlreadyAdded ? `✓ 已在 D${activeDayNum}` : `⏱️ ${spot.defaultDurationMinutes || 60}分`}</span>
               </div>
             ` : `
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.35rem;">
@@ -3851,8 +4158,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="btn btn-secondary btn-sm btn-picker-preview" data-id="${escapeHtml(spot.id)}">
               🔍 攻略
             </button>
-            <button class="btn-picker-add" data-id="${escapeHtml(spot.id)}">
-              ➕ 加入此日
+            <button class="btn-picker-add ${isAlreadyAdded ? 'is-added' : ''}" data-id="${escapeHtml(spot.id)}">
+              ${isAlreadyAdded ? `✓ 已在 D${activeDayNum} · +1` : `➕ 加入 D${activeDayNum}`}
             </button>
           </div>
         </div>
@@ -3862,9 +4169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     grid.querySelectorAll('.btn-picker-add').forEach(btn => {
       btn.addEventListener('click', () => {
         addSpotToCurrentPlannerDay(btn.dataset.id);
-        const modal = document.getElementById('spot-picker-modal');
-        if (modal) modal.classList.remove('open');
-        document.body.style.overflow = '';
+        renderPickerCatalog();
       });
     });
 
@@ -3910,91 +4215,22 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       ` : ''}
-      <div style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+      <div class="modal-practical-meta-strip">
         <span class="card-duration-badge">⏱️ 建議停留：${item.defaultDurationMinutes || item.duration || '60'} 分鐘</span>
         <span class="tag-badge" style="background: var(--primary-light); color: var(--primary); font-size: 0.8rem;">${escapeHtml(item.categoryLabel || '沖繩精選')}</span>
-        <button class="btn btn-primary btn-sm btn-modal-quick-add" style="margin-left:auto; font-size:0.8rem;">
-          ➕ 快速加入 (Day ${(state.plannerData.activeDayIndex || 0) + 1})
-        </button>
       </div>
 
-      <div style="margin-bottom: 1.25rem;">
-        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem;">景點介紹與特色亮點</h4>
-        <p style="font-size: 0.925rem; color: var(--text-muted); line-height: 1.6;">${escapeHtml(item.desc)}</p>
-      </div>
-
-      <!-- 3 Structured Generation Perspective Cards -->
-      <div style="display:flex; flex-direction:column; gap:0.85rem; margin-bottom:1.25rem;">
-        
-        <!-- Senior Perspective Card -->
-        <div style="background: rgba(16,185,129,0.06); border-left: 4px solid #10b981; border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-wrap:wrap;">
-            <h4 style="font-size: 0.925rem; font-weight: 800; color: #059669; margin:0;">🧓 40~60歲 熟齡舒活指南</h4>
-            <span style="font-size:0.775rem; font-weight:700; color:${walkColor}; border:1px solid ${walkColor}; padding:0.1rem 0.45rem; border-radius:var(--radius-full);">
-              🚶 步數強度：${escapeHtml(senior.walkingLoad || '輕鬆舒適')}
-            </span>
-          </div>
-          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
-            <strong>🪑 座椅空調：</strong>${escapeHtml(senior.seatingRest || '設有座位環境可供歇息')}
-          </div>
-          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
-            <strong>🍵 餐飲解渴：</strong>${escapeHtml(senior.foodHighlights || '提供清淡海鮮、熱茶或在地小點')}
-          </div>
-          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.35rem;">
-            <strong>⛩️ 文化伴手：</strong>${escapeHtml(senior.cultureShopping || '在地身心祈福與精選特產')}
-          </div>
-          <div class="gen-tip-highlight senior">
-            💡 舒活實戰對策：${escapeHtml(senior.keyTip || '下車可先確認洗手間與電梯動線，放慢遊覽步調。')}
-          </div>
-        </div>
-
-        <!-- Young Perspective Card -->
-        <div style="background: rgba(245,158,11,0.06); border-left: 4px solid #f59e0b; border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">
-            <h4 style="font-size: 0.925rem; font-weight: 800; color: #d97706; margin:0;">📸 25~35歲 年輕探索指南</h4>
-            <span class="tag-badge gen-young-badge" style="font-size: 0.75rem;">#打卡熱點</span>
-          </div>
-          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
-            <strong>📷 IG絕景拍照：</strong>${escapeHtml(young.photoSpot || '熱門出片打卡取景點')}
-          </div>
-          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.25rem;">
-            <strong>🍜 話題必吃：</strong>${escapeHtml(young.trendyFood || '網路排隊熱門美食')}
-          </div>
-          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.35rem;">
-            <strong>🛍️ 潮流亮點：</strong>${escapeHtml(young.shoppingNightlife || '特色服飾、露營戶外選品或夜間氛圍')}
-          </div>
-          <div class="gen-tip-highlight young">
-            ⚡ 探索實戰攻略：${escapeHtml(young.keyTip || '把握自然光最佳時間拍照，分流採購更加高效。')}
-          </div>
-        </div>
-
-        <!-- Cross-Gen Harmony Advice -->
-        <div style="background: rgba(124,58,237,0.06); border-left: 4px solid #7c3aed; border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
-          <h4 style="font-size: 0.925rem; font-weight: 800; color: #7c3aed; margin-bottom: 0.25rem;">
-            🤝 跨世代共榮契合度：${harmonyScore} / 10
-          </h4>
-          <p style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin:0;">
-            ${escapeHtml(harmonyAdvice || '全體各取所需，長輩在舒適座位喝茶看海，年輕人前往打卡拍照，約定集合時間皆大歡喜。')}
-          </p>
-        </div>
-
-      </div>
-
-      <div style="background: var(--bg-subtle); border-left: 4px solid var(--accent); padding: 0.85rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem;">
-        <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">💡 實用攻略與注意事項</h4>
-        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">${escapeHtml(item.tips || '自駕導航請優先輸入MapCode，進入停車場請遵從引導。')}</p>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.25rem;">
-        <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
-          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">日本車機 MapCode</div>
+      <!-- Practical Navigation Info First (MapCode & Address) -->
+      <div class="modal-practical-grid">
+        <div class="modal-practical-box">
+          <div class="modal-practical-label">日本車機 MapCode</div>
           ${isSensitiveLocked
             ? `<button type="button" class="card-address-locked-btn" data-action="modal-unlock-privacy" style="margin-top:0.25rem; width:100%;">🔒 密碼保護（點擊解鎖）</button>`
             : `<div style="font-family: monospace; font-size: 1rem; font-weight: 700; color: var(--primary); margin-top: 0.2rem;">${escapeHtml(item.mapCode || '無')}</div>`
           }
         </div>
-        <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm);">
-          <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">地址 / 區域</div>
+        <div class="modal-practical-box">
+          <div class="modal-practical-label">地址 / 區域</div>
           ${isSensitiveLocked
             ? `<button type="button" class="card-address-locked-btn" data-action="modal-unlock-privacy" style="margin-top:0.25rem; width:100%;">🔒 詳細地址已隱藏（點擊解鎖）</button>`
             : (isSensitiveUnlocked && acc
@@ -4004,8 +4240,59 @@ document.addEventListener('DOMContentLoaded', () => {
                    ${acc.notes ? `<div style="font-size: 0.75rem; color: var(--primary); margin-top: 0.25rem;">💡 ${escapeHtml(acc.notes)}</div>` : ''}
                    <button type="button" class="btn-inline-copy-addr" data-action="modal-copy-address" data-address="${escapeHtml(acc.address)}" style="margin-top:0.4rem;">📋 複製地址</button>
                  </div>`
-              : `<div style="font-size: 0.85rem; font-weight: 600; margin-top: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(item.address)}">${escapeHtml(item.address)}</div>`)
+              : `<div style="font-size: 0.85rem; font-weight: 600; margin-top: 0.2rem; word-break: break-word;" title="${escapeHtml(item.address)}">${escapeHtml(item.address)}</div>`)
           }
+        </div>
+      </div>
+
+      <!-- Tips & Spot Overview -->
+      <div class="modal-tips-box">
+        <h4>💡 實用攻略與注意事項</h4>
+        <p>${escapeHtml(item.tips || '自駕導航請優先輸入MapCode，進入停車場請遵從引導。')}</p>
+      </div>
+
+      <div style="margin-bottom: 1.15rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem;">景點介紹與特色亮點</h4>
+        <p style="font-size: 0.925rem; color: var(--text-muted); line-height: 1.65;">${escapeHtml(item.desc)}</p>
+      </div>
+
+      <!-- 3 Structured Generation Perspective Cards (Dark-Mode Safe) -->
+      <div style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:0.5rem;">
+        <div class="modal-gen-card senior">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-wrap:wrap; gap:0.4rem;">
+            <h4 class="modal-gen-title senior">🧓 40~60歲 熟齡舒活指南</h4>
+            <span class="modal-walk-pill" style="color:${walkColor}; border-color:${walkColor};">
+              🚶 步數強度：${escapeHtml(senior.walkingLoad || '輕鬆舒適')}
+            </span>
+          </div>
+          <div class="modal-gen-row"><strong>🪑 座椅空調：</strong>${escapeHtml(senior.seatingRest || '設有座位環境可供歇息')}</div>
+          <div class="modal-gen-row"><strong>🍵 餐飲解渴：</strong>${escapeHtml(senior.foodHighlights || '提供清淡海鮮、熱茶或在地小點')}</div>
+          <div class="modal-gen-row" style="margin-bottom:0.4rem;"><strong>⛩️ 文化伴手：</strong>${escapeHtml(senior.cultureShopping || '在地身心祈福與精選特產')}</div>
+          <div class="gen-tip-highlight senior">
+            💡 舒活實戰對策：${escapeHtml(senior.keyTip || '下車可先確認洗手間與電梯動線，放慢遊覽步調。')}
+          </div>
+        </div>
+
+        <div class="modal-gen-card young">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">
+            <h4 class="modal-gen-title young">📸 25~35歲 年輕探索指南</h4>
+            <span class="tag-badge gen-young-badge" style="font-size: 0.75rem;">#打卡熱點</span>
+          </div>
+          <div class="modal-gen-row"><strong>📷 IG絕景拍照：</strong>${escapeHtml(young.photoSpot || '熱門出片打卡取景點')}</div>
+          <div class="modal-gen-row"><strong>🍜 話題必吃：</strong>${escapeHtml(young.trendyFood || '網路排隊熱門美食')}</div>
+          <div class="modal-gen-row" style="margin-bottom:0.4rem;"><strong>🛍️ 潮流亮點：</strong>${escapeHtml(young.shoppingNightlife || '特色服飾、露營戶外選品或夜間氛圍')}</div>
+          <div class="gen-tip-highlight young">
+            ⚡ 探索實戰攻略：${escapeHtml(young.keyTip || '把握自然光最佳時間拍照，分流採購更加高效。')}
+          </div>
+        </div>
+
+        <div class="modal-gen-card harmony">
+          <h4 class="modal-gen-title harmony">
+            🤝 跨世代共榮契合度：${harmonyScore} / 10
+          </h4>
+          <p class="modal-gen-row" style="margin:0;">
+            ${escapeHtml(harmonyAdvice || '全體各取所需，長輩在舒適座位喝茶看海，年輕人前往打卡拍照，約定集合時間皆大歡喜。')}
+          </p>
         </div>
       </div>
     `;
@@ -4196,8 +4483,20 @@ document.addEventListener('DOMContentLoaded', () => {
     syncScrollerActiveChip(itemId);
 
     const targetEl = document.getElementById('map-section') || document.getElementById('main-layout-grid');
-    if (targetEl && typeof targetEl.scrollIntoView === 'function') {
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      const mapCard = document.querySelector('.map-card-container');
+      if (mapCard && mapCard.classList && typeof mapCard.classList.add === 'function') {
+        mapCard.classList.remove('map-focus-pulse');
+        void mapCard.offsetWidth;
+        mapCard.classList.add('map-focus-pulse');
+        setTimeout(() => {
+          if (mapCard && mapCard.classList) mapCard.classList.remove('map-focus-pulse');
+        }, 900);
+      }
     }
     if (isSensitiveLocked) {
       showToast('🔒 民宿精準地址已隱藏（目前顯示糸滿概略區域），點擊右上角 🔒 解鎖精準定位');
@@ -4297,6 +4596,22 @@ document.addEventListener('DOMContentLoaded', () => {
   function initChecklist() {
     renderChecklist();
 
+    const filterBar = document.getElementById('checklist-filter-bar');
+    if (filterBar) {
+      filterBar.querySelectorAll('.checklist-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.checklistFilter = btn.dataset.checklistFilter || 'all';
+          filterBar.querySelectorAll('.checklist-filter-btn').forEach(b => {
+            if (b.classList) {
+              if (b === btn) b.classList.add('active');
+              else b.classList.remove('active');
+            }
+          });
+          renderChecklist();
+        });
+      });
+    }
+
     const resetBtn = document.getElementById('checklist-reset-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
@@ -4357,15 +4672,49 @@ document.addEventListener('DOMContentLoaded', () => {
     if (progressFill) progressFill.style.width = pct + '%';
     if (progressText) progressText.textContent = `已準備 ${checkedCount} / ${total} 項 (${pct}%)`;
 
-    container.innerHTML = state.checklist.map(item => `
-      <label class="checklist-item ${item.checked ? 'checked' : ''}" data-id="${escapeHtml(item.id)}">
-        <input type="checkbox" class="checklist-checkbox" ${item.checked ? 'checked' : ''} data-id="${escapeHtml(item.id)}">
-        <span style="flex: 1; font-size: 0.925rem;">
-          ${escapeHtml(item.text)}
-          ${item.essential ? '<span style="color:#ef4444;font-size:0.75rem;font-weight:700;margin-left:0.35rem;">[必備]</span>' : ''}
-        </span>
-        <span style="font-size: 0.75rem; color: var(--text-subtle);">${escapeHtml(item.categoryName || '')}</span>
-      </label>
+    const visibleItems = state.checklist.filter(item => {
+      if (state.checklistFilter === 'pending') return !item.checked;
+      if (state.checklistFilter === 'essential') return Boolean(item.essential);
+      return true;
+    });
+
+    if (visibleItems.length === 0) {
+      container.innerHTML = `<div style="text-align:center; padding:2rem 1rem; color:var(--text-muted); font-size:0.9rem;">${state.checklistFilter === 'pending' ? '🎉 太棒了！所有行李項目皆已準備完成' : '此篩選條件下無清單項目'}</div>`;
+      return;
+    }
+
+    // Group items by categoryName while preserving order
+    const groups = [];
+    const groupMap = new Map();
+    visibleItems.forEach(item => {
+      const gName = item.categoryName || '其他項目';
+      if (!groupMap.has(gName)) {
+        const gObj = { name: gName, items: [] };
+        groupMap.set(gName, gObj);
+        groups.push(gObj);
+      }
+      groupMap.get(gName).items.push(item);
+    });
+
+    container.innerHTML = groups.map(group => `
+      <div class="checklist-group-block">
+        <div class="checklist-group-header">${escapeHtml(group.name)} (${group.items.filter(i => i.checked).length}/${group.items.length})</div>
+        ${group.items.map(item => `
+          <div class="checklist-item ${item.checked ? 'checked' : ''}" data-id="${escapeHtml(item.id)}">
+            <label class="checklist-item-label">
+              <input type="checkbox" class="checklist-checkbox" ${item.checked ? 'checked' : ''} data-id="${escapeHtml(item.id)}">
+              <span style="flex: 1; font-size: 0.925rem;">
+                ${escapeHtml(item.text)}
+                ${item.essential ? '<span class="checklist-essential-tag">[必備]</span>' : ''}
+              </span>
+            </label>
+            ${String(item.id).startsWith('custom-')
+              ? `<button type="button" class="btn-delete-checklist-item" data-delete-id="${escapeHtml(item.id)}" aria-label="刪除此項目" title="刪除自訂項目">✕</button>`
+              : ''
+            }
+          </div>
+        `).join('')}
+      </div>
     `).join('');
 
     container.querySelectorAll('.checklist-checkbox').forEach(cb => {
@@ -4379,6 +4728,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+
+    container.querySelectorAll('.btn-delete-checklist-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const delId = btn.dataset.deleteId;
+        state.checklist = state.checklist.filter(i => i.id !== delId);
+        saveChecklist();
+        renderChecklist();
+        showToast('已刪除自訂行李項目');
+      });
+    });
   }
 
   /* ==========================================================================
@@ -4388,6 +4748,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rateInput = document.getElementById('currency-rate-input');
     const jpyInput = document.getElementById('calc-jpy-input');
     const twdOutput = document.getElementById('calc-twd-output');
+    const bringToExpenseBtn = document.getElementById('btn-calc-to-expense');
 
     if (rateInput) {
       rateInput.value = state.exchangeRate;
@@ -4399,14 +4760,41 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    if (jpyInput && twdOutput) {
-      jpyInput.addEventListener('input', updateCalculator);
-    }
-
     function updateCalculator() {
+      if (!jpyInput || !twdOutput) return;
       const jpy = parseFloat(jpyInput.value) || 0;
       const twd = Math.round(jpy * state.exchangeRate);
       twdOutput.textContent = `約 NT$ ${twd.toLocaleString()}`;
+    }
+
+    if (jpyInput && twdOutput) {
+      jpyInput.addEventListener('input', updateCalculator);
+      updateCalculator();
+    }
+
+    document.querySelectorAll('.jpy-quick-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.jpy;
+        if (jpyInput && val) {
+          jpyInput.value = val;
+          updateCalculator();
+        }
+      });
+    });
+
+    if (bringToExpenseBtn) {
+      bringToExpenseBtn.addEventListener('click', () => {
+        const expJpy = document.getElementById('expense-jpy-input');
+        const expName = document.getElementById('expense-name-input');
+        const val = jpyInput ? (parseFloat(jpyInput.value) || 0) : 0;
+        if (expJpy && val > 0) {
+          expJpy.value = String(val);
+        }
+        if (expName && typeof expName.focus === 'function') {
+          expName.focus();
+        }
+        showToast('💴 已帶入金額，請輸入品名後點擊「記帳」');
+      });
     }
 
     // Add Expense Entry Form
@@ -4444,16 +4832,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderExpenses() {
     const list = document.getElementById('expenses-history-list');
+    const summaryEl = document.getElementById('expenses-category-summary');
     const totalJpyEl = document.getElementById('expenses-total-jpy');
     const totalTwdEl = document.getElementById('expenses-total-twd');
     if (!list) return;
 
     let sumJpy = 0;
-    state.expenses.forEach(e => sumJpy += e.jpy);
+    const catTotals = {};
+    state.expenses.forEach(e => {
+      sumJpy += e.jpy;
+      const cat = e.category || '其他雜支';
+      catTotals[cat] = (catTotals[cat] || 0) + e.jpy;
+    });
     const sumTwd = Math.round(sumJpy * state.exchangeRate);
 
     if (totalJpyEl) totalJpyEl.textContent = `¥ ${sumJpy.toLocaleString()}`;
     if (totalTwdEl) totalTwdEl.textContent = `NT$ ${sumTwd.toLocaleString()}`;
+
+    if (summaryEl) {
+      const entries = Object.entries(catTotals);
+      if (entries.length === 0) {
+        summaryEl.innerHTML = '';
+        summaryEl.style.display = 'none';
+      } else {
+        summaryEl.style.display = 'flex';
+        summaryEl.innerHTML = entries.map(([cat, amt]) => `
+          <span class="expense-cat-chip">${escapeHtml(cat)}：¥ ${amt.toLocaleString()}</span>
+        `).join('');
+      }
+    }
 
     if (state.expenses.length === 0) {
       list.innerHTML = '<div style="text-align:center;padding:2rem 0;color:var(--text-muted);font-size:0.875rem;">尚無記帳記錄，可透過上方表單新增</div>';

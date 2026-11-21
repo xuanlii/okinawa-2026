@@ -43,7 +43,6 @@
           <li><a href="#schedule-section" class="nav-link" id="nav-planner-link">自由規劃</a></li>
           <li><a href="#map-section" class="nav-link">路線地圖</a></li>
           <li><a href="#toolkit-section" class="nav-link">行前錦囊</a></li>
-          <li><a href="#chictrip-section" class="nav-link">去趣 App</a></li>
         </ul>
       </nav>
 
@@ -69,28 +68,30 @@
   </header>
 
   <!-- ==========================================================================
-       Hero Section
+       Hero Section (Compact Trip Command Header)
        ========================================================================== -->
   <section class="hero-section">
     <div class="container">
-      <div class="hero-badge-group">
-        <span class="hero-pill flight-pill" id="hero-flight-pill" title="點擊切換航班與連動時間">✈️ 航班：<strong id="hero-flight-name">中華航空 CI120/CI121</strong> ▾</span>
-        <button type="button" class="hero-pill privacy-pill" id="hero-privacy-pill" title="點擊輸入密碼解鎖或檢視民宿地址與敏感資訊">
-          🔒 民宿地址已加密 · 點擊輸入密碼解鎖
-        </button>
-        <span class="hero-pill">2026/12/12 – 12/16 · 5天4夜自駕</span>
-      </div>
+      <div class="hero-top-row">
+        <div class="hero-top-main">
+          <div class="hero-badge-group">
+            <span class="hero-pill flight-pill" id="hero-flight-pill" title="點擊切換航班與連動時間">✈️ <strong id="hero-flight-name">中華航空 CI120/CI121</strong> ▾</span>
+            <button type="button" class="hero-pill privacy-pill" id="hero-privacy-pill" title="點擊輸入密碼解鎖或檢視民宿地址與敏感資訊">
+              🔒 民宿已加密 · 點擊解鎖
+            </button>
+            <span class="hero-pill">12/12 – 12/16 · 5天4夜</span>
+          </div>
 
-      <h1 class="hero-title">
-        2026/12 沖繩 <span class="gradient-text">冬日自駕</span>
-      </h1>
+          <h1 class="hero-title">
+            2026/12 沖繩 <span class="gradient-text">冬日自駕</span>
+          </h1>
 
-      <p class="hero-subtitle">
-        5 天 4 夜南部與西海岸慢活路線 — 糸滿海鮮、那霸古社、PARCO CITY 購物與海濱日落。
-      </p>
+          <p class="hero-subtitle">
+            南部漁港 × 那霸古社 × PARCO CITY 海景慢活路線
+          </p>
+        </div>
 
-      <div class="hero-meta-strip">
-        <!-- Countdown Banner -->
+        <!-- Compact Countdown Banner -->
         <div class="countdown-box" id="countdown-wrap">
           <div class="countdown-label">
             <span class="pulse-dot"></span>
@@ -118,14 +119,16 @@
             </div>
           </div>
         </div>
+      </div>
 
+      <div class="hero-meta-strip hero-bottom-bar">
         <!-- Stats Grid -->
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon">🗓️</div>
             <div>
               <div class="stat-value">5 天 4 夜</div>
-              <div class="stat-label">週末＋平日</div>
+              <div class="stat-label">自駕總覽</div>
             </div>
           </div>
           <div class="stat-card">
@@ -150,73 +153,91 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Quick Action Buttons -->
-      <div class="hero-cta-group">
-        <a href="#schedule-section" class="btn btn-primary" id="hero-btn-official">
-          <span>瀏覽 5 天行程</span>
-        </a>
-        <button class="btn btn-secondary" id="hero-btn-planner">
-          <span>🛠️ 自由規劃 Studio</span>
-        </button>
-        <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn btn-chictrip">
-          <span>去趣 App</span>
-        </a>
-        <button class="btn btn-secondary btn-copy-chictrip">
-          <span>複製連結</span>
-        </button>
-        <button class="btn btn-secondary btn-print-itinerary hero-print-btn">
-          <span>列印 PDF</span>
-        </button>
+        <!-- Quick Action Buttons -->
+        <div class="hero-cta-group">
+          <a href="#schedule-section" class="btn btn-primary" id="hero-btn-official">
+            <span>開始瀏覽行程</span>
+          </a>
+          <button class="btn btn-secondary" id="hero-btn-planner">
+            <span>🛠️ 自由規劃</span>
+          </button>
+          <a href="#chictrip-section" data-sensitive-chictrip="link" class="btn btn-chictrip">
+            <span>去趣 App</span>
+          </a>
+          <button class="btn btn-secondary btn-copy-chictrip">
+            <span>複製連結</span>
+          </button>
+          <button class="btn btn-secondary btn-print-itinerary hero-print-btn">
+            <span>列印</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ==========================================================================
-       Schedule Control Bar (Sticky Filter & Day Switcher)
-       ========================================================================== -->
-  <section class="schedule-control-bar" id="schedule-section">
-    <div class="container">
-      
+  <!-- Tier 1: Slim Sticky Mode + Day Dock (Direct child of body so sticky persists down the timeline) -->
+  <div class="schedule-sticky-dock" id="schedule-sticky-dock">
+    <div class="container schedule-dock-inner">
       <!-- Itinerary Mode Switcher (Official 5-Day vs Custom Planner Studio) -->
       <div class="itinerary-mode-tabs-container">
         <button class="mode-tab-btn active" id="btn-mode-official" data-mode="official">
           <span class="mode-icon">🗓️</span>
-          <span class="mode-text">官方 5 天行程</span>
+          <span class="mode-text">官方行程</span>
         </button>
         <button class="mode-tab-btn" id="btn-mode-planner" data-mode="planner">
           <span class="mode-icon">🛠️</span>
-          <span class="mode-text">自由規劃 Studio</span>
+          <span class="mode-text">自由規劃</span>
         </button>
       </div>
 
-      <!-- Generation Perspective Switcher Bar (Dual-Generation Mode) -->
-      <div class="generation-perspective-bar" id="generation-perspective-bar">
-        <div class="gen-bar-left">
-          <span class="gen-bar-title">視角</span>
-        </div>
-        <div class="gen-bar-buttons">
-          <button class="gen-btn active" data-gen="both" title="同時顯示熟齡與年輕雙向指南">
-            <span>全部</span>
-          </button>
-          <button class="gen-btn" data-gen="senior" title="聚焦低步數負擔、座椅空調與清淡餐飲">
-            <span>熟齡 40–60</span>
-          </button>
-          <button class="gen-btn" data-gen="young" title="聚焦IG拍照點、排隊話題美食與潮流選品">
-            <span>年輕 25–35</span>
-          </button>
-        </div>
+      <!-- Day Switcher Tabs -->
+      <div class="day-tabs-scroll" id="day-tabs-container">
+        <!-- Dynamically injected via JS -->
       </div>
 
-      <!-- Official Schedule Filter Controls (Shown in official mode) -->
-      <div id="official-filter-controls">
-        <!-- Day Switcher Tabs -->
-        <div class="day-tabs-scroll" id="day-tabs-container">
-          <!-- Dynamically injected via JS -->
+      <!-- Filter Drawer Trigger -->
+      <button type="button" class="btn-toggle-filters" id="btn-toggle-filters" aria-expanded="false" aria-controls="official-filter-controls" title="搜尋、分類與雙世代視角篩選">
+        <span>🔍 篩選</span>
+        <span id="active-filter-count-badge" class="filter-count-badge" style="display:none;">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       Schedule Control Bar (Filter Toolbar & Active Summary)
+       ========================================================================== -->
+  <section class="schedule-control-bar" id="schedule-section">
+    <!-- Tier 2: Official Filter Toolbar (Always accessible on desktop, collapsible on mobile) -->
+    <div class="container">
+      <div id="official-filter-controls" class="official-filter-controls">
+        <div class="filter-top-toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="schedule-search-input" class="search-input" placeholder="搜尋景點 / MapCode...">
+            <button id="schedule-search-clear" class="search-clear" aria-label="清除搜尋">✕</button>
+          </div>
+
+          <!-- Generation Perspective Switcher Bar (Dual-Generation Mode) -->
+          <div class="generation-perspective-bar" id="generation-perspective-bar">
+            <div class="gen-bar-left">
+              <span class="gen-bar-title">視角</span>
+            </div>
+            <div class="gen-bar-buttons">
+              <button class="gen-btn active" data-gen="both" title="同時顯示熟齡與年輕雙向指南">
+                <span>全部</span>
+              </button>
+              <button class="gen-btn" data-gen="senior" title="聚焦低步數負擔、座椅空調與清淡餐飲">
+                <span>熟齡 40–60</span>
+              </button>
+              <button class="gen-btn" data-gen="young" title="聚焦IG拍照點、排隊話題美食與潮流選品">
+                <span>年輕 25–35</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Secondary Filters & Search -->
+        <!-- Category Filters -->
         <div class="filter-row">
           <div class="category-pills">
             <button class="cat-pill active" data-category="all">全部</button>
@@ -224,17 +245,18 @@
             <button class="cat-pill" data-category="shopping">購物</button>
             <button class="cat-pill" data-category="attraction">景點</button>
             <button class="cat-pill" data-category="transport-hotel">交通 / 住宿</button>
+            <span class="cat-pill-divider" aria-hidden="true"></span>
             <button class="cat-pill" data-category="senior">熟齡友善</button>
             <button class="cat-pill" data-category="young">人氣打卡</button>
             <button class="cat-pill" data-category="harmony">全家共融</button>
             <button class="cat-pill" data-category="favorites">收藏</button>
           </div>
+        </div>
 
-          <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="schedule-search-input" class="search-input" placeholder="搜尋景點 / MapCode...">
-            <button id="schedule-search-clear" class="search-clear">✕</button>
-          </div>
+        <!-- Active Filter Summary & 1-Click Reset -->
+        <div id="active-filters-summary" class="active-filters-summary" style="display:none;">
+          <span id="active-filters-text"></span>
+          <button type="button" id="btn-reset-all-filters" class="btn-reset-filters">↺ 清除篩選</button>
         </div>
       </div>
     </div>
@@ -295,37 +317,35 @@
 
             <!-- Planner Actions & Presets Control Card -->
             <div class="planner-control-card">
-              <div class="planner-control-row">
+              <div class="planner-control-row planner-control-primary">
+                <button id="btn-planner-open-spot-picker" class="btn btn-primary btn-sm">➕ 新增景點至行程</button>
                 <div class="planner-time-box">
                   <span>⏰ 當日啟程：</span>
                   <input type="time" id="planner-day-start-time" class="form-control-time" value="09:00" title="設定此日出發時間，系統將自動推算全日各景點抵達與出發時刻">
                 </div>
+                <select id="planner-preset-select" class="form-control-select" aria-label="載入經典範本">
+                  <option value="">⚡ 載入推薦範本...</option>
+                  <option value="official_5d">🌟 官方推薦 5天4夜自駕經典</option>
+                  <option value="senior_5d">🧓 40~60歲 熟齡舒活・海味祈福 5天4夜慢活全景</option>
+                  <option value="young_5d">📸 25~35歲 潮流美拍・巨城爆買 5天4夜打卡全景</option>
+                  <option value="cross_5d">🤝 跨世代雙贏全家歡樂 5天4夜黃金全景版</option>
+                </select>
+              </div>
+
+              <div class="planner-control-row planner-control-utils">
                 <div class="planner-flight-badge" id="planner-flight-badge" title="點擊切換航班與連動時間">
                   <span>✈️ 航班連動：</span><strong id="planner-flight-label">CI120/CI121</strong>
                   <button type="button" class="btn btn-secondary btn-sm" id="btn-planner-change-flight">切換</button>
                 </div>
-                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-                  <select id="planner-preset-select" class="form-control-select" aria-label="載入經典範本">
-                    <option value="">⚡ 載入經典範本...</option>
-                    <option value="official_5d">🌟 官方推薦 5天4夜自駕經典</option>
-                    <option value="senior_5d">🧓 40~60歲 熟齡舒活・海味祈福 5天4夜慢活全景</option>
-                    <option value="young_5d">📸 25~35歲 潮流美拍・巨城爆買 5天4夜打卡全景</option>
-                    <option value="cross_5d">🤝 跨世代雙贏全家歡樂 5天4夜黃金全景版</option>
-                  </select>
-                  <button id="btn-planner-open-spot-picker" class="btn btn-primary btn-sm">➕ 新增景點</button>
-                </div>
-              </div>
-
-              <div class="planner-control-row">
                 <div class="planner-btn-group">
-                  <button id="btn-planner-copy-text" class="btn btn-secondary btn-sm" title="複製完整行程時間表至剪貼簿">📋 複製行程文字</button>
+                  <button id="btn-planner-copy-text" class="btn btn-secondary btn-sm" title="複製完整行程時間表至剪貼簿">📋 複製文字</button>
                   <button id="btn-planner-print" class="btn btn-secondary btn-sm" title="列印或另存為PDF行程手冊">🖨️ 列印/PDF</button>
                   <button id="btn-planner-export-json" class="btn btn-secondary btn-sm" title="備份下載JSON格式行程">📤 匯出備份</button>
                   <button id="btn-planner-import-json-btn" class="btn btn-secondary btn-sm" title="匯入已備份的行程檔案">📥 匯入行程</button>
                   <input type="file" id="planner-import-file-input" accept=".json" style="display:none;">
-                  <button id="btn-planner-clear-day" class="btn btn-secondary btn-sm" style="color:#ef4444;" title="清空當日已排節點">🗑️ 清空當日</button>
+                  <button id="btn-planner-clear-day" class="btn btn-secondary btn-sm btn-planner-danger" title="清空當日已排節點">🗑️ 清空當日</button>
                 </div>
-                <span style="font-size:0.775rem; color:var(--text-subtle);">※ 異動即時自動儲存於瀏覽器</span>
+                <span class="planner-autosave-hint">※ 異動自動儲存在此瀏覽器</span>
               </div>
             </div>
 
@@ -417,9 +437,7 @@
           <div class="map-card-container">
             <div class="map-card-header">
               <div class="map-title" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-                <span>🗺️ Google Maps 沖繩自駕路網</span>
-                <span id="gmaps-mode-badge" class="badge" style="background:var(--primary-light); color:var(--primary); font-size:0.75rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:var(--radius-full);">Google Maps 嵌入模式</span>
-                <button type="button" class="btn btn-secondary btn-xs" id="btn-open-gmap-key-modal" title="設定個人 Google Maps API Key 解鎖路況與衛星圖">🔑 API Key</button>
+                <span>🗺️ 沖繩自駕路線圖</span>
               </div>
               <div class="map-legend">
                 <span><span class="legend-dot" style="background:#ef4444;"></span>美食</span>
@@ -453,14 +471,15 @@
             </div>
 
             <div class="map-card-footer">
-              <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+              <div class="map-footer-controls">
                 <button type="button" class="btn btn-primary btn-xs" id="btn-back-to-timeline-card" title="返回剛才瀏覽的景點卡片" style="display:none; font-weight:700;">📋 返回行程卡片</button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-reset-gmap-route" title="返回當日完整自駕路線視圖" style="display:none; color:var(--primary); font-weight:700;">↺ 返回當日路線</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-traffic" title="切換即時路況圖層 (需 JS API 模式)" style="display:none;">🚦 即時路況</button>
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-toggle-gmap-mode" title="在嵌入模式與 JS API 模式間切換">🔄 切換視圖</button>
-                <button type="button" class="btn btn-secondary btn-xs" id="btn-reset-gmap-route" title="返回當日完整自駕路線視圖" style="display:none; color:var(--primary); font-weight:700;">🔄 返回當日路線</button>
-                <span>💡 提示：點擊圖標可查看亮點並啟動導航</span>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-open-gmap-key-modal" title="設定個人 Google Maps API Key 解鎖路況與衛星圖">⚙️ 地圖設定</button>
+                <span id="gmaps-mode-badge" class="badge map-mode-badge-subtle">Google Maps 嵌入模式</span>
               </div>
-              <a href="#chictrip-section" data-sensitive-chictrip="link" style="color:var(--primary); font-weight:600; font-size:0.8rem;">去趣 App 導航 →</a>
+              <a href="#chictrip-section" data-sensitive-chictrip="link" class="map-footer-chictrip-link">去趣 App 導航 →</a>
             </div>
           </div>
         </div>
@@ -492,10 +511,10 @@
 
       <!-- Tab: Cross-Generation Travel Handbook -->
       <div class="toolkit-panel active" id="panel-crossgen">
-        <div style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(124, 58, 237, 0.08)); padding: 1.5rem; border-radius: var(--radius-md); border-left: 5px solid #7c3aed; margin-bottom: 1.5rem;">
-          <h3 style="font-size: 1.2rem; font-weight: 800; color: #7c3aed; margin-bottom: 0.35rem;">👥 40~60歲 × 25~35歲 跨世代自駕共融寶典</h3>
-          <p style="font-size: 0.925rem; color: var(--text-main); line-height: 1.6;">
-            帶父母出遊如何皆大歡喜？掌握5大黃金相處法則，兼顧長輩的體力作息與年輕人的探索打卡，讓全家共創零磨擦的南國自駕美好回憶！
+        <div class="toolkit-intro-banner">
+          <h3 class="toolkit-intro-title">👥 40~60歲 × 25~35歲 跨世代自駕共融寶典</h3>
+          <p class="toolkit-intro-desc">
+            帶父母出遊如何皆大歡喜？掌握黃金相處法則，兼顧長輩的體力作息與年輕人的探索打卡，讓全家共創零磨擦的南國自駕美好回憶！
           </p>
         </div>
 
@@ -616,6 +635,13 @@
             <button id="checklist-add-btn" class="btn btn-primary" style="white-space: nowrap; font-size: 0.85rem;">新增</button>
           </div>
 
+          <!-- Checklist filter chips -->
+          <div class="checklist-filter-bar" id="checklist-filter-bar">
+            <button type="button" class="checklist-filter-btn active" data-checklist-filter="all">全部項目</button>
+            <button type="button" class="checklist-filter-btn" data-checklist-filter="pending">尚未準備</button>
+            <button type="button" class="checklist-filter-btn" data-checklist-filter="essential">⭐ 必備證件</button>
+          </div>
+
           <div class="checklist-items-group" id="checklist-items-container">
             <!-- Dynamically populated via JS -->
           </div>
@@ -638,12 +664,23 @@
             <div class="form-group">
               <label class="form-label">輸入日幣金額 (¥ JPY)</label>
               <input type="number" id="calc-jpy-input" class="form-control" placeholder="例：3000" value="5000">
+              <div class="jpy-quick-amounts" aria-label="快速日幣金額">
+                <button type="button" class="jpy-quick-btn" data-jpy="500">¥500</button>
+                <button type="button" class="jpy-quick-btn" data-jpy="1000">¥1,000</button>
+                <button type="button" class="jpy-quick-btn" data-jpy="3000">¥3,000</button>
+                <button type="button" class="jpy-quick-btn" data-jpy="5000">¥5,000</button>
+                <button type="button" class="jpy-quick-btn" data-jpy="10000">¥10,000</button>
+              </div>
             </div>
 
             <div class="conversion-result-box">
               <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">折合台幣預估</div>
               <div class="conversion-val-big" id="calc-twd-output">約 NT$ 1,075</div>
             </div>
+
+            <button type="button" id="btn-calc-to-expense" class="btn btn-secondary btn-sm" style="width:100%; margin-top:0.65rem;">
+              ➕ 將此金額帶入右側記帳
+            </button>
 
             <p style="font-size: 0.775rem; color: var(--text-subtle); margin-top: 0.85rem; text-align: center;">
               * 匯率可依出發當下即時匯率自由自訂修改，系統將自動保存。
@@ -674,6 +711,8 @@
               <input type="number" id="expense-jpy-input" class="form-control" placeholder="日幣 ¥" required>
               <button type="submit" class="btn btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.85rem;">記帳</button>
             </form>
+
+            <div id="expenses-category-summary" class="expenses-category-summary"></div>
 
             <div id="expenses-history-list" style="max-height: 280px; overflow-y: auto;">
               <!-- Dynamically populated -->
@@ -759,12 +798,16 @@
   <div class="modal-overlay" id="spot-picker-modal">
     <div class="modal-dialog modal-dialog-wide">
       <div class="modal-drag-handle" aria-hidden="true"></div>
-      <div class="modal-header">
+      <div class="modal-header picker-modal-header">
         <div>
-          <h3 style="font-size: 1.25rem; font-weight: 800;">📍 選擇景點加入當日行程</h3>
-          <div style="font-size: 0.825rem; color: var(--text-muted);">瀏覽 30 處沖繩精選節點或新增自訂景點，系統將自動計算車程</div>
+          <h3 style="font-size: 1.2rem; font-weight: 800;">📍 選擇景點加入行程</h3>
+          <div style="font-size: 0.825rem; color: var(--text-muted);">可連續加入多個景點至指定天數，系統將自動計算車程</div>
         </div>
-        <button class="modal-close-btn" id="picker-modal-close-btn" aria-label="關閉">✕</button>
+        <div class="picker-header-right">
+          <select id="picker-target-day-select" class="form-control picker-target-day-select" aria-label="加入至第幾天"></select>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-picker-done">完成</button>
+          <button class="modal-close-btn" id="picker-modal-close-btn" aria-label="關閉">✕</button>
+        </div>
       </div>
 
       <div class="picker-filter-bar">
